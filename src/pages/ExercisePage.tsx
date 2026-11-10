@@ -10,6 +10,10 @@ import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-diffi
 import { getAppData } from '../data/app-data'
 import { createAppRegistry, createExerciseConfig } from '../modules'
 import { Calculation20Game } from '../modules/processing-speed/games/calculation-20/Calculation20Game'
+import { Calculation100Game } from '../modules/processing-speed/games/calculation-100/Calculation100Game'
+import { ContinuousCountdownGame } from '../modules/processing-speed/games/continuous-countdown/ContinuousCountdownGame'
+import { MissingOperatorGame } from '../modules/processing-speed/games/missing-operator/MissingOperatorGame'
+import { NumberComparisonGame } from '../modules/processing-speed/games/number-comparison/NumberComparisonGame'
 import { GoNoGoGame } from '../modules/attention-control/games/go-no-go/GoNoGoGame'
 import { StroopGame } from '../modules/attention-control/games/stroop/StroopGame'
 import { ReactionTimeGame } from '../modules/sensorimotor/games/reaction-time/ReactionTimeGame'
@@ -39,6 +43,14 @@ function renderGame(exerciseId: string) {
       return (ctx: Parameters<typeof StroopGame>[0]['ctx']) => <StroopGame ctx={ctx} />
     case 'calculation-20':
       return (ctx: Parameters<typeof Calculation20Game>[0]['ctx']) => <Calculation20Game ctx={ctx} />
+    case 'calculation-100':
+      return (ctx: Parameters<typeof Calculation100Game>[0]['ctx']) => <Calculation100Game ctx={ctx} />
+    case 'continuous-countdown':
+      return (ctx: Parameters<typeof ContinuousCountdownGame>[0]['ctx']) => <ContinuousCountdownGame ctx={ctx} />
+    case 'missing-operator':
+      return (ctx: Parameters<typeof MissingOperatorGame>[0]['ctx']) => <MissingOperatorGame ctx={ctx} />
+    case 'number-comparison':
+      return (ctx: Parameters<typeof NumberComparisonGame>[0]['ctx']) => <NumberComparisonGame ctx={ctx} />
     case 'memorise-grid':
       return (ctx: Parameters<typeof MemoriseGridGame>[0]['ctx']) => <MemoriseGridGame ctx={ctx} />
     case 'spatial-sequence':

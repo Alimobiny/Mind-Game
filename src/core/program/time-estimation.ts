@@ -49,6 +49,14 @@ export const TRIAL_SECONDS_BY_EXERCISE: Readonly<Record<string, number>> = {
   'sequence-logic': 14,
   // تحلیل ماتریس + انتخاب گزینه
   'pattern-completion': 14,
+  // موج ۴ — سؤال سریع + فلش کوتاه (~۰٫۵تا۱ ثانیه) + تایپ پاسخ
+  'calculation-100': 4,
+  // نمایش عدد شروع + توالی گام‌ها + ورود باقیمانده نهایی
+  'continuous-countdown': 12,
+  // خواندن معادله + انتخاب عملگر + بازخورد
+  'missing-operator': 4,
+  // پنجره پاسخ کوتاه + بازخورد انتخاب
+  'number-comparison': 3,
 }
 
 /** تخمین مدت جلسه یک بازی به دقیقه — گرد به بالا */

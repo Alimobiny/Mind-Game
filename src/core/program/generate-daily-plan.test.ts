@@ -57,7 +57,9 @@ function makeRecord(date: string, exerciseIds: readonly string[]): TrainingPlanR
 }
 
 /** هفت روز متوالی از یک تاریخ شروع (هر ۷ روز هفته را می‌پوشاند) */
-const WEEK_START = '2026-11-09'
+// شنبه‌آغاز: تضمین مستند چرخش («هر ۷ حوزه در هر هفته») از شنبه اعمال می‌شود؛
+// پنجره‌ای که از وسط هفته شروع شود از دو چرخشِ مستقل عبور می‌کند.
+const WEEK_START = '2026-11-07'
 function weekDates(): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(`${WEEK_START}T00:00:00Z`)

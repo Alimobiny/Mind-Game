@@ -35,7 +35,7 @@ export async function readAllSessions(page: Page): Promise<
   return page.evaluate(
     () =>
       new Promise<Array<Record<string, unknown>>>((resolve, reject) => {
-        const req = indexedDB.open('cognitive-training-lab', 1)
+        const req = indexedDB.open('cognitive-training-lab')
         req.onerror = () => reject(req.error)
         req.onsuccess = () => {
           const db = req.result
@@ -64,7 +64,7 @@ export async function seedSessions(
   await page.evaluate(
     (records) =>
       new Promise<void>((resolve, reject) => {
-        const req = indexedDB.open('cognitive-training-lab', 1)
+        const req = indexedDB.open('cognitive-training-lab')
         req.onerror = () => reject(req.error)
         req.onsuccess = () => {
           const db = req.result
@@ -126,7 +126,7 @@ export async function readTrialEvents(page: Page): Promise<Array<Record<string, 
   return page.evaluate(
     () =>
       new Promise<Array<Record<string, unknown>>>((resolve, reject) => {
-        const req = indexedDB.open('cognitive-training-lab', 1)
+        const req = indexedDB.open('cognitive-training-lab')
         req.onerror = () => reject(req.error)
         req.onsuccess = () => {
           const db = req.result

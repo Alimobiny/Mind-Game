@@ -37,7 +37,7 @@ export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
         if (submittedRef.current) return
         submittedRef.current = true
         void ctx.submit(null).then((result) => {
-          if (result.accepted) ctx.advance()
+          if (result.accepted && !result.sessionCompleted) ctx.advance()
         })
       }, remaining)
     }
@@ -52,7 +52,7 @@ export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit('match').then((result) => {
-      if (result.accepted) ctx.advance()
+      if (result.accepted && !result.sessionCompleted) ctx.advance()
     })
   }
 

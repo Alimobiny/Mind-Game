@@ -1,0 +1,35 @@
+/* استایل اختصاصی محاسبه × ۱۰۰ — موبایل-اول؛ کلاس‌های مشترک (hint، keypad،
+   key، answerDisplay) از game.module.css می‌آیند */
+
+/* سؤال حساب — مانند bigNumber مشترک اما کمی فشرده‌تر، چون جلسه ۱۰۰
+   سؤالی است و قرار نیست هر سؤال کل صفحه را بگیرد؛ direction لترال
+   برای این‌که ترتیب عملوندها در متن RTL جابه‌جا نشود */
+.question {
+  direction: ltr;
+  font-size: clamp(2.75rem, 14vw, 4.5rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  user-select: none;
+}
+
+/* ناحیه فلش بازخورد — ارتفاع ثابت تا با ظاهر/محو شدن فلش، صفحه نپرد */
+.flashZone {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flash {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.flashCorrect {
+  color: var(--color-success);
+}
+
+.flashIncorrect {
+  color: var(--color-danger);
+}

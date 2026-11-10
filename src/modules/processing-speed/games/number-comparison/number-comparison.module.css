@@ -1,0 +1,88 @@
+/* مقایسه اعداد — استایل مرحله فعال (موبایل-اول) */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ردیف جفت اعداد — dir=ltr از کامپوننت می‌آید تا «left» فیزیکی بماند */
+.pairRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 640px;
+  animation: ncmpIn 120ms ease-out;
+}
+
+@keyframes ncmpIn {
+  from {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* کارت عدد: هدف لمسی بزرگ — خودِ عدد دکمه است */
+.choiceCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  min-height: clamp(170px, 34vh, 300px); /* هدف لمسی ≥ ۴۸px، عملاً بسیار بزرگ‌تر */
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: transform 80ms ease, background 80ms ease;
+}
+
+.choiceCard:active {
+  transform: scale(0.97);
+  background: var(--color-surface-2);
+}
+
+.choiceCard:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* عدد یک‌پارچه — با ۸ رقم هم در عرض موبایل جا شود */
+.numeral {
+  font-size: clamp(2.6rem, 13vw, 5.5rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  direction: ltr;
+  word-break: break-all;
+}
+
+/* رشته‌رقم جداشده (۴ ۲ ۳) — کوچک‌تر با فاصله‌گذاری رقم‌ها */
+.digits {
+  font-size: clamp(1.7rem, 8vw, 3.2rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  letter-spacing: 0.35em;
+  direction: ltr;
+}
+
+/* جداکننده کوتاه بین دو کارت */
+.separator {
+  align-self: center;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}

@@ -1,0 +1,37 @@
+/* شمارش معکوس پیوسته — استایل اختصاصی همین بازی */
+
+/* عدد در حال نمایش (شروع یا گام) — LTR تا علامت منفی سمت چپ عدد بماند.
+   عنصر همیشه سوار است و min-height دارد تا بین نمایش‌ها نپرد. */
+.display {
+  direction: ltr;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(4rem, 24vw, 8rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* عدد شروع: درشت‌تر و با رنگ متن عادی — نقطهٔ آغاز شمارش */
+.displayStart {
+  font-size: clamp(4rem, 24vw, 8rem);
+}
+
+/* اعداد کم‌شونده: کمی کوچک‌تر و رنگ تأکید تا از شروع متمایز شوند */
+.displayStep {
+  font-size: clamp(3.25rem, 18vw, 6rem);
+  color: var(--color-primary);
+}
+
+/* عبارت کامل مرحله در بازخورد — LTR (زنجیرهٔ تفریق) و خوانا در موبایل */
+.expression {
+  direction: ltr;
+  font-size: clamp(1.15rem, 5vw, 1.5rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  max-width: min(92vw, 34rem);
+  text-align: center;
+  margin: 0;
+}

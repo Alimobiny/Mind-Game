@@ -85,6 +85,36 @@ import {
   configForDifficulty as seqLogicConfigForDifficulty,
   sequenceLogicDefinition,
 } from './reasoning/games/sequence-logic/engine'
+import {
+  CALCULATION_100_CONTENT_VERSION,
+  CALCULATION_100_ID,
+  CALCULATION_100_VERSION,
+  calculation100Definition,
+  configForDifficulty as calc100ConfigForDifficulty,
+} from './processing-speed/games/calculation-100/engine'
+import { CALCULATION_100_META_FA } from './processing-speed/games/calculation-100/meta'
+import {
+  CONTINUOUS_COUNTDOWN_ID,
+  configForDifficulty as ccountConfigForDifficulty,
+  continuousCountdownDefinition,
+} from './processing-speed/games/continuous-countdown/engine'
+import { CONTINUOUS_COUNTDOWN_META_FA } from './processing-speed/games/continuous-countdown/meta'
+import {
+  MISSING_OPERATOR_CONTENT_VERSION,
+  MISSING_OPERATOR_ID,
+  MISSING_OPERATOR_VERSION,
+  configForDifficulty as missopConfigForDifficulty,
+  missingOperatorDefinition,
+} from './processing-speed/games/missing-operator/engine'
+import { MISSING_OPERATOR_META_FA } from './processing-speed/games/missing-operator/meta'
+import {
+  NUMBER_COMPARISON_CONTENT_VERSION,
+  NUMBER_COMPARISON_ID,
+  NUMBER_COMPARISON_VERSION,
+  configForDifficulty as numcmpConfigForDifficulty,
+  numberComparisonDefinition,
+} from './processing-speed/games/number-comparison/engine'
+import { NUMBER_COMPARISON_META_FA } from './processing-speed/games/number-comparison/meta'
 
 /**
  * ثبت صریح تمرین‌های MVP در Registry — هیچ ثبت خودکار/جادویی وجود ندارد؛
@@ -392,6 +422,51 @@ const patternCompletion: RegisteredExercise = {
   },
 }
 
+/** موج ۴ — چهار بازی جدید سرعت پردازش (متادیتای فارسی از meta.ts همان بازی) */
+
+const calculation100: RegisteredExercise = {
+  definition: calculation100Definition,
+  meta: {
+    id: CALCULATION_100_ID,
+    domain: 'processing-speed',
+    version: CALCULATION_100_VERSION,
+    contentVersion: CALCULATION_100_CONTENT_VERSION,
+    ...CALCULATION_100_META_FA,
+  },
+}
+
+const continuousCountdown: RegisteredExercise = {
+  definition: continuousCountdownDefinition,
+  // متای این بازی کامل ExerciseMeta است و مستقیم از پوشه خودش می‌آید
+  meta: CONTINUOUS_COUNTDOWN_META_FA,
+}
+
+const missingOperator: RegisteredExercise = {
+  definition: missingOperatorDefinition,
+  meta: {
+    id: MISSING_OPERATOR_ID,
+    domain: 'processing-speed',
+    version: MISSING_OPERATOR_VERSION,
+    contentVersion: MISSING_OPERATOR_CONTENT_VERSION,
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 20,
+    ...MISSING_OPERATOR_META_FA,
+  },
+}
+
+const numberComparison: RegisteredExercise = {
+  definition: numberComparisonDefinition,
+  meta: {
+    id: NUMBER_COMPARISON_ID,
+    domain: 'processing-speed',
+    version: NUMBER_COMPARISON_VERSION,
+    contentVersion: NUMBER_COMPARISON_CONTENT_VERSION,
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 36,
+    ...NUMBER_COMPARISON_META_FA,
+  },
+}
+
 export function createAppRegistry(): GameRegistry {
   const registry = new GameRegistry()
   registry.register(numberSequence)
@@ -406,6 +481,10 @@ export function createAppRegistry(): GameRegistry {
   registry.register(syllableCounting)
   registry.register(sequenceLogic)
   registry.register(patternCompletion)
+  registry.register(calculation100)
+  registry.register(continuousCountdown)
+  registry.register(missingOperator)
+  registry.register(numberComparison)
   return registry
 }
 
@@ -439,6 +518,14 @@ export function createExerciseConfig(exerciseId: string, difficulty: number): Ex
       return seqLogicConfigForDifficulty(difficulty)
     case PATTERN_COMPLETION_ID:
       return patternConfigForDifficulty(difficulty)
+    case CALCULATION_100_ID:
+      return calc100ConfigForDifficulty(difficulty)
+    case CONTINUOUS_COUNTDOWN_ID:
+      return ccountConfigForDifficulty(difficulty)
+    case MISSING_OPERATOR_ID:
+      return missopConfigForDifficulty(difficulty)
+    case NUMBER_COMPARISON_ID:
+      return numcmpConfigForDifficulty(difficulty)
     default:
       throw new Error(`config برای تمرین ${exerciseId} تعریف نشده است`)
   }
