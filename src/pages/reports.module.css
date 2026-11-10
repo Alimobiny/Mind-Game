@@ -1,0 +1,138 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--space-4);
+}
+
+.header h1 {
+  font-size: 1.4rem;
+}
+
+.backLink {
+  color: var(--color-text-muted);
+}
+
+.empty {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding-block: var(--space-6);
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.cardValue {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cardLabel {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.sectionTitle {
+  font-size: 1.05rem;
+  color: var(--color-primary);
+  margin: var(--space-5) 0 var(--space-3);
+}
+
+.exerciseRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.exerciseInfo {
+  display: grid;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 90px;
+}
+
+.exerciseName {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.exerciseDomain {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.sparkline {
+  flex: 1;
+  height: 48px;
+  min-width: 0;
+  direction: ltr;
+}
+
+.exerciseStats {
+  display: grid;
+  gap: 2px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  text-align: end;
+  flex-shrink: 0;
+}
+
+.sessionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sessionItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  font-size: 0.85rem;
+}
+
+.sessionName {
+  font-weight: 700;
+}
+
+.sessionMeta {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  flex: 1;
+}
+
+.sessionAccuracy {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+.disclaimer {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: var(--space-5);
+}

@@ -1,0 +1,56 @@
+/* زمان واکنش — استایل مرحله فعال (موبایل-اول) */
+
+.tapArea {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 55vh;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* متن خاموش بازه انتظار — هیچ محرکی نمایش داده نمی‌شود */
+.waitText {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* پس‌زمینهٔ روشن‌تر در لحظهٔ محرک برای حس فوریت */
+.stimulusPhase {
+  background: var(--color-surface-2);
+}
+
+/* محرک: دایرهٔ بزرگ و درخشان با فرمان ضربه */
+.stimulus {
+  width: clamp(150px, 45vw, 240px);
+  height: clamp(150px, 45vw, 240px);
+  border-radius: 50%;
+  background: var(--color-primary-strong);
+  color: #082f49;
+  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 56px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  animation: rtPop 110ms ease-out;
+}
+
+@keyframes rtPop {
+  from {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

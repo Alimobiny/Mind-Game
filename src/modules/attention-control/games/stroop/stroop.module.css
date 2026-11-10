@@ -1,0 +1,71 @@
+/* استایل اختصاصی Stroop — موبایل-اول؛ کلاس‌های مشترک (hint و bigNumber) از game.module.css */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/* کلمه رنگ بزرگ — bigNumber مشترک پایه است؛ اندازه برای واژه فارسی محلی تنظیم می‌شود */
+.word {
+  font-size: clamp(3.25rem, 16vw, 6rem);
+  line-height: 1.25;
+  user-select: none;
+}
+
+/* ردیف پاسخ: موبایل ۲×۲؛ صفحه پهن یک ردیف ۴تایی */
+.answerRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 520px;
+}
+
+@media (min-width: 640px) {
+  .answerRow {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.colorButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  min-height: 56px; /* هدف لمسی ≥ ۴۸px */
+  padding: var(--space-2) var(--space-3);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: transform 80ms ease;
+}
+
+.colorButton:active {
+  transform: scale(0.97);
+  background: var(--color-surface-2);
+}
+
+.colorButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* چیپ رنگی داخل دکمه — دایره پر با رنگ همان گزینه */
+.chip {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  flex-shrink: 0;
+  display: inline-block;
+}

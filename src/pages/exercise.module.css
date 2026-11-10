@@ -1,0 +1,66 @@
+.notFound {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+  padding-block: var(--space-6);
+}
+
+.picker {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+  padding-block: var(--space-5);
+}
+
+.picker h1 {
+  font-size: 1.4rem;
+}
+
+.pickerHint {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.levelGrid {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.levelButton {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.levelActive {
+  background: var(--color-primary-strong);
+  border-color: var(--color-primary-strong);
+  color: #082f49;
+}
+
+.startButton {
+  background: var(--color-primary-strong);
+  color: #082f49;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 14px 42px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  min-height: var(--tap-target);
+}
+
+.startButton:disabled {
+  opacity: 0.6;
+}
+
+.backLink {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}

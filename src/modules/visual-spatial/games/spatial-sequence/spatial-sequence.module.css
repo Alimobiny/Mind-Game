@@ -1,0 +1,66 @@
+/* توالی مکانی — استایل اختصاصی شبکه و نشان شماره ترتیب؛ موبایل-اول */
+
+.grid {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: min(92vw, 420px);
+  aspect-ratio: 1;
+}
+
+.cell {
+  position: relative;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.cell:active {
+  background: var(--color-surface-2);
+}
+
+/* خانه‌ای که در فاز نمایش الان روشن است */
+.active {
+  background: var(--color-primary);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+  border-color: var(--color-primary);
+}
+
+/* خانه انتخاب‌شده کاربر در فاز بازتولید */
+.selected {
+  background: var(--color-primary-strong);
+  border-color: var(--color-primary);
+}
+
+/* خانه متعلق به توالی درست در بازخورد */
+.hit {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+/* انتخاب غلط کاربر (خارج از توالی درست) در بازخورد */
+.wrong {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+/* شماره ترتیب روی خانه‌های انتخاب‌شده/بازخورد */
+.badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.9rem, 4vw, 1.25rem);
+  font-weight: 700;
+  color: #082f49;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}

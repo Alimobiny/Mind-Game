@@ -1,0 +1,41 @@
+.tapArea {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 55vh;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.goStimulus {
+  width: clamp(110px, 35vw, 180px);
+  height: clamp(110px, 35vw, 180px);
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 40px rgba(74, 222, 128, 0.35);
+  display: block;
+}
+
+.nogoStimulus {
+  width: clamp(110px, 35vw, 180px);
+  height: clamp(110px, 35vw, 180px);
+  border-radius: var(--radius-md);
+  background: var(--color-danger);
+  box-shadow: 0 0 40px rgba(248, 113, 113, 0.35);
+  display: block;
+}
+
+.plusSign {
+  font-size: 3rem;
+  color: var(--color-text-muted);
+}
+
+.blank {
+  background: var(--color-bg);
+}

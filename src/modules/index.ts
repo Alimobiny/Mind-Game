@@ -1,0 +1,307 @@
+import { GameRegistry } from '../core/registry/game-registry'
+import type { RegisteredExercise } from '../core/registry/game-registry'
+import type { ExerciseConfig } from '../core/types'
+import {
+  NUMBER_SEQUENCE_CONTENT_VERSION,
+  NUMBER_SEQUENCE_ID,
+  NUMBER_SEQUENCE_VERSION,
+  configForDifficulty as nsConfigForDifficulty,
+  numberSequenceDefinition,
+} from './working-memory/games/number-sequence/engine'
+import {
+  NBACK_CONTENT_VERSION,
+  NBACK_ID,
+  NBACK_VERSION,
+  configForDifficulty as nbackConfigForDifficulty,
+  nBackDefinition,
+} from './working-memory/games/n-back/engine'
+import {
+  GO_NO_GO_CONTENT_VERSION,
+  GO_NO_GO_ID,
+  GO_NO_GO_VERSION,
+  configForDifficulty as gngConfigForDifficulty,
+  goNoGoDefinition,
+} from './attention-control/games/go-no-go/engine'
+import {
+  STROOP_CONTENT_VERSION,
+  STROOP_ID,
+  STROOP_VERSION,
+  configForDifficulty as stroopConfigForDifficulty,
+  stroopDefinition,
+} from './attention-control/games/stroop/engine'
+import {
+  CALCULATION_20_CONTENT_VERSION,
+  CALCULATION_20_ID,
+  CALCULATION_20_VERSION,
+  calculation20Definition,
+  configForDifficulty as calcConfigForDifficulty,
+} from './processing-speed/games/calculation-20/engine'
+import {
+  MEMORISE_GRID_CONTENT_VERSION,
+  MEMORISE_GRID_ID,
+  MEMORISE_GRID_VERSION,
+  configForDifficulty as gridConfigForDifficulty,
+  memoriseGridDefinition,
+} from './visual-spatial/games/memorise-grid/engine'
+import {
+  SPATIAL_SEQUENCE_CONTENT_VERSION,
+  SPATIAL_SEQUENCE_ID,
+  SPATIAL_SEQUENCE_VERSION,
+  configForDifficulty as spatialConfigForDifficulty,
+  spatialSequenceDefinition,
+} from './visual-spatial/games/spatial-sequence/engine'
+import {
+  REACTION_TIME_CONTENT_VERSION,
+  REACTION_TIME_ID,
+  REACTION_TIME_VERSION,
+  configForDifficulty as rtConfigForDifficulty,
+  reactionTimeDefinition,
+} from './sensorimotor/games/reaction-time/engine'
+
+/**
+ * ثبت صریح تمرین‌های MVP در Registry — هیچ ثبت خودکار/جادویی وجود ندارد؛
+ * افزودن بازی یعنی افزودن import و یک register در همین فایل.
+ */
+
+const numberSequence: RegisteredExercise = {
+  definition: numberSequenceDefinition,
+  meta: {
+    id: NUMBER_SEQUENCE_ID,
+    nameFa: 'توالی اعداد',
+    descriptionFa: 'ارقام یکی‌یکی نمایش داده می‌شوند؛ باید همان ترتیب را از حافظه بازسازی کنی.',
+    domain: 'working-memory',
+    version: NUMBER_SEQUENCE_VERSION,
+    contentVersion: NUMBER_SEQUENCE_CONTENT_VERSION,
+    instructionsFa: [
+      'ارقام به‌ترتیب و یکی‌یکی روی صفحه ظاهر می‌شوند.',
+      'توالی را به همان ترتیب به خاطر بسپار.',
+      'پس از پنهان‌شدن ارقام، همان ترتیب را با صفحه‌کلید وارد کن.',
+      '۱۰ مرحله در هر جلسه؛ با بالا رفتن سطح، توالی طولانی‌تر و سریع‌تر می‌شود.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 10,
+    metricLabelsFa: {
+      meanCorrectPositionRate: 'میانگین ارقام درست در جای درست (٪)',
+      sequenceLength: 'طول توالی',
+    },
+  },
+}
+
+const goNoGo: RegisteredExercise = {
+  definition: goNoGoDefinition,
+  meta: {
+    id: GO_NO_GO_ID,
+    nameFa: 'برو / نرو',
+    descriptionFa: 'به دایره سریع واکنش نشان بده و به مربع هیچ واکنشی نشان نده.',
+    domain: 'attention-control',
+    version: GO_NO_GO_VERSION,
+    contentVersion: GO_NO_GO_CONTENT_VERSION,
+    instructionsFa: [
+      'دایره سبز = برو: در سریع‌ترین زمان روی صفحه بزن.',
+      'مربع قرمز = نرو: دست خود را نگه دار و واکنش نشان نده.',
+      'واکنش به مربع «خطای ارتکاب» و بی‌واکنشی به دایره «خطای ازقلم‌افتادن» ثبت می‌شود.',
+      '۴۰ محرک در هر جلسه؛ با بالا رفتن سطح، زمان کمتری برای تصمیم داری.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 40,
+    metricLabelsFa: {
+      commissionErrors: 'خطای ارتکاب (واکنش به مربع)',
+      omissionErrors: 'خطای ازقلم‌افتادن (بی‌واکنشی به دایره)',
+      medianGoReactionTimeMs: 'میانه واکنش به دایره (میلی‌ثانیه)',
+      goTrials: 'تعداد محرک برو',
+      nogoTrials: 'تعداد محرک نرو',
+    },
+  },
+}
+
+const calculation20: RegisteredExercise = {
+  definition: calculation20Definition,
+  meta: {
+    id: CALCULATION_20_ID,
+    nameFa: 'محاسبه × ۲۰',
+    descriptionFa: 'به ۲۰ سؤال حساب سریع و دقیق پاسخ بده؛ سرعت و دقت جداگانه سنجیده می‌شوند.',
+    domain: 'processing-speed',
+    version: CALCULATION_20_VERSION,
+    contentVersion: CALCULATION_20_CONTENT_VERSION,
+    instructionsFa: [
+      '۲۰ سؤال جمع، تفریق، ضرب و (در سطح‌های بالا) تقسیم دقیق داری.',
+      'پاسخ را با صفحه‌کلید عددی تایپ و تأیید کن.',
+      'سؤال منفرد مهلت زمانی ندارد؛ مجموع زمان ملاک است.',
+      'پاسخ سریع ولی نادرست امتیاز بیشتری نمی‌آورد — دقت جداگانه ثبت می‌شود.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 20,
+    metricLabelsFa: {
+      questionsPerMinute: 'سؤال بر دقیقه',
+      totalAnswerTimeMs: 'مجموع زمان پاسخ (میلی‌ثانیه)',
+    },
+  },
+}
+
+const memoriseGrid: RegisteredExercise = {
+  definition: memoriseGridDefinition,
+  meta: {
+    id: MEMORISE_GRID_ID,
+    nameFa: 'شبکه حافظه',
+    descriptionFa: 'مکان خانه‌های روشن شبکه را به خاطر بسپار و همان‌ها را انتخاب کن.',
+    domain: 'visual-spatial',
+    version: MEMORISE_GRID_VERSION,
+    contentVersion: MEMORISE_GRID_CONTENT_VERSION,
+    instructionsFa: [
+      'چند خانه از شبکه کوتاه روشن می‌شوند.',
+      'مکان آن‌ها را به خاطر بسپار.',
+      'پس از خاموش‌شدن، همان خانه‌ها را انتخاب و تأیید کن.',
+      '۱۰ مرحله در هر جلسه؛ شبکه بزرگ‌تر و خانه‌های بیشتر با سطح بالاتر.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 10,
+    metricLabelsFa: {
+      meanOverlapRate: 'میانگین خانه‌های به‌خاطرسپرده‌شده (٪)',
+      gridSize: 'ابعاد شبکه',
+      activeCells: 'تعداد خانه‌های هدف',
+    },
+  },
+}
+
+const nBack: RegisteredExercise = {
+  definition: nBackDefinition,
+  meta: {
+    id: NBACK_ID,
+    nameFa: 'ان-بک',
+    descriptionFa: 'اگر حرف فعلی با حرف N مرحله قبل یکی بود، دکمه تطبیق را بزن.',
+    domain: 'working-memory',
+    version: NBACK_VERSION,
+    contentVersion: NBACK_CONTENT_VERSION,
+    instructionsFa: [
+      'حروف یکی‌یکی نمایش داده می‌شوند.',
+      'اگر حرف فعلی با حرفِ N مرحله قبل یکسان بود، «تطبیق» را بزن.',
+      'اگر یکسان نبود، هیچ دکمه‌ای نزن و صبر کن.',
+      '۲۵ محرک در هر جلسه؛ با بالا رفتن سطح، N و سرعت نمایش بیشتر می‌شود.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 25,
+    metricLabelsFa: {
+      hits: 'تطبیق‌های درست (hit)',
+      misses: 'اهداف ازقلم‌افتاده (miss)',
+      falseAlarms: 'تطبیق‌های نابجا (false alarm)',
+      correctRejections: 'خودداری‌های درست',
+    },
+  },
+}
+
+const stroop: RegisteredExercise = {
+  definition: stroopDefinition,
+  meta: {
+    id: STROOP_ID,
+    nameFa: 'استرووپ',
+    descriptionFa: 'رنگِ جوهرِ کلمه را انتخاب کن، نه معنی کلمه را — تمرین کلاسیک مهار تداخل.',
+    domain: 'attention-control',
+    version: STROOP_VERSION,
+    contentVersion: STROOP_CONTENT_VERSION,
+    instructionsFa: [
+      'نام یک رنگ با جوهرِ رنگ دیگری نوشته می‌شود.',
+      'فقط رنگِ جوهر (رنگی که کلمه با آن نوشته شده) را انتخاب کن.',
+      'به معنی کلمه توجه نکن — همین تداخل است که تمرین را می‌سازد.',
+      '۲۰ محرک در هر جلسه؛ با بالا رفتن سطح، ناهم‌خوان‌ها بیشتر و زمان کمتر می‌شود.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 20,
+    metricLabelsFa: {
+      congruentAccuracy: 'دقت محرک‌های هم‌خوان (٪)',
+      incongruentAccuracy: 'دقت محرک‌های ناهم‌خوان (٪)',
+      stroopCostMs: 'هزینه استروپ (میلی‌ثانیه)',
+    },
+  },
+}
+
+const reactionTime: RegisteredExercise = {
+  definition: reactionTimeDefinition,
+  meta: {
+    id: REACTION_TIME_ID,
+    nameFa: 'زمان واکنش',
+    descriptionFa: 'به محض ظاهرشدن دایره، هرچه سریع‌تر بزن؛ زودتر از موعد نزن.',
+    domain: 'sensorimotor',
+    version: REACTION_TIME_VERSION,
+    contentVersion: REACTION_TIME_CONTENT_VERSION,
+    instructionsFa: [
+      'پس از شروع، صفحه ساکت می‌ماند — صبر کن.',
+      'به محض ظاهرشدن دایره درخشان، سریع بزن.',
+      'زدنِ پیش از ظاهرشدن محرک، «پیش‌دستی» ثبت می‌شود.',
+      '۱۰ محرک در هر جلسه؛ میانه و بهترین زمان واکنشت گزارش می‌شود.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 10,
+    metricLabelsFa: {
+      medianReactionTimeMs: 'میانه زمان واکنش (میلی‌ثانیه)',
+      bestReactionTimeMs: 'بهترین زمان واکنش (میلی‌ثانیه)',
+      meanReactionTimeMs: 'میانگین زمان واکنش (میلی‌ثانیه)',
+      anticipationErrors: 'خطای پیش‌دستی',
+      tooSlowErrors: 'پاسخ دیرهنگام',
+    },
+  },
+}
+
+const spatialSequence: RegisteredExercise = {
+  definition: spatialSequenceDefinition,
+  meta: {
+    id: SPATIAL_SEQUENCE_ID,
+    nameFa: 'توالی مکانی',
+    descriptionFa: 'خانه‌ها یکی‌یکی و به‌ترتیب روشن می‌شوند؛ همان ترتیب را بازسازی کن.',
+    domain: 'visual-spatial',
+    version: SPATIAL_SEQUENCE_VERSION,
+    contentVersion: SPATIAL_SEQUENCE_CONTENT_VERSION,
+    instructionsFa: [
+      'خانه‌های شبکه یکی‌یکی و به‌ترتیب روشن می‌شوند.',
+      'ترتیب روشن‌شدن را به خاطر بسپار.',
+      'پس از اتمام، همان خانه‌ها را به همان ترتیب بزن و تأیید کن.',
+      '۱۰ مرحله در هر جلسه؛ با بالا رفتن سطح، توالی طولانی‌تر می‌شود.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 10,
+    metricLabelsFa: {
+      meanOrderMatchRate: 'میانگین خانه‌های درست در جای درست (٪)',
+      gridSize: 'ابعاد شبکه',
+      sequenceLength: 'طول توالی',
+    },
+  },
+}
+
+export function createAppRegistry(): GameRegistry {
+  const registry = new GameRegistry()
+  registry.register(numberSequence)
+  registry.register(nBack)
+  registry.register(goNoGo)
+  registry.register(stroop)
+  registry.register(calculation20)
+  registry.register(memoriseGrid)
+  registry.register(spatialSequence)
+  registry.register(reactionTime)
+  return registry
+}
+
+/**
+ * ساخت config کامل بازی برای سطح دشواری داده‌شده — نقطه واحد اتصال
+ * «difficulty انتخابی کاربر» به پیکربندی موتور همان بازی.
+ */
+export function createExerciseConfig(exerciseId: string, difficulty: number): ExerciseConfig {
+  switch (exerciseId) {
+    case NUMBER_SEQUENCE_ID:
+      return nsConfigForDifficulty(difficulty)
+    case NBACK_ID:
+      return nbackConfigForDifficulty(difficulty)
+    case GO_NO_GO_ID:
+      return gngConfigForDifficulty(difficulty)
+    case STROOP_ID:
+      return stroopConfigForDifficulty(difficulty)
+    case CALCULATION_20_ID:
+      return calcConfigForDifficulty(difficulty)
+    case MEMORISE_GRID_ID:
+      return gridConfigForDifficulty(difficulty)
+    case SPATIAL_SEQUENCE_ID:
+      return spatialConfigForDifficulty(difficulty)
+    case REACTION_TIME_ID:
+      return rtConfigForDifficulty(difficulty)
+    default:
+      throw new Error(`config برای تمرین ${exerciseId} تعریف نشده است`)
+  }
+}
