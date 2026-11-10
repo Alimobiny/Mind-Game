@@ -1,8 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { accuracySparklinePath, loadDashboard } from '../analytics/dashboard'
-import type { DashboardTotals, ExerciseProgress } from '../analytics/dashboard'
+import {
+  accuracySparklinePath,
+  loadDashboard,
+  loadProgressForExercises,
+} from '../analytics/dashboard'
+import type { AdaptiveDifficultyResult, DashboardTotals, ExerciseProgress } from '../analytics/dashboard'
 import type { SessionRecord } from '../core/types'
+import { describeStreakFa } from '../core/difficulty/adaptive-difficulty'
+import {
+  createBackup,
+  downloadBackupFile,
+  restoreBackup,
+  validateBackup,
+} from '../data/export-import'
 import { getAppData } from '../data/app-data'
 import { createAppRegistry } from '../modules'
 import { DOMAIN_LABELS_FA } from '../i18n/fa'
@@ -16,16 +27,27 @@ interface ReportsData {
   totals: DashboardTotals
   recent: readonly SessionRecord[]
   byExercise: readonly ExerciseProgress[]
+  progress: Record<string, AdaptiveDifficultyResult>
 }
 
 export function ReportsPage() {
   const [data, setData] = useState<ReportsData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [backupMessage, setBackupMessage] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     void getAppData()
-      .then((appData) => loadDashboard(appData.sessions))
+      .then(async (appData) => {
+        const dashboard = await loadDashboard(appData.sessions)
+        const progress = await loadProgressForExercises(
+          appData.sessions,
+          registry.list().map((e) => e.meta.id),
+        )
+        return { ...dashboard, progress }
+      })
       .then((result) => {
         if (!cancelled) setData(result)
       })
@@ -35,7 +57,37 @@ export function ReportsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [reloadKey])
+
+  const handleExport = async () => {
+    setBackupMessage(null)
+    try {
+      const appData = await getAppData()
+      const backup = await createBackup(appData.sessions, appData.trialEvents)
+      downloadBackupFile(backup)
+      setBackupMessage(
+        `پشتیبان ساخته شد: ${toFaDigits(backup.sessions.length)} جلسه و ${toFaDigits(backup.trialEvents.length)} رویداد.`,
+      )
+    } catch {
+      setBackupMessage('ساخت فایل پشتیبان ناموفق بود.')
+    }
+  }
+
+  const handleImportFile = async (file: File) => {
+    setBackupMessage(null)
+    try {
+      const text = await file.text()
+      const backup = validateBackup(JSON.parse(text))
+      const appData = await getAppData()
+      const result = await restoreBackup(backup, appData.sessions, appData.trialEvents)
+      setBackupMessage(
+        `بازیابی شد: ${toFaDigits(result.sessionsImported)} جلسه و ${toFaDigits(result.trialEventsImported)} رویداد (ادغام بدون حذف).`,
+      )
+      setReloadKey((k) => k + 1)
+    } catch (e) {
+      setBackupMessage(e instanceof Error ? e.message : 'بازیابی فایل ناموفق بود.')
+    }
+  }
 
   return (
     <main className="app-shell">
@@ -47,6 +99,40 @@ export function ReportsPage() {
       </header>
 
       {error ? <p className={styles.empty}>{error}</p> : null}
+
+      {/* پشتیبان‌گیری و بازیابی — داده‌ها فقط روی دستگاه شما هستند */}
+      <section className={styles.backupSection} aria-label="پشتیبان‌گیری داده‌ها">
+        <h2 className={styles.sectionTitle}>پشتیبان‌گیری داده‌ها</h2>
+        <p className={styles.backupHint}>
+          پیشرفت شما فقط روی همین دستگاه ذخیره می‌شود. با «خروجی پشتیبان» یک فایل JSON بگیرید و
+          روی دستگاه دیگر (یا پس از تعویض مرورگر) با «بازیابی» آن را برگردانید — بازیابی
+          داده‌های موجود را حذف نمی‌کند، فقط ادغام می‌کند.
+        </p>
+        <div className={styles.backupActions}>
+          <button type="button" className={styles.backupButton} onClick={() => void handleExport()}>
+            خروجی پشتیبان (JSON)
+          </button>
+          <button
+            type="button"
+            className={styles.backupButtonSecondary}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            بازیابی از فایل
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            className={styles.hiddenInput}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) void handleImportFile(file)
+              e.target.value = ''
+            }}
+          />
+        </div>
+        {backupMessage ? <p className={styles.backupMessage}>{backupMessage}</p> : null}
+      </section>
 
       {!error && data ? (
         data.totals.completedSessions === 0 ? (
@@ -89,6 +175,7 @@ export function ReportsPage() {
               <h2 className={styles.sectionTitle}>روند تمرین‌ها</h2>
               {data.byExercise.map((progress) => {
                 const meta = registry.get(progress.exerciseId)?.meta
+                const adaptive = data.progress[progress.exerciseId]
                 return (
                   <div className={styles.exerciseRow} key={progress.exerciseId}>
                     <div className={styles.exerciseInfo}>
@@ -96,6 +183,23 @@ export function ReportsPage() {
                       <span className={styles.exerciseDomain}>
                         {meta ? DOMAIN_LABELS_FA[meta.domain] : ''}
                       </span>
+                      {adaptive ? (
+                        <span className={styles.exerciseAdaptive}>
+                          سطح {toFaDigits(adaptive.recommendedLevel)} · {describeStreakFa(adaptive)}
+                        </span>
+                      ) : null}
+                      {adaptive && adaptive.levelHistory.length > 0 ? (
+                        <span className={styles.levelTimeline}>
+                          {adaptive.levelHistory
+                            .map(
+                              (c) =>
+                                `${toFaDigits(c.from)}→${toFaDigits(c.to)} (${formatDateTime(
+                                  new Date(`${c.isoDate}T12:00:00`).getTime(),
+                                ).split(' ')[0]})`,
+                            )
+                            .join(' · ')}
+                        </span>
+                      ) : null}
                     </div>
                     <svg
                       className={styles.sparkline}
@@ -130,6 +234,7 @@ export function ReportsPage() {
                       <span className={styles.sessionName}>{meta?.nameFa ?? session.exerciseId}</span>
                       <span className={styles.sessionMeta}>
                         {formatDateTime(session.startedAt)} · سطح {toFaDigits(session.difficulty)}
+                        {session.status === 'completed' ? '' : ' · ناتمام'}
                       </span>
                       <span className={styles.sessionAccuracy}>
                         {session.summary ? `${toFaDigits(session.summary.accuracy)}٪` : '—'}

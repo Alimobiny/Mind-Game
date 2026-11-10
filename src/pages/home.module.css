@@ -56,6 +56,11 @@
   margin-top: var(--space-1);
 }
 
+.lastPlayed {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
 .comingSoon {
   margin-top: var(--space-5);
   color: var(--color-text-muted);

@@ -35,4 +35,6 @@ export interface TrialEventRepository {
   appendMany(events: readonly TrialEventRecord[]): Promise<void>
   listBySession(sessionId: string): Promise<TrialEventRecord[]>
   countBySession(sessionId: string): Promise<number>
+  /** همه رویدادها (برای پشتیبان‌گیری) — مرتب بر اساس sessionId سپس trialIndex */
+  listAll(): Promise<TrialEventRecord[]>
 }

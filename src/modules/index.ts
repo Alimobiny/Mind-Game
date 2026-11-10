@@ -57,6 +57,34 @@ import {
   configForDifficulty as rtConfigForDifficulty,
   reactionTimeDefinition,
 } from './sensorimotor/games/reaction-time/engine'
+import {
+  SYLLABLE_COUNTING_CONTENT_VERSION,
+  SYLLABLE_COUNTING_ID,
+  SYLLABLE_COUNTING_VERSION,
+  configForDifficulty as syllableConfigForDifficulty,
+  syllableCountingDefinition,
+} from './verbal-auditory/games/syllable-counting/engine'
+import {
+  WORD_MEMORY_CONTENT_VERSION,
+  WORD_MEMORY_ID,
+  WORD_MEMORY_VERSION,
+  configForDifficulty as wordMemoryConfigForDifficulty,
+  wordMemoryDefinition,
+} from './verbal-auditory/games/word-memory/engine'
+import {
+  PATTERN_COMPLETION_CONTENT_VERSION,
+  PATTERN_COMPLETION_ID,
+  PATTERN_COMPLETION_VERSION,
+  configForDifficulty as patternConfigForDifficulty,
+  patternCompletionDefinition,
+} from './reasoning/games/pattern-completion/engine'
+import {
+  SEQUENCE_LOGIC_CONTENT_VERSION,
+  SEQUENCE_LOGIC_ID,
+  SEQUENCE_LOGIC_VERSION,
+  configForDifficulty as seqLogicConfigForDifficulty,
+  sequenceLogicDefinition,
+} from './reasoning/games/sequence-logic/engine'
 
 /**
  * ثبت صریح تمرین‌های MVP در Registry — هیچ ثبت خودکار/جادویی وجود ندارد؛
@@ -266,6 +294,104 @@ const spatialSequence: RegisteredExercise = {
   },
 }
 
+const wordMemory: RegisteredExercise = {
+  definition: wordMemoryDefinition,
+  meta: {
+    id: WORD_MEMORY_ID,
+    nameFa: 'حافظه واژه‌ها',
+    descriptionFa: 'کلمات را یکی‌یکی به خاطر بسپار و همان‌ها را از میان واژه‌های جدید پیدا کن.',
+    domain: 'verbal-auditory',
+    version: WORD_MEMORY_VERSION,
+    contentVersion: WORD_MEMORY_CONTENT_VERSION,
+    instructionsFa: [
+      'چند کلمه یکی‌یکی و به‌ترتیب نمایش داده می‌شوند.',
+      'آن‌ها را به خاطر بسپار.',
+      'پس از پنهان‌شدن، از میان ۲ برابر کلمه، فقط همان‌هایی که دیدی را انتخاب کن.',
+      '۶ مرحله در هر جلسه؛ با بالا رفتن سطح، تعداد کلمات بیشتر و زمان کمتر می‌شود.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 6,
+    metricLabelsFa: {
+      hits: 'کلمات به‌یادآورده‌شده',
+      falseAlarms: 'کلمات نابجا انتخاب‌شده',
+      missedWords: 'کلمات ازقلم‌افتاده',
+      meanRecallRate: 'میانگین بازیابی (٪)',
+    },
+  },
+}
+
+const syllableCounting: RegisteredExercise = {
+  definition: syllableCountingDefinition,
+  meta: {
+    id: SYLLABLE_COUNTING_ID,
+    nameFa: 'شمارش هجا',
+    descriptionFa: 'تعداد هجای جمله را بشمار و با صفحه‌کلید وارد کن.',
+    domain: 'verbal-auditory',
+    version: SYLLABLE_COUNTING_VERSION,
+    contentVersion: SYLLABLE_COUNTING_CONTENT_VERSION,
+    instructionsFa: [
+      'یک جمله فارسی نمایش داده می‌شود.',
+      'تعداد هجاهای جمله را بشمار (واژه‌به‌واژه بلند بخوان کمک می‌کند).',
+      'عدد را با صفحه‌کلید وارد و تأیید کن.',
+      '۱۲ جمله در هر جلسه؛ با بالا رفتن سطح، جمله‌ها طولانی‌تر می‌شوند.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 12,
+    metricLabelsFa: {
+      meanAbsoluteError: 'میانگین خطای مطلق (هجا)',
+      exactAnswerRate: 'درصد پاسخ دقیق (٪)',
+    },
+  },
+}
+
+const sequenceLogic: RegisteredExercise = {
+  definition: sequenceLogicDefinition,
+  meta: {
+    id: SEQUENCE_LOGIC_ID,
+    nameFa: 'منطق توالی',
+    descriptionFa: 'قاعده پنهان توالی اعداد را کشف کن و عدد بعدی را انتخاب کن.',
+    domain: 'reasoning',
+    version: SEQUENCE_LOGIC_VERSION,
+    contentVersion: SEQUENCE_LOGIC_CONTENT_VERSION,
+    instructionsFa: [
+      'توالی‌ای از اعداد با قاعده‌ای پنهان نمایش داده می‌شود.',
+      'قاعده را کشف کن (جمعی، ضربی، متناوب و…).',
+      'عدد بعدی را از میان ۴ گزینه انتخاب کن.',
+      '۱۲ سؤال در هر جلسه؛ با بالا رفتن سطح، قاعده‌ها پیچیده‌تر می‌شوند.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 12,
+    metricLabelsFa: {
+      difficultyWeightedScore: 'امتیاز وزن‌دار سطح',
+      avgShownLength: 'میانگین طول توالی',
+    },
+  },
+}
+
+const patternCompletion: RegisteredExercise = {
+  definition: patternCompletionDefinition,
+  meta: {
+    id: PATTERN_COMPLETION_ID,
+    nameFa: 'تکمیل الگو',
+    descriptionFa: 'قاعده سطر و ستون ماتریس را بفهم و خانه خالی را کامل کن.',
+    domain: 'reasoning',
+    version: PATTERN_COMPLETION_VERSION,
+    contentVersion: PATTERN_COMPLETION_CONTENT_VERSION,
+    instructionsFa: [
+      'ماتریس ۳×۳ از نمادهای رنگی نمایش داده می‌شود؛ خانه آخر خالی است.',
+      'قاعده سطرها یا ستون‌ها را پیدا کن (تعداد، رنگ یا شکل).',
+      'گزینه‌ای که خانه خالی را کامل می‌کند انتخاب کن.',
+      '۱۲ سؤال در هر جلسه؛ با بالا رفتن سطح، گزینه‌های گمراه‌کننده شبیه‌تر می‌شوند.',
+    ],
+    difficultyLevels: [1, 2, 3, 4, 5],
+    plannedTrials: 12,
+    metricLabelsFa: {
+      ruleFamilyVariety: 'تنوع قواعد دیده‌شده',
+      difficultyWeightedScore: 'امتیاز وزن‌دار سطح',
+    },
+  },
+}
+
 export function createAppRegistry(): GameRegistry {
   const registry = new GameRegistry()
   registry.register(numberSequence)
@@ -276,6 +402,10 @@ export function createAppRegistry(): GameRegistry {
   registry.register(memoriseGrid)
   registry.register(spatialSequence)
   registry.register(reactionTime)
+  registry.register(wordMemory)
+  registry.register(syllableCounting)
+  registry.register(sequenceLogic)
+  registry.register(patternCompletion)
   return registry
 }
 
@@ -301,6 +431,14 @@ export function createExerciseConfig(exerciseId: string, difficulty: number): Ex
       return spatialConfigForDifficulty(difficulty)
     case REACTION_TIME_ID:
       return rtConfigForDifficulty(difficulty)
+    case WORD_MEMORY_ID:
+      return wordMemoryConfigForDifficulty(difficulty)
+    case SYLLABLE_COUNTING_ID:
+      return syllableConfigForDifficulty(difficulty)
+    case SEQUENCE_LOGIC_ID:
+      return seqLogicConfigForDifficulty(difficulty)
+    case PATTERN_COMPLETION_ID:
+      return patternConfigForDifficulty(difficulty)
     default:
       throw new Error(`config برای تمرین ${exerciseId} تعریف نشده است`)
   }

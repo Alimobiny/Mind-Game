@@ -7,3 +7,4 @@ blob-report
 playwright/.cache
 *.local
 .DS_Store
+.zcode/

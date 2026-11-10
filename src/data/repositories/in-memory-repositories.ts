@@ -72,6 +72,12 @@ export class InMemoryTrialEventRepository implements TrialEventRepository {
   async countBySession(sessionId: string): Promise<number> {
     return [...this.events.values()].filter((e) => e.sessionId === sessionId).length
   }
+
+  async listAll(): Promise<TrialEventRecord[]> {
+    return [...this.events.values()].sort((a, b) =>
+      a.sessionId === b.sessionId ? a.trialIndex - b.trialIndex : a.sessionId < b.sessionId ? -1 : 1,
+    )
+  }
 }
 
 export class InMemoryExerciseSettingsRepository implements ExerciseSettingsRepository {

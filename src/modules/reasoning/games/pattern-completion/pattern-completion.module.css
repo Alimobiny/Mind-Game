@@ -1,0 +1,104 @@
+/* استایل اختصاصی تکمیل الگو — موبایل-اول؛ کلاس‌های مشترک (hint) از game.module.css */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/*
+ * ماتریس ۳×۳ — عرض حداکثر min(80vw, 320px).
+ * direction: ltr تا خانه نمایه ۰ در ستون چپ قرار بگیرد و پیشرفت
+ * الگو (چپ → راست) با ریاضیات قاعده هم‌جهت بماند.
+ */
+.matrix {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  width: min(80vw, 320px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2);
+  direction: ltr;
+  user-select: none;
+}
+
+/* هر خانه ماتریس: مربع با نسبت ۱:۱ */
+.cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+
+/* خانه خالی — خط‌چین + علامت سؤال بزرگ */
+.emptyCell {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border: 2px dashed var(--color-border);
+}
+
+.questionMark {
+  font-size: clamp(1.75rem, 9vw, 2.5rem);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+/* گروه شکل‌های داخل یک خانه: چیدمان فشرده و وسط‌چین */
+.cellShapes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 4px;
+}
+
+/* هر شکل کوچک — SVG انتزاعی بدون دارایی خارجی */
+.shape {
+  width: 26%;
+  max-width: 26px;
+  min-width: 12px;
+  aspect-ratio: 1;
+  display: block;
+}
+
+/* گزینه‌ها: موبایل ۲×۲؛ هدف لمسی ≥ ۵۶px */
+.options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  width: min(80vw, 320px);
+}
+
+.optionButton {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  cursor: pointer;
+  transition: transform 80ms ease;
+}
+
+.optionButton:active {
+  transform: scale(0.97);
+  background: var(--color-surface-2);
+}
+
+.optionButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

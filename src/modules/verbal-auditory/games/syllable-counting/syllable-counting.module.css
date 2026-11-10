@@ -1,0 +1,12 @@
+/* شمارش هجا — استایل اختصاصی همین بازی */
+
+/* جملهٔ محرک: درشت، وسط‌چین و خوانا در موبایل و دسکتاپ (حدود ۱٫۵rem) */
+.sentence {
+  font-size: clamp(1.35rem, 5.5vw, 1.6rem);
+  font-weight: 700;
+  line-height: 2.1;
+  text-align: center;
+  max-width: min(92vw, 34rem);
+  margin: 0;
+  color: var(--color-text);
+}

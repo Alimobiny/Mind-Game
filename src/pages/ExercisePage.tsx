@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { GameShell } from '../components/game/GameShell'
+import {
+  computeAdaptiveDifficulty,
+  describeStreakFa,
+  toLocalIsoDate,
+} from '../core/difficulty/adaptive-difficulty'
+import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-difficulty'
 import { getAppData } from '../data/app-data'
 import { createAppRegistry, createExerciseConfig } from '../modules'
 import { Calculation20Game } from '../modules/processing-speed/games/calculation-20/Calculation20Game'
@@ -11,6 +17,10 @@ import { MemoriseGridGame } from '../modules/visual-spatial/games/memorise-grid/
 import { SpatialSequenceGame } from '../modules/visual-spatial/games/spatial-sequence/SpatialSequenceGame'
 import { NumberSequenceGame } from '../modules/working-memory/games/number-sequence/NumberSequenceGame'
 import { NBackGame } from '../modules/working-memory/games/n-back/NBackGame'
+import { WordMemoryGame } from '../modules/verbal-auditory/games/word-memory/WordMemoryGame'
+import { SyllableCountingGame } from '../modules/verbal-auditory/games/syllable-counting/SyllableCountingGame'
+import { SequenceLogicGame } from '../modules/reasoning/games/sequence-logic/SequenceLogicGame'
+import { PatternCompletionGame } from '../modules/reasoning/games/pattern-completion/PatternCompletionGame'
 import { toFaDigits } from '../utils/format'
 import styles from './exercise.module.css'
 
@@ -35,6 +45,14 @@ function renderGame(exerciseId: string) {
       return (ctx: Parameters<typeof SpatialSequenceGame>[0]['ctx']) => <SpatialSequenceGame ctx={ctx} />
     case 'reaction-time':
       return (ctx: Parameters<typeof ReactionTimeGame>[0]['ctx']) => <ReactionTimeGame ctx={ctx} />
+    case 'word-memory':
+      return (ctx: Parameters<typeof WordMemoryGame>[0]['ctx']) => <WordMemoryGame ctx={ctx} />
+    case 'syllable-counting':
+      return (ctx: Parameters<typeof SyllableCountingGame>[0]['ctx']) => <SyllableCountingGame ctx={ctx} />
+    case 'sequence-logic':
+      return (ctx: Parameters<typeof SequenceLogicGame>[0]['ctx']) => <SequenceLogicGame ctx={ctx} />
+    case 'pattern-completion':
+      return (ctx: Parameters<typeof PatternCompletionGame>[0]['ctx']) => <PatternCompletionGame ctx={ctx} />
     default:
       return null
   }
@@ -50,6 +68,9 @@ export function ExercisePage() {
   const [appData, setAppData] = useState<Awaited<ReturnType<typeof getAppData>> | null>(null)
   // برای شروع مجدد جلسه با همان تنظیمات: کلید جدید، manager جدید
   const [sessionRound, setSessionRound] = useState(0)
+  // دشواری تطبیقی: سطح پیشنهادی سیستم + وضعیت رکورد
+  const [adaptive, setAdaptive] = useState<AdaptiveDifficultyResult | null>(null)
+  const [progressRefreshKey, setProgressRefreshKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -61,15 +82,22 @@ export function ExercisePage() {
     }
   }, [])
 
-  // آخرین دشواری انتخابی کاربر را از تنظیمات محلی می‌خواند
+  // محاسبه سطح پیشنهادی از تاریخچه جلسات — با هر بازگشت به picker تازه می‌شود
   useEffect(() => {
     if (!appData || !registered) return
-    void appData.settings.get(registered.meta.id).then((record) => {
-      if (record && registered.meta.difficultyLevels.includes(record.lastDifficulty)) {
-        setDifficulty(record.lastDifficulty)
-      }
-    })
-  }, [appData, registered])
+    let cancelled = false
+    void (async () => {
+      const history = await appData.sessions.listByExercise(registered.meta.id)
+      if (cancelled) return
+      const todayIso = toLocalIsoDate(Date.now())
+      const result = computeAdaptiveDifficulty(history, todayIso)
+      setAdaptive(result)
+      setDifficulty(result.recommendedLevel)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [appData, registered, progressRefreshKey])
 
   const renderTrial = useMemo(() => (registered ? renderGame(registered.meta.id) : null), [registered])
 
@@ -87,11 +115,16 @@ export function ExercisePage() {
   }
 
   if (!difficultyConfirmed || !appData) {
+    const recommended = adaptive?.recommendedLevel ?? null
+    const isManual = recommended !== null && difficulty !== recommended
     return (
       <main className="app-shell">
         <div className={styles.picker}>
           <h1>{registered.meta.nameFa}</h1>
-          <p className={styles.pickerHint}>سطح دشواری را انتخاب کن — در MVP دشواری ثابت جلسه است.</p>
+          <p className={styles.pickerHint}>
+            سطح پیشنهادی سیستم به‌صورت خودکار انتخاب شده است.
+            {adaptive ? ` ${describeStreakFa(adaptive)}${adaptive.todayQualified ? ' · امروز انجام شد ✓' : ''}` : ''}
+          </p>
           <div className={styles.levelGrid} role="radiogroup" aria-label="سطح دشواری">
             {registered.meta.difficultyLevels.map((level) => (
               <button
@@ -103,9 +136,17 @@ export function ExercisePage() {
                 onClick={() => setDifficulty(level)}
               >
                 {toFaDigits(level)}
+                {recommended === level ? (
+                  <span className={styles.recommendedBadge} aria-hidden="true">
+                    پیشنهادی
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>
+          {isManual ? (
+            <p className={styles.manualHint}>انتخاب دستی — جلسات سطح دستی در ارتقای سطح حساب نمی‌شوند.</p>
+          ) : null}
           <button
             type="button"
             className={styles.startButton}
@@ -131,9 +172,10 @@ export function ExercisePage() {
         deps={appData}
         renderTrial={(ctx) => renderTrial?.(ctx) ?? null}
         onExit={() => {
-          // بازگشت به انتخاب سطح؛ round جدید جلسه تازه می‌سازد
+          // بازگشت به انتخاب سطح؛ round جدید جلسه تازه و progress تازه
           setDifficultyConfirmed(false)
           setSessionRound((r) => r + 1)
+          setProgressRefreshKey((k) => k + 1)
           void navigate(`/play/${exerciseId}`, { replace: true })
         }}
       />

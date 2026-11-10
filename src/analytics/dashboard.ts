@@ -1,5 +1,9 @@
 import type { CognitiveDomain, SessionRecord } from '../core/types'
+import { computeAdaptiveDifficulty, toLocalIsoDate } from '../core/difficulty/adaptive-difficulty'
+import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-difficulty'
 import type { SessionRepository } from '../data/repositories/types'
+
+export type { AdaptiveDifficultyResult }
 
 /**
  * تجمیع داده‌های جلسه برای داشبورد — فقط روی داده خام ذخیره‌شده
@@ -77,4 +81,22 @@ export function accuracySparklinePath(series: readonly number[], width = 220, he
       return `${i === 0 ? 'M' : 'L'} ${Math.round(x)} ${Math.round(y)}`
     })
     .join(' ')
+}
+
+/**
+ * وضعیت دشواری تطبیقی همه تمرین‌ها — مبنای UI پیشرفت
+ * (سطح پیشنهادی، رکورد روزها و تاریخچه تغییر سطح هر بازی).
+ */
+export async function loadProgressForExercises(
+  sessions: SessionRepository,
+  exerciseIds: readonly string[],
+): Promise<Record<string, AdaptiveDifficultyResult>> {
+  const todayIso = toLocalIsoDate(Date.now())
+  const entries = await Promise.all(
+    exerciseIds.map(async (exerciseId) => {
+      const history = await sessions.listByExercise(exerciseId)
+      return [exerciseId, computeAdaptiveDifficulty(history, todayIso)] as const
+    }),
+  )
+  return Object.fromEntries(entries)
 }

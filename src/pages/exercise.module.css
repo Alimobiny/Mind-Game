@@ -29,6 +29,7 @@
 }
 
 .levelButton {
+  position: relative;
   width: 56px;
   height: 56px;
   border-radius: var(--radius-md);
@@ -43,6 +44,25 @@
   background: var(--color-primary-strong);
   border-color: var(--color-primary-strong);
   color: #082f49;
+}
+
+.recommendedBadge {
+  position: absolute;
+  bottom: -10px;
+  inset-inline: -14px;
+  font-size: 0.6rem;
+  font-weight: 500;
+  background: var(--color-bg-elevated);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.manualHint {
+  font-size: 0.75rem;
+  color: var(--color-warning);
 }
 
 .startButton {

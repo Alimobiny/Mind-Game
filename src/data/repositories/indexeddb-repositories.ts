@@ -96,6 +96,15 @@ export class IdbTrialEventRepository implements TrialEventRepository {
     const index = tx.objectStore(STORES.trialEvents).index('by_session')
     return requestToPromise(index.count(sessionId))
   }
+
+  async listAll(): Promise<TrialEventRecord[]> {
+    const tx = this.db.transaction(STORES.trialEvents, 'readonly')
+    const store = tx.objectStore(STORES.trialEvents)
+    const events = await requestToPromise(store.getAll() as IDBRequest<TrialEventRecord[]>)
+    return events.sort((a, b) =>
+      a.sessionId === b.sessionId ? a.trialIndex - b.trialIndex : a.sessionId < b.sessionId ? -1 : 1,
+    )
+  }
 }
 
 export class IdbExerciseSettingsRepository implements ExerciseSettingsRepository {

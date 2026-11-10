@@ -38,7 +38,7 @@ test.describe('صفحه اصلی', () => {
   test('هر چهار بازی MVP در فهرست دیده می‌شوند', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('heading', { name: 'آزمایشگاه تمرین شناختی' })).toBeVisible()
-    await expect(page.getByRole('link', { name: /توالی اعداد/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: /^توالی اعداد/ })).toBeVisible()
     await expect(page.getByRole('link', { name: /برو \/ نرو/ })).toBeVisible()
     await expect(page.getByRole('link', { name: /محاسبه × ۲۰/ })).toBeVisible()
     await expect(page.getByRole('link', { name: /شبکه حافظه/ })).toBeVisible()
@@ -58,54 +58,53 @@ test.describe('Number Sequence', () => {
   test('۱۰ مرحله با ثبت ارقام نمایش‌داده‌شده کامل می‌شود', async ({ page }) => {
     // شروع دستی تا در فاز COUNTDOWN بتوان ضبط‌کننده ارقام را نصب کرد
     await page.goto('/')
-    await page.getByRole('link', { name: /توالی اعداد/ }).click()
+    await page.getByRole('link', { name: /^توالی اعداد/ }).click()
     await page.getByRole('radio', { name: '۱', exact: true }).click()
     await page.getByRole('button', { name: 'ادامه' }).click()
     await page.getByRole('button', { name: 'شروع تمرین' }).click()
 
-    // ضبط تغییرات ns-digit با MutationObserver داخل صفحه — مطمئن‌تر از polling
+    // ضبط ارقام با شمارش «ظاهرشدن از حالت خالی» — مستقل از مقدار رقم
+    // (رقم اول مرحله بعد ممکن است با رقم آخر مرحله قبل یکسان باشد)
     await page.evaluate(() => {
-      const w = window as unknown as { __nsDigits: string[]; __nsLast: string }
+      const w = window as unknown as { __nsDigits: string[]; __nsOccupied: boolean }
       w.__nsDigits = []
-      w.__nsLast = ''
+      w.__nsOccupied = false
       new MutationObserver(() => {
         const el = document.querySelector('[data-testid="ns-digit"]')
         const text = el ? (el.textContent ?? '').trim() : ''
-        if (text && text !== w.__nsLast) {
-          w.__nsLast = text
+        if (text && !w.__nsOccupied) {
+          w.__nsOccupied = true
           w.__nsDigits.push(text)
         }
+        if (!text) w.__nsOccupied = false
       }).observe(document.body, { childList: true, subtree: true, characterData: true })
     })
     await expect(page.locator('section[data-phase="ACTIVE"]')).toBeVisible({ timeout: 20_000 })
 
     for (let trial = 0; trial < 10; trial++) {
-      // انتظار تا ۳ رقم ضبط شود
+      // هر مرحله دقیقاً ۳ رقم ثبت می‌کند → شرط مطلق بدون race:
+      // بعد از مرحله n، طول آرایه باید ۳×(n+1) باشد
+      const needed = (trial + 1) * 3
       await page.waitForFunction(
-        () => (window as unknown as { __nsDigits: string[] }).__nsDigits.length >= 3,
-        undefined,
-        { timeout: 15_000 },
+        (target) => (window as unknown as { __nsDigits: string[] }).__nsDigits.length >= target,
+        needed,
+        { timeout: 20_000 },
       )
-      const seen = (await page.evaluate(
+      const allDigits = (await page.evaluate(
         () => (window as unknown as { __nsDigits: string[] }).__nsDigits,
       )) as string[]
-      if (seen.length < 3) throw new Error(`ارقام ثبت‌شده ناقص: ${seen.join(',')}`)
+      const seen = allDigits.slice(-3)
+      if (seen.length < 3) throw new Error(`ارقام ثبت‌شده ناقص: ${allDigits.join(',')}`)
 
       // فاز input: دکمه تأیید ظاهر می‌شود (ابتدا disabled)
       const submitBtn = page.getByRole('button', { name: 'تأیید' })
       await expect(submitBtn).toBeVisible({ timeout: 10_000 })
 
-      for (const faDigit of seen.slice(0, 3)) {
+      for (const faDigit of seen) {
         await page.getByRole('button', { name: faDigit, exact: true }).click()
       }
       // click خودش تا enabled شدن صبر می‌کند
       await submitBtn.click()
-      // ریست ضبط برای مرحله بعد + صبر بازخورد کوتاه
-      await page.evaluate(() => {
-        const w = window as unknown as { __nsDigits: string[]; __nsLast: string }
-        w.__nsDigits = []
-        w.__nsLast = ''
-      })
       await page.waitForTimeout(1200)
     }
 
