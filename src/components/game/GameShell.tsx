@@ -70,7 +70,11 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
 
   // شروع خودکار جلسه (IDLE → READY)
   useEffect(() => {
-    void manager.start()
+    // در React StrictMode دولوپمنت این افکت دوبار اجرا می‌شود؛
+    // شروع دومِ همان manager باید بی‌اثر بماند نه unhandled rejection بسازد
+    if (manager.getSnapshot().machine.phase === 'IDLE') {
+      void manager.start()
+    }
   }, [manager])
 
   const snapshot = manager.getSnapshot()
@@ -175,7 +179,12 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
           registered={registered}
           difficulty={config.difficulty}
           onStart={beginCountdown}
-          onExit={onExit}
+          onExit={() => {
+            // خروج پیش از شروع: رکورد in_progressِ ساخته‌شده در start()
+            // باید همین‌جا aborted شود، نه این که تا بوت بعدی زنده بماند
+            void manager.abort()
+            onExit()
+          }}
         />
       ) : null}
 

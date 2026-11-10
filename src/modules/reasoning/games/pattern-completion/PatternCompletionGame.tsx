@@ -56,7 +56,8 @@ export function PatternCompletionGame({ ctx }: { ctx: ActiveGameContext }) {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit(index).then((result) => {
-      if (result.accepted) ctx.advance()
+      // advance روی جلسه تمام‌شده (آخرین گزینه) خطا می‌دهد
+      if (result.accepted && !result.sessionCompleted) ctx.advance()
     })
   }
 

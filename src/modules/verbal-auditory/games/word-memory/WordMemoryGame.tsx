@@ -24,6 +24,8 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
   const [selected, setSelected] = useState<string[]>([])
   const [wasCorrect, setWasCorrect] = useState(false)
   const timeoutsRef = useRef<number[]>([])
+  // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
+  const submittedRef = useRef(false)
 
   const clearTimers = useCallback(() => {
     for (const t of timeoutsRef.current) window.clearTimeout(t)
@@ -33,6 +35,7 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
   // ریست فازها با شروع هر مرحله جدید + زمان‌بندی نمایش واژه‌ها:
   // هر واژه به‌مدت displayMsPerWord دیده می‌شود و gapMs فاصله تا بعدی
   useEffect(() => {
+    submittedRef.current = false
     setPhase('study')
     setShownWord(trial.studyWords[0] ?? null)
     setWordIndex(0)
@@ -73,9 +76,16 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   const submit = async () => {
-    if (phase !== 'recall' || ctx.paused || selected.length !== studyCount) return
+    if (submittedRef.current || phase !== 'recall' || ctx.paused || selected.length !== studyCount) return
+    submittedRef.current = true
     const result = await ctx.submit(selected)
-    setWasCorrect(result.accepted ? result.record.correct : false)
+    if (!result.accepted) {
+      submittedRef.current = false
+      return
+    }
+    // آخرین پاسخ جلسه را کامل کرد → advanceی برای مرحله بعدی وجود ندارد
+    if (result.sessionCompleted) return
+    setWasCorrect(result.record.correct)
     setPhase('feedback')
     // بازخورد کوتاه رنگی، سپس مرحله بعد
     timeoutsRef.current.push(window.setTimeout(() => ctx.advance(), 1300))

@@ -85,7 +85,14 @@ export function ReportsPage() {
       )
       setReloadKey((k) => k + 1)
     } catch (e) {
-      setBackupMessage(e instanceof Error ? e.message : 'بازیابی فایل ناموفق بود.')
+      // خطای JSON خراب پیام انگلیسی SyntaxError دارد؛ پیام فارسی واضح بده
+      setBackupMessage(
+        e instanceof SyntaxError
+          ? 'فایل پشتیبان JSON معتبر نیست — فایل خراب یا ناقص است.'
+          : e instanceof Error
+            ? e.message
+            : 'بازیابی فایل ناموفق بود.',
+      )
     }
   }
 

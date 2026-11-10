@@ -17,8 +17,11 @@ export function MemoriseGridGame({ ctx }: { ctx: ActiveGameContext }) {
   const [selected, setSelected] = useState<number[]>([])
   const [wasCorrect, setWasCorrect] = useState(false)
   const timerRef = useRef<number | null>(null)
+  // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
+  const submittedRef = useRef(false)
 
   useEffect(() => {
+    submittedRef.current = false
     setPhase('memorise')
     setSelected([])
     if (timerRef.current !== null) window.clearTimeout(timerRef.current)
@@ -41,9 +44,16 @@ export function MemoriseGridGame({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   const submit = async () => {
-    if (selected.length !== trial.activeCells.length) return
+    if (submittedRef.current || selected.length !== trial.activeCells.length) return
+    submittedRef.current = true
     const result = await ctx.submit(selected)
-    setWasCorrect(result.accepted ? result.record.correct : false)
+    if (!result.accepted) {
+      submittedRef.current = false
+      return
+    }
+    // آخرین پاسخ جلسه را کامل کرد → advanceی برای مرحله بعدی وجود ندارد
+    if (result.sessionCompleted) return
+    setWasCorrect(result.record.correct)
     setPhase('feedback')
     window.setTimeout(() => ctx.advance(), 1400)
   }

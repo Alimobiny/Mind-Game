@@ -22,6 +22,8 @@ export function SpatialSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState(false)
   const trialKey = `${trial.trialIndex}`
   const timeoutsRef = useRef<number[]>([])
+  // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
+  const submittedRef = useRef(false)
 
   const clearTimers = useCallback(() => {
     for (const t of timeoutsRef.current) window.clearTimeout(t)
@@ -31,6 +33,7 @@ export function SpatialSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
   // ریست فازها با شروع هر مرحله جدید + زمان‌بندی نمایش تک‌به‌تک:
   // هر خانه به‌مدت displayMsPerCell روشن است و gapMs فاصله تا بعدی
   useEffect(() => {
+    submittedRef.current = false
     setPhase('showing')
     setShownPosition(trial.sequence.length > 0 ? 0 : null)
     setEntered([])
@@ -68,9 +71,16 @@ export function SpatialSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
   const clearEntered = () => setEntered([])
 
   const submit = async () => {
-    if (phase !== 'recall' || entered.length !== trial.sequence.length) return
+    if (submittedRef.current || phase !== 'recall' || entered.length !== trial.sequence.length) return
+    submittedRef.current = true
     const result = await ctx.submit(entered)
-    setWasCorrect(result.accepted ? result.record.correct : false)
+    if (!result.accepted) {
+      submittedRef.current = false
+      return
+    }
+    // آخرین پاسخ جلسه را کامل کرد → advanceی برای مرحله بعدی وجود ندارد
+    if (result.sessionCompleted) return
+    setWasCorrect(result.record.correct)
     setPhase('feedback')
     window.setTimeout(() => ctx.advance(), 1400)
   }

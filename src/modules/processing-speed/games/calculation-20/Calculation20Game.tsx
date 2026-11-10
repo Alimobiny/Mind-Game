@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
@@ -13,8 +13,12 @@ import type { Calculation20Trial } from './engine'
 export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as Calculation20Trial
   const [entry, setEntry] = useState('')
+  // قفل پاسخِ ثبت‌شده — تپ دومی روی «تأیید» نباید همان پاسخ را
+  // به سؤال بعدی هم بفرستد (پنجره race بین advance و پاک‌شدن entry)
+  const submittedRef = useRef(false)
 
   useEffect(() => {
+    submittedRef.current = false
     setEntry('')
   }, [trial.trialIndex])
 
@@ -27,11 +31,14 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   const submit = async () => {
-    if (entry.length === 0) return
+    if (submittedRef.current || entry.length === 0) return
+    submittedRef.current = true
     const value = Number.parseInt(entry, 10)
     const result = await ctx.submit(value)
     if (result.accepted && !result.sessionCompleted) {
       ctx.advance()
+    } else if (!result.accepted) {
+      submittedRef.current = false
     }
   }
 
