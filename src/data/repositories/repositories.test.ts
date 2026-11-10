@@ -1,15 +1,18 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { SessionRecord, TrialEventRecord } from '../../core/types'
-import { DB_NAME, deleteDatabase, openDatabase } from '../database/db'
+import type { TrainingPlanRecord } from '../../core/program/types'
+import { DB_NAME, STORES, deleteDatabase, openDatabase, requestToPromise } from '../database/db'
 import {
   IdbExerciseSettingsRepository,
   IdbSessionRepository,
+  IdbTrainingPlanRepository,
   IdbTrialEventRepository,
 } from './indexeddb-repositories'
 import type {
   ExerciseSettingsRepository,
   SessionRepository,
+  TrainingPlanRepository,
   TrialEventRepository,
 } from './types'
 
@@ -23,15 +26,17 @@ function repositoryContract(
     sessions: SessionRepository
     trials: TrialEventRepository
     settings: ExerciseSettingsRepository
+    plans: TrainingPlanRepository
   }>,
 ) {
   describe(`قرارداد repository — ${name}`, () => {
     let sessions: SessionRepository
     let trials: TrialEventRepository
     let settings: ExerciseSettingsRepository
+    let plans: TrainingPlanRepository
 
     beforeEach(async () => {
-      ;({ sessions, trials, settings } = await make())
+      ;({ sessions, trials, settings, plans } = await make())
     })
 
     it('جلسه ایجاد و خوانده می‌شود', async () => {
@@ -98,6 +103,30 @@ function repositoryContract(
       await settings.put({ exerciseId: 'go-no-go', lastDifficulty: 3 })
       expect(await settings.get('go-no-go')).toEqual({ exerciseId: 'go-no-go', lastDifficulty: 3 })
     })
+
+    it('برنامه روزانه با کلید تاریخ ذخیره و خوانده می‌شود', async () => {
+      expect(await plans.getByDate('2026-11-11')).toBeNull()
+      await plans.put(makePlan('2026-11-11', ['go-no-go']))
+      const loaded = await plans.getByDate('2026-11-11')
+      expect(loaded?.items.map((i) => i.exerciseId)).toEqual(['go-no-go'])
+    })
+
+    it('put دوباره همان تاریخ بازنویسی می‌کند، نه رکورد تکراری (idempotent)', async () => {
+      await plans.put(makePlan('2026-11-11', ['go-no-go']))
+      await plans.put(makePlan('2026-11-11', ['stroop']))
+      const loaded = await plans.getByDate('2026-11-11')
+      expect(loaded?.items.map((i) => i.exerciseId)).toEqual(['stroop'])
+      const recent = await plans.listRecent(10)
+      expect(recent.filter((p) => p.date === '2026-11-11')).toHaveLength(1)
+    })
+
+    it('listRecent برنامه‌ها را جدید → قدیم می‌دهد و محدود می‌کند', async () => {
+      await plans.put(makePlan('2026-11-09', ['a']))
+      await plans.put(makePlan('2026-11-11', ['b']))
+      await plans.put(makePlan('2026-11-10', ['c']))
+      const recent = await plans.listRecent(2)
+      expect(recent.map((p) => p.date)).toEqual(['2026-11-11', '2026-11-10'])
+    })
   })
 }
 
@@ -142,6 +171,18 @@ function makeTrial(sessionId: string, trialIndex: number, overrides: Partial<Tri
   }
 }
 
+function makePlan(date: string, exerciseIds: readonly string[]): TrainingPlanRecord {
+  return {
+    date,
+    generatedAt: 1_700_000_000_000,
+    items: exerciseIds.map((exerciseId) => ({
+      exerciseId,
+      difficulty: 1,
+      estimatedMinutes: 4,
+    })),
+  }
+}
+
 repositoryContract('IndexedDB (fake-indexeddb)', async () => {
   // دیتابیس fake بین تست‌ها state نگه می‌دارد؛ برای ایزوله‌بودن هر تست از نو ساخته می‌شود
   await deleteDatabase()
@@ -150,17 +191,23 @@ repositoryContract('IndexedDB (fake-indexeddb)', async () => {
     sessions: new IdbSessionRepository(db),
     trials: new IdbTrialEventRepository(db),
     settings: new IdbExerciseSettingsRepository(db),
+    plans: new IdbTrainingPlanRepository(db),
   }
 })
 
 // In-memory پیاده‌سازی مرجع است؛ import داینامیک برای استفاده از همان تست‌ها
 repositoryContract('InMemory', async () => {
-  const { InMemoryExerciseSettingsRepository, InMemorySessionRepository, InMemoryTrialEventRepository } =
-    await import('./in-memory-repositories')
+  const {
+    InMemoryExerciseSettingsRepository,
+    InMemorySessionRepository,
+    InMemoryTrainingPlanRepository,
+    InMemoryTrialEventRepository,
+  } = await import('./in-memory-repositories')
   return {
     sessions: new InMemorySessionRepository(),
     trials: new InMemoryTrialEventRepository(),
     settings: new InMemoryExerciseSettingsRepository(),
+    plans: new InMemoryTrainingPlanRepository(),
   }
 })
 
@@ -169,20 +216,70 @@ describe('openDatabase (migrations)', () => {
     await deleteDatabase()
   })
 
-  it('دیتابیس با نسخه ۱ ساخته می‌شود و استورها وجود دارند', async () => {
+  it('دیتابیس تازه با نسخه ۲ ساخته می‌شود و همه استورها وجود دارند', async () => {
     const db = await openDatabase()
     expect(db.name).toBe(DB_NAME)
-    expect(db.version).toBe(1)
-    for (const store of [
-      'exercise_sessions',
-      'trial_events',
-      'exercise_settings',
-      'user_preferences',
-      'schema_meta',
-    ]) {
+    expect(db.version).toBe(2)
+    for (const store of Object.values(STORES)) {
       expect(db.objectStoreNames.contains(store)).toBe(true)
     }
     expect(db.objectStoreNames.contains('by_session') === false).toBe(true)
     db.close()
   })
+
+  it('ارتقا از نسخه ۱ به ۲: training_plans ساخته می‌شود و داده قبلی سالم می‌ماند', async () => {
+    await openLegacyV1Database()
+    const db = await openDatabase()
+    expect(db.version).toBe(2)
+    expect(db.objectStoreNames.contains(STORES.trainingPlans)).toBe(true)
+
+    // داده‌های نسخه ۱ دست‌نخورده مانده‌اند
+    const sessions = new IdbSessionRepository(db)
+    expect(await sessions.get('legacy-1')).not.toBeNull()
+
+    // استور جدید قابل نوشتن است و schema_meta به‌روز شده است
+    const plans = new IdbTrainingPlanRepository(db)
+    await plans.put(makePlan('2026-11-11', ['go-no-go']))
+    expect((await plans.getByDate('2026-11-11'))?.items).toHaveLength(1)
+
+    const metaTx = db.transaction(STORES.schemaMeta, 'readonly')
+    const meta = await requestToPromise(
+      metaTx.objectStore(STORES.schemaMeta).get('schema_version') as IDBRequest<
+        { key: string; value: number } | undefined
+      >,
+    )
+    expect(meta?.value).toBe(2)
+    db.close()
+  })
 })
+
+/** ساخت دیتابیس ساختگی نسخه ۱ (بدون training_plans) با یک جلسه — شبیه‌سازی نصب قدیمی */
+function openLegacyV1Database(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1)
+    request.onupgradeneeded = () => {
+      const db = request.result
+      const sessions = db.createObjectStore(STORES.exerciseSessions, { keyPath: 'id' })
+      sessions.createIndex('by_exercise', 'exerciseId', { unique: false })
+      sessions.createIndex('by_started', 'startedAt', { unique: false })
+      db.createObjectStore(STORES.trialEvents, { keyPath: 'id' })
+      db.createObjectStore(STORES.exerciseSettings, { keyPath: 'exerciseId' })
+      db.createObjectStore(STORES.userPreferences, { keyPath: 'key' })
+      db.createObjectStore(STORES.schemaMeta, { keyPath: 'key' })
+      request.transaction?.objectStore(STORES.schemaMeta).put({ key: 'schema_version', value: 1 })
+    }
+    request.onsuccess = () => {
+      const db = request.result
+      const tx = db.transaction(STORES.exerciseSessions, 'readwrite')
+      tx.objectStore(STORES.exerciseSessions).put(
+        makeSession('legacy-1', 1000, { status: 'completed' }),
+      )
+      tx.oncomplete = () => {
+        db.close()
+        resolve()
+      }
+      tx.onerror = () => reject(tx.error ?? new Error('legacy seed failed'))
+    }
+    request.onerror = () => reject(request.error ?? new Error('legacy open failed'))
+  })
+}

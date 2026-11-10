@@ -4,7 +4,7 @@ import { loadProgressForExercises } from '../analytics/dashboard'
 import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-difficulty'
 import { describeStreakFa } from '../core/difficulty/adaptive-difficulty'
 import { getAppData } from '../data/app-data'
-import { APP_TEXTS_FA, DOMAIN_LABELS_FA } from '../i18n/fa'
+import { APP_TEXTS_FA, DOMAIN_LABELS_FA, PROGRAM_TEXTS_FA } from '../i18n/fa'
 import { COGNITIVE_DOMAINS } from '../core/types'
 import { createAppRegistry } from '../modules'
 import { formatDate, toFaDigits } from '../utils/format'
@@ -46,6 +46,10 @@ export function HomePage() {
       <header className={styles.hero}>
         <h1>{APP_TEXTS_FA.appName}</h1>
         <p className={styles.subtitle}>{APP_TEXTS_FA.appSubtitle}</p>
+        <Link to="/program" className={styles.programLink}>
+          <span className={styles.programTitle}>{PROGRAM_TEXTS_FA.title}</span>
+          <span className={styles.programHint}>{PROGRAM_TEXTS_FA.entryHint}</span>
+        </Link>
       </header>
 
       {activeDomains.map((domain) => {

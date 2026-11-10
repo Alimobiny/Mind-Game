@@ -1,8 +1,10 @@
 import type { SessionRecord, SessionStatus, TrialEventRecord } from '../../core/types'
+import type { TrainingPlanRecord } from '../../core/program/types'
 import type {
   ExerciseSettingsRecord,
   ExerciseSettingsRepository,
   SessionRepository,
+  TrainingPlanRepository,
   TrialEventRepository,
 } from './types'
 
@@ -89,5 +91,24 @@ export class InMemoryExerciseSettingsRepository implements ExerciseSettingsRepos
 
   async put(record: ExerciseSettingsRecord): Promise<void> {
     this.settings.set(record.exerciseId, record)
+  }
+}
+
+export class InMemoryTrainingPlanRepository implements TrainingPlanRepository {
+  // کلید = تاریخ؛ upsert روی همان تاریخ — مانند پیاده‌سازی IndexedDB
+  private readonly plans = new Map<string, TrainingPlanRecord>()
+
+  async getByDate(date: string): Promise<TrainingPlanRecord | null> {
+    return this.plans.get(date) ?? null
+  }
+
+  async put(record: TrainingPlanRecord): Promise<void> {
+    this.plans.set(record.date, record)
+  }
+
+  async listRecent(limit: number): Promise<TrainingPlanRecord[]> {
+    return [...this.plans.values()]
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+      .slice(0, limit)
   }
 }

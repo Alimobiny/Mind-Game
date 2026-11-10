@@ -1,11 +1,12 @@
 /**
- * باز کردن IndexedDB با ساختار نسخه ۱ و مهاجرت‌های آینده.
+ * باز کردن IndexedDB با ساختار نسخه ۲ و مهاجرت‌های آینده.
  * استورها مطابق سند معماری: exercise_sessions، trial_events،
- * exercise_settings، user_preferences، schema_meta.
+ * exercise_settings، user_preferences، schema_meta — و از نسخه ۲:
+ * training_plans (برنامه تمرینی روزانه، کلید = تاریخ ISO محلی).
  */
 
 export const DB_NAME = 'cognitive-training-lab'
-export const DB_VERSION = 1
+export const DB_VERSION = 2
 
 export const STORES = {
   exerciseSessions: 'exercise_sessions',
@@ -13,6 +14,7 @@ export const STORES = {
   exerciseSettings: 'exercise_settings',
   userPreferences: 'user_preferences',
   schemaMeta: 'schema_meta',
+  trainingPlans: 'training_plans',
 } as const
 
 export function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
@@ -56,11 +58,16 @@ export function openDatabase(
       return
     }
     const request = indexedDBFactory.open(DB_NAME, DB_VERSION)
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = request.result
-      // مهاجرت‌ها بر اساس نسخه قبلی؛ نسخه ۱ همه استورها را می‌سازد
+      // مهاجرت‌ها نسخه‌دار هستند؛ oldVersion نسخه قبلی دیتابیس است.
+      // نسخه ۱: همه استورهای پایه (نصب تازه یا ارتقا از ۰)
       if (db.objectStoreNames.contains(STORES.exerciseSessions) === false) {
         createStores(db)
+      }
+      // نسخه ۲: استور برنامه تمرینی — فقط هنگام ارتقا از <۲ یا نصب تازه
+      if (event.oldVersion < 2 && db.objectStoreNames.contains(STORES.trainingPlans) === false) {
+        db.createObjectStore(STORES.trainingPlans, { keyPath: 'date' })
       }
       const meta = request.transaction?.objectStore(STORES.schemaMeta)
       meta?.put({ key: 'schema_version', value: DB_VERSION })

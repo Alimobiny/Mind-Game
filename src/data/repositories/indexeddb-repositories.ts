@@ -1,9 +1,11 @@
 import type { SessionRecord, SessionStatus, TrialEventRecord } from '../../core/types'
+import type { TrainingPlanRecord } from '../../core/program/types'
 import { STORES, requestToPromise, transactionDone } from '../database/db'
 import type {
   ExerciseSettingsRecord,
   ExerciseSettingsRepository,
   SessionRepository,
+  TrainingPlanRepository,
   TrialEventRepository,
 } from './types'
 
@@ -124,5 +126,33 @@ export class IdbExerciseSettingsRepository implements ExerciseSettingsRepository
     const tx = this.db.transaction(STORES.exerciseSettings, 'readwrite')
     tx.objectStore(STORES.exerciseSettings).put(record)
     await transactionDone(tx)
+  }
+}
+
+export class IdbTrainingPlanRepository implements TrainingPlanRepository {
+  constructor(private readonly db: IDBDatabase) {}
+
+  async getByDate(date: string): Promise<TrainingPlanRecord | null> {
+    const tx = this.db.transaction(STORES.trainingPlans, 'readonly')
+    const result = await requestToPromise(
+      tx.objectStore(STORES.trainingPlans).get(date) as IDBRequest<TrainingPlanRecord | undefined>,
+    )
+    return result ?? null
+  }
+
+  async put(record: TrainingPlanRecord): Promise<void> {
+    const tx = this.db.transaction(STORES.trainingPlans, 'readwrite')
+    tx.objectStore(STORES.trainingPlans).put(record)
+    await transactionDone(tx)
+  }
+
+  async listRecent(limit: number): Promise<TrainingPlanRecord[]> {
+    const tx = this.db.transaction(STORES.trainingPlans, 'readonly')
+    const all = await requestToPromise(
+      tx.objectStore(STORES.trainingPlans).getAll() as IDBRequest<TrainingPlanRecord[]>,
+    )
+    return all
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+      .slice(0, limit)
   }
 }
