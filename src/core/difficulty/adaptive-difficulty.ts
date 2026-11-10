@@ -146,7 +146,7 @@ export function computeAdaptiveDifficulty(
 
 /** توصیف فارسی وضعیت رکورد برای UI */
 export function describeStreakFa(result: AdaptiveDifficultyResult): string {
-  if (result.recommendedLevel >= MAX_LEVEL && result.streakDays === 0) {
+  if (result.recommendedLevel >= MAX_LEVEL) {
     return 'در بالاترین سطح هستی'
   }
   return `رکورد ${toFa(result.streakDays)} از ${toFa(result.streakNeededDays)} روز`

@@ -70,8 +70,10 @@ export async function loadDashboard(
 export function accuracySparklinePath(series: readonly number[], width = 220, height = 48): string {
   if (series.length === 0) return ''
   if (series.length === 1) {
-    const y = height - (series[0] as number / 100) * height
-    return `M ${width / 2} ${y} L ${width / 2} ${y}`
+    // تک‌جلسه: خط افقی کوتاه به‌جای نقطه نامرئی
+    const y = Math.round(height - ((series[0] as number) / 100) * height)
+    const x = Math.round(width / 2)
+    return `M ${x - 10} ${y} L ${x + 10} ${y}`
   }
   const stepX = width / (series.length - 1)
   return series

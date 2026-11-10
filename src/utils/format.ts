@@ -26,3 +26,8 @@ export function formatDateTime(epochMs: number): string {
     timeStyle: 'short',
   }).format(new Date(epochMs))
 }
+
+/** فقط تاریخ (بدون ساعت) — برای «آخرین تمرین» و تایم‌لاین‌ها */
+export function formatDate(epochMs: number): string {
+  return new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(epochMs))
+}

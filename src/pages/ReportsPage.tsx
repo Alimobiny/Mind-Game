@@ -18,7 +18,7 @@ import { getAppData } from '../data/app-data'
 import { createAppRegistry } from '../modules'
 import { DOMAIN_LABELS_FA } from '../i18n/fa'
 import { APP_TEXTS_FA } from '../i18n/fa'
-import { formatDateTime, formatDuration, toFaDigits } from '../utils/format'
+import { formatDate, formatDateTime, formatDuration, toFaDigits } from '../utils/format'
 import styles from './reports.module.css'
 
 const registry = createAppRegistry()
@@ -169,6 +169,10 @@ export function ReportsPage() {
                 </div>
                 <div className={styles.cardLabel}>حوزه‌های فعال</div>
               </div>
+              <div className={styles.card}>
+                <div className={styles.cardValue}>{toFaDigits(registry.list().length)}</div>
+                <div className={styles.cardLabel}>بازی‌های موجود</div>
+              </div>
             </section>
 
             <section aria-label="روند هر تمرین">
@@ -193,9 +197,9 @@ export function ReportsPage() {
                           {adaptive.levelHistory
                             .map(
                               (c) =>
-                                `${toFaDigits(c.from)}→${toFaDigits(c.to)} (${formatDateTime(
+                                `${toFaDigits(c.from)}→${toFaDigits(c.to)} (${formatDate(
                                   new Date(`${c.isoDate}T12:00:00`).getTime(),
-                                ).split(' ')[0]})`,
+                                )})`,
                             )
                             .join(' · ')}
                         </span>

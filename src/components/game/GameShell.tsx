@@ -4,6 +4,13 @@ import { Link } from 'react-router-dom'
 import type { ExerciseConfig, ExerciseTrial, RecordedTrial } from '../../core/types'
 import type { RegisteredExercise } from '../../core/registry/game-registry'
 import {
+  computeAdaptiveDifficulty,
+  describeStreakFa,
+  toLocalIsoDate,
+  ACCURACY_LEVEL_UP_THRESHOLD,
+} from '../../core/difficulty/adaptive-difficulty'
+import type { AdaptiveDifficultyResult } from '../../core/difficulty/adaptive-difficulty'
+import {
   ExerciseSessionManager,
   type SessionManagerDeps,
   type SubmitResult,
@@ -81,6 +88,35 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
   }, [manager])
 
   const [countdown, setCountdown] = useState<number | null>(null)
+  // خروج دوتایی-تأیید: اولین ضربه حالت تأیید می‌سازد، دومی جلسه را قطع می‌کند
+  const [confirmExit, setConfirmExit] = useState(false)
+  const confirmExitTimer = useRef<number | null>(null)
+  // وضعیت دشواری تطبیقی پس از پایان جلسه — برای بازخورد حد نصاب و رکورد
+  const [postAdaptive, setPostAdaptive] = useState<AdaptiveDifficultyResult | null>(null)
+
+  const requestExit = useCallback(() => {
+    if (!confirmExit) {
+      setConfirmExit(true)
+      if (confirmExitTimer.current !== null) window.clearTimeout(confirmExitTimer.current)
+      confirmExitTimer.current = window.setTimeout(() => setConfirmExit(false), 2500)
+      return
+    }
+    setConfirmExit(false)
+    void manager.abort()
+  }, [confirmExit, manager])
+
+  // پس از تکمیل جلسه، وضعیت ارتقای سطح را از تاریخچه محاسبه کن
+  useEffect(() => {
+    if (phase !== 'COMPLETED') return
+    let cancelled = false
+    void deps.sessions.listByExercise(registered.meta.id).then((history) => {
+      if (cancelled) return
+      setPostAdaptive(computeAdaptiveDifficulty(history, toLocalIsoDate(Date.now())))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [phase, deps.sessions, registered.meta.id])
 
   const beginCountdown = useCallback(() => {
     manager.beginCountdown()
@@ -118,9 +154,19 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
       <header className={styles.header}>
         <h1 className={styles.headerTitle}>{registered.meta.nameFa}</h1>
         {phase === 'ACTIVE' || phase === 'PAUSED' ? (
-          <span className={styles.progress}>
-            {toFaDigits(snapshot.answeredTrials)} / {toFaDigits(registered.meta.plannedTrials ?? 0)}
-          </span>
+          <div className={styles.headerActions}>
+            <span className={styles.progress}>
+              {toFaDigits(snapshot.answeredTrials)} / {toFaDigits(registered.meta.plannedTrials ?? 0)}
+            </span>
+            <button
+              type="button"
+              className={`${styles.exitButton} ${confirmExit ? styles.exitConfirm : ''}`}
+              onClick={requestExit}
+              aria-label={confirmExit ? 'قطع جلسه — تأیید' : 'خروج از جلسه'}
+            >
+              {confirmExit ? 'قطع جلسه؟' : '✕'}
+            </button>
+          </div>
         ) : null}
       </header>
 
@@ -151,6 +197,9 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
           <button type="button" className={styles.primaryButton} onClick={() => manager.resume()}>
             {APP_TEXTS_FA.resume}
           </button>
+          <button type="button" className={styles.secondaryButton} onClick={requestExit}>
+            خروج از جلسه
+          </button>
         </div>
       ) : null}
 
@@ -159,6 +208,7 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
           registered={registered}
           summary={snapshot.summary}
           onRetry={onExit}
+          adaptive={postAdaptive}
           extraActions={
             <Link className={styles.secondaryButton} to="/reports">
               {APP_TEXTS_FA.reports}
@@ -228,18 +278,35 @@ function ResultsScreen({
   registered,
   summary,
   onRetry,
+  adaptive,
   extraActions,
 }: {
   registered: RegisteredExercise
   summary: import('../../core/types').ExerciseSummary
   onRetry: () => void
+  adaptive: AdaptiveDifficultyResult | null
   extraActions?: ReactNode
 }) {
   const metricEntries = Object.entries(summary.metrics)
+  const thresholdMet = summary.accuracy >= ACCURACY_LEVEL_UP_THRESHOLD
   return (
     <div className={styles.stage} data-testid="results">
       <div className={styles.card}>
         <h2>جلسه کامل شد</h2>
+        {adaptive ? (
+          <div
+            className={`${styles.thresholdBanner} ${thresholdMet ? styles.thresholdMet : styles.thresholdMissed}`}
+            data-testid="threshold-banner"
+          >
+            {thresholdMet ? 'حد نصاب ارتقا (دقت ۸۰٪) پاس شد ✓' : 'حد نصاب ارتقا (دقت ۸۰٪) کامل نشد'}
+            <span className={styles.thresholdDetail}>
+              {describeStreakFa(adaptive)}
+              {adaptive.levelHistory.at(-1)?.isoDate === toLocalIsoDate(Date.now())
+                ? ` · سطح پیشنهادی اکنون: ${toFaDigits(adaptive.recommendedLevel)}`
+                : ''}
+            </span>
+          </div>
+        ) : null}
         <div className={styles.resultsGrid}>
           <div className={styles.metricCard}>
             <div className={styles.metricValue}>{toFaDigits(summary.correctTrials)}</div>

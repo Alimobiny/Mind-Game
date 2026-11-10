@@ -7,7 +7,7 @@ import { getAppData } from '../data/app-data'
 import { APP_TEXTS_FA, DOMAIN_LABELS_FA } from '../i18n/fa'
 import { COGNITIVE_DOMAINS } from '../core/types'
 import { createAppRegistry } from '../modules'
-import { formatDateTime, toFaDigits } from '../utils/format'
+import { formatDate, toFaDigits } from '../utils/format'
 import styles from './home.module.css'
 
 const registry = createAppRegistry()
@@ -72,7 +72,7 @@ export function HomePage() {
                     </span>
                     {p?.lastPlayedIsoDate ? (
                       <span className={styles.lastPlayed}>
-                        آخرین تمرین: {formatDateTime(new Date(`${p.lastPlayedIsoDate}T12:00:00`).getTime())}
+                        آخرین تمرین: {formatDate(new Date(`${p.lastPlayedIsoDate}T12:00:00`).getTime())}
                       </span>
                     ) : null}
                   </Link>
