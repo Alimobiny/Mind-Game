@@ -35,11 +35,11 @@ src/
 │   ├── program/     # منطق خالص برنامه تمرینی روزانه (تولید قطعی برنامه)
 │   └── registry/    # Game Registry
 ├── data/            # IndexedDB (استورها + migration) + repositoryها + in-memory
-├── modules/         # شانزده تمرین — منطق (engine خالص) جدا از UI
+├── modules/         # بیست‌ویک تمرین — منطق (engine خالص) جدا از UI
 │   ├── working-memory/games/{number-sequence, n-back}/
-│   ├── attention-control/games/{go-no-go, stroop}/
+│   ├── attention-control/games/{go-no-go, stroop, task-switching}/
 │   ├── processing-speed/games/{calculation-20, calculation-100, continuous-countdown, missing-operator, number-comparison}/
-│   ├── visual-spatial/games/{memorise-grid, spatial-sequence}/
+│   ├── visual-spatial/games/{memorise-grid, spatial-sequence, object-tracking, mental-rotation, mirror-clock, block-height}/
 │   ├── sensorimotor/games/reaction-time/
 │   ├── verbal-auditory/games/{word-memory, syllable-counting}/
 │   └── reasoning/games/{sequence-logic, pattern-completion}/
@@ -79,7 +79,7 @@ interface ExerciseDefinition<Config, State, Trial, Answer> {
 5. **گاردهای الزامی کامپوننت** (درس‌های باگ‌یابی نشست ۲): قفل `submittedRef` علیه double-fire · عدم `advance` پس از `result.sessionCompleted` · همه تایمرها در `timeoutsRef` با پاک‌سازی
 6. افزودن زمان تقریبی هر مرحله به `src/core/program/time-estimation.ts` (وگرنه پیش‌فرض ۱۰ث برای بودجهٔ برنامه روزانه بیش‌برآورد می‌شود)
 
-## تمرین‌های فعال (۱۶ بازی در هر ۷ حوزه شناختی)
+## تمرین‌های فعال (۲۱ بازی در هر ۷ حوزه شناختی)
 
 | بازی | حوزه | الگوی تعاملی |
 | --- | --- | --- |
@@ -87,6 +87,7 @@ interface ExerciseDefinition<Config, State, Trial, Answer> {
 | ان-بک (N-Back) | حافظه کاری | تشخیص تطابق با N مرحله قبل |
 | برو/نرو (Go/No-Go) | توجه و مهار | واکنش/مهار در جریان پیوسته |
 | استرووپ (Stroop) | توجه و مهار | انتخاب رنگ جوهر با وجود تداخل کلمه |
+| جابه‌جایی تکلیف (Task Switching) | توجه و مهار | دسته‌بندی بر اساس نشانهٔ بُعد + سنجهٔ هزینهٔ جابه‌جایی |
 | محاسبه ×۲۰ (Calculation × 20) | سرعت پردازش | ۲۰ سؤال حساب بدون مهلت منفرد |
 | محاسبه ×۱۰۰ (Calculation × 100) | سرعت پردازش | ۱۰۰ سؤال پیوسته با بازخورد فلش کوتاه |
 | شمارش معکوس پیوسته (Continuous Countdown) | سرعت پردازش | تفریق زنجیره‌ای حفظی → ورود باقیمانده نهایی |
@@ -94,6 +95,10 @@ interface ExerciseDefinition<Config, State, Trial, Answer> {
 | مقایسه اعداد (Number Comparison) | سرعت پردازش | انتخاب عدد بزرگ‌تر با فاصلهٔ عددی کنترل‌شده |
 | شبکه حافظه (Memorise Grid) | دیداری-فضایی | بازسازی مجموعه خانه‌ها |
 | توالی مکانی (Spatial Sequence) | دیداری-فضایی | بازسازی ترتیب خانه‌ها |
+| دنبال‌کردن اشیا (Object Tracking) | دیداری-فضایی | ردیابی اهداف متحرک روی Canvas (اولین بازی Canvas) |
+| چرخش ذهنی (Mental Rotation) | دیداری-فضایی | قضاوت یکسان/آینه‌ای شکل چرخیده |
+| ساعت آینه‌ای (Mirror Clock) | دیداری-فضایی | خوانش زمان واقعی از ساعت آینه‌شده |
+| ارتفاع بلوک‌ها (Block Height) | دیداری-فضایی | شمارش کل بلوک‌ها با استنتاج پنهان‌ها |
 | زمان واکنش (Reaction Time) | حسی-حرکتی | تپ سریع پس از محرک ناگهانی + شناسایی پیش‌دستی |
 | حافظه واژه‌ها (Word Memory) | زبانی | مطالعه واژه‌ها → بازیابی از میان حواس‌پرتی‌ها |
 | شمارش هجا (Syllable Counting) | زبانی | شمارش هجای جمله با بانک محتوای از پیش اعتبارسنجی‌شده |
@@ -130,8 +135,8 @@ interface ExerciseDefinition<Config, State, Trial, Answer> {
 
 | لایه | ابزار | پوشش |
 | --- | --- | --- |
-| Unit | Vitest | RNG، ماشین حالت، تایمر، scoring، دشواری تطبیقی، برنامه روزانه، هر ۱۶ engine |
+| Unit | Vitest | RNG، ماشین حالت، تایمر، scoring، دشواری تطبیقی، برنامه روزانه، هر ۲۱ engine |
 | Integration | Vitest + fake-indexeddb | repositoryها (شامل migration نسخه ۲)، Session Manager، GameShell، Export/Import |
-| E2E | Playwright (Chrome سیستم) | مسیر کامل هر ۱۶ بازی + ماندگاری + انتقال کامل داده + سناریوهای QA (تپ مضاعف، خروج، visibility، روز ضعیف، ایمپورت خراب، viewport، رفرش) |
+| E2E | Playwright (Chrome سیستم) | مسیر کامل بازی‌ها + ماندگاری + انتقال کامل داده + سناریوهای QA (تپ مضاعف، خروج، visibility، روز ضعیف، ایمپورت خراب، viewport، رفرش) |
 
 نکته E2E: دانلود مرورگر از CDN پلی‌رایت در برخی لوکیشن‌ها مسدود است؛ کانفیگ از Chrome نصب‌شده سیستم (`channel: 'chrome'`) استفاده می‌کند.
