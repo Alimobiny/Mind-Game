@@ -1,0 +1,44 @@
+/* Block Height — استایل اختصاصی شکل بلوک‌ها
+   صفحه‌کلید/نمایش پاسخ/بازخورد از game.module.css مشترک می‌آیند */
+
+.figureWrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 360px;
+}
+
+.figure {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ردیف پشتی: روشن و باریک — فقط بیرون‌زدگی بالای ستون جلویی پیدا است */
+.blockBack {
+  fill: #bae6fd;
+  stroke: #0c4a6e;
+  stroke-width: 2;
+}
+
+/* ردیف جلویی: تیره و پهن — کاملاً پیدا و قابل شمارش */
+.blockFront {
+  fill: #0ea5e9;
+  stroke: #082f49;
+  stroke-width: 2;
+}
+
+/* خط زمین مشترک دو ردیف — مرجع شروع شمارش از پایین */
+.groundLine {
+  stroke: #64748b;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+/* جای فلش بازخورد — ارتفاع ثابت تا چیدمان با هر مرحله نپرد */
+.flashZone {
+  min-height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

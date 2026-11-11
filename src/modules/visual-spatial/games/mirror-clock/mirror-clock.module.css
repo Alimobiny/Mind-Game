@@ -1,0 +1,123 @@
+/* استایل اختصاصی ساعت آینه‌ای — موبایل‌اول؛ کلاس‌های مشترک (hint/feedback) از game.module.css */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/* نشان نوع آینه — کمکی برای جهت‌یابی، بدون لو دادن پاسخ */
+.axisBadge {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+
+.clockSvg {
+  width: min(68vw, 300px, 38vh);
+  height: auto;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* اجزای SVG — رنگ‌ها از متغیرهای سراسری تم */
+.face {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+  stroke-width: 2;
+}
+
+.tickMinor {
+  stroke: color-mix(in srgb, var(--color-text-muted) 55%, transparent);
+  stroke-width: 1.5;
+}
+
+.tickMajor {
+  stroke: var(--color-text);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.number {
+  fill: var(--color-text);
+  font-size: 17px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  user-select: none;
+}
+
+.handHour {
+  stroke: var(--color-text);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.handMinute {
+  stroke: var(--color-primary);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.centerDot {
+  fill: var(--color-primary);
+}
+
+/* ناحیهٔ بازخورد — ارتفاع پایدار تا چیدمان با هر فلش نپرد */
+.flashZone {
+  min-height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* گزینه‌های «ساعت:دقیقه» — موبایل ۲×۲؛ صفحه پهن یک ردیف ۴تایی */
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 520px;
+}
+
+@media (min-width: 640px) {
+  .optionGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.optionButton {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  min-height: 60px; /* هدف لمسی ≥ ۴۸px */
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-text);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: transform 80ms ease;
+}
+
+.optionButton:active {
+  transform: scale(0.97);
+  background: var(--color-surface-2);
+}
+
+.optionButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* «۳:۴۵» همیشه چپ‌به‌راست خوانده شود — جداسازی bidi */
+.optionLabel {
+  direction: ltr;
+  unicode-bidi: isolate;
+}

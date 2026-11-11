@@ -57,6 +57,16 @@ export const TRIAL_SECONDS_BY_EXERCISE: Readonly<Record<string, number>> = {
   'missing-operator': 4,
   // پنجره پاسخ کوتاه + بازخورد انتخاب
   'number-comparison': 3,
+  // موج ۵ — هایلایت + حرکت + پنجرهٔ پاسخ چندثانیه‌ای
+  'object-tracking': 15,
+  // داوری یکسان/آینه‌ای + فلش بازخورد
+  'mental-rotation': 6,
+  // خوانش ساعت آینه‌ای + انتخاب گزینه
+  'mirror-clock': 12,
+  // شمارش بلوک‌های پنهان با قاعدهٔ f+p — کندترین بازی کاتالوگ
+  'block-height': 25,
+  // نشانه + محرک + پاسخ دکمه‌ای سریع
+  'task-switching': 2.5,
 }
 
 /** تخمین مدت جلسه یک بازی به دقیقه — گرد به بالا */

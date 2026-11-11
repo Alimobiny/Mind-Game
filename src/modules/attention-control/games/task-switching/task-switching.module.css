@@ -1,0 +1,109 @@
+/* استایل اختصاصی جابه‌جایی تکلیف — موبایل-اول؛ کلاس‌های مشترک (hint) از game.module.css */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/* نشان بُعد («رنگ»/«شکل»/«اندازه») — ارتفاع ثابت تا با عوض‌شدن متن،
+   چیدمان نپرد */
+.cue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  min-width: 160px;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: clamp(1.5rem, 6vw, 2.25rem);
+  font-weight: 800;
+  color: var(--color-text);
+  user-select: none;
+}
+
+/* جایگاه محرک — ارتفاع ثابت برای جایگزینی نقطهٔ تمرکز و شکل بدون لرزش */
+.stimulusZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 144px;
+}
+
+.stimulus {
+  display: block;
+}
+
+/* نقطهٔ تمرکز پیش از ظاهرشدن محرک (طی CSI) */
+.fixation {
+  font-size: 3.5rem;
+  line-height: 1;
+  color: var(--color-text);
+  opacity: 0.45;
+  user-select: none;
+}
+
+/* جایگاه فلش بازخورد — ارتفاع ثابت تا دکمه‌ها نپرند */
+.feedbackZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+}
+
+.flash {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.flashCorrect {
+  color: #22c55e;
+}
+
+.flashIncorrect {
+  color: #ef4444;
+}
+
+/* ردیف دو دکمهٔ ثابت پاسخ — در dir=rtl عنصر اول سمت «راست» رندر می‌شود؛
+   جای دکمه‌ها در کل جلسه ثابت می‌ماند (هزینهٔ جابه‌جایی خالص) */
+.choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 520px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  min-height: 64px; /* هدف لمسی ≥ ۴۸px */
+  padding: var(--space-2) var(--space-3);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: transform 80ms ease;
+}
+
+.choice:active {
+  transform: scale(0.97);
+  background: var(--color-surface-2);
+}
+
+.choice:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

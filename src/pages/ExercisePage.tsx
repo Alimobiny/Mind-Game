@@ -25,6 +25,11 @@ import { WordMemoryGame } from '../modules/verbal-auditory/games/word-memory/Wor
 import { SyllableCountingGame } from '../modules/verbal-auditory/games/syllable-counting/SyllableCountingGame'
 import { SequenceLogicGame } from '../modules/reasoning/games/sequence-logic/SequenceLogicGame'
 import { PatternCompletionGame } from '../modules/reasoning/games/pattern-completion/PatternCompletionGame'
+import { ObjectTrackingGame } from '../modules/visual-spatial/games/object-tracking/ObjectTrackingGame'
+import { MentalRotationGame } from '../modules/visual-spatial/games/mental-rotation/MentalRotationGame'
+import { MirrorClockGame } from '../modules/visual-spatial/games/mirror-clock/MirrorClockGame'
+import { BlockHeightGame } from '../modules/visual-spatial/games/block-height/BlockHeightGame'
+import { TaskSwitchingGame } from '../modules/attention-control/games/task-switching/TaskSwitchingGame'
 import { toFaDigits } from '../utils/format'
 import styles from './exercise.module.css'
 
@@ -65,6 +70,16 @@ function renderGame(exerciseId: string) {
       return (ctx: Parameters<typeof SequenceLogicGame>[0]['ctx']) => <SequenceLogicGame ctx={ctx} />
     case 'pattern-completion':
       return (ctx: Parameters<typeof PatternCompletionGame>[0]['ctx']) => <PatternCompletionGame ctx={ctx} />
+    case 'object-tracking':
+      return (ctx: Parameters<typeof ObjectTrackingGame>[0]['ctx']) => <ObjectTrackingGame ctx={ctx} />
+    case 'mental-rotation':
+      return (ctx: Parameters<typeof MentalRotationGame>[0]['ctx']) => <MentalRotationGame ctx={ctx} />
+    case 'mirror-clock':
+      return (ctx: Parameters<typeof MirrorClockGame>[0]['ctx']) => <MirrorClockGame ctx={ctx} />
+    case 'block-height':
+      return (ctx: Parameters<typeof BlockHeightGame>[0]['ctx']) => <BlockHeightGame ctx={ctx} />
+    case 'task-switching':
+      return (ctx: Parameters<typeof TaskSwitchingGame>[0]['ctx']) => <TaskSwitchingGame ctx={ctx} />
     default:
       return null
   }

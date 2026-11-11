@@ -1,0 +1,59 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.canvas {
+  width: 100%;
+  max-width: min(92vw, 420px);
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  touch-action: manipulation;
+}
+
+.numberRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+  max-width: min(92vw, 420px);
+}
+
+.numButton {
+  min-height: 48px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 1.15rem;
+  font-weight: 600;
+  padding: 0;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.numButton:active {
+  background: var(--color-surface-2);
+}
+
+.numSelected {
+  background: var(--color-primary-strong);
+  border-color: var(--color-primary);
+  color: #0b1220;
+}
+
+.numTarget {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #06120a;
+}
+
+.numWrong {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}

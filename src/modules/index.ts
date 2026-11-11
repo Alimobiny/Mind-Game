@@ -115,6 +115,46 @@ import {
   numberComparisonDefinition,
 } from './processing-speed/games/number-comparison/engine'
 import { NUMBER_COMPARISON_META_FA } from './processing-speed/games/number-comparison/meta'
+import {
+  OBJECT_TRACKING_CONTENT_VERSION,
+  OBJECT_TRACKING_ID,
+  OBJECT_TRACKING_VERSION,
+  configForDifficulty as otConfigForDifficulty,
+  objectTrackingDefinition,
+} from './visual-spatial/games/object-tracking/engine'
+import { OBJECT_TRACKING_META_FA } from './visual-spatial/games/object-tracking/meta'
+import {
+  MENTAL_ROTATION_CONTENT_VERSION,
+  MENTAL_ROTATION_ID,
+  MENTAL_ROTATION_VERSION,
+  configForDifficulty as mrConfigForDifficulty,
+  mentalRotationDefinition,
+} from './visual-spatial/games/mental-rotation/engine'
+import { MENTAL_ROTATION_META_FA } from './visual-spatial/games/mental-rotation/meta'
+import {
+  MIRROR_CLOCK_CONTENT_VERSION,
+  MIRROR_CLOCK_ID,
+  MIRROR_CLOCK_VERSION,
+  configForDifficulty as mcConfigForDifficulty,
+  mirrorClockDefinition,
+} from './visual-spatial/games/mirror-clock/engine'
+import { MIRROR_CLOCK_META_FA } from './visual-spatial/games/mirror-clock/meta'
+import {
+  BLOCK_HEIGHT_CONTENT_VERSION,
+  BLOCK_HEIGHT_ID,
+  BLOCK_HEIGHT_VERSION,
+  blockHeightDefinition,
+  configForDifficulty as bhConfigForDifficulty,
+} from './visual-spatial/games/block-height/engine'
+import { BLOCK_HEIGHT_META_FA } from './visual-spatial/games/block-height/meta'
+import {
+  TASK_SWITCHING_CONTENT_VERSION,
+  TASK_SWITCHING_ID,
+  TASK_SWITCHING_VERSION,
+  configForDifficulty as tsConfigForDifficulty,
+  taskSwitchingDefinition,
+} from './attention-control/games/task-switching/engine'
+import { TASK_SWITCHING_META_FA } from './attention-control/games/task-switching/meta'
 
 /**
  * ثبت صریح تمرین‌های MVP در Registry — هیچ ثبت خودکار/جادویی وجود ندارد؛
@@ -467,6 +507,63 @@ const numberComparison: RegisteredExercise = {
   },
 }
 
+/** موج ۵ — چهار بازی دیداری-فضایی + جابه‌جایی تکلیف (متادیتای فارسی از meta.ts همان بازی) */
+
+const objectTracking: RegisteredExercise = {
+  definition: objectTrackingDefinition,
+  meta: {
+    id: OBJECT_TRACKING_ID,
+    domain: 'visual-spatial',
+    version: OBJECT_TRACKING_VERSION,
+    contentVersion: OBJECT_TRACKING_CONTENT_VERSION,
+    ...OBJECT_TRACKING_META_FA,
+  },
+}
+
+const mentalRotation: RegisteredExercise = {
+  definition: mentalRotationDefinition,
+  meta: {
+    id: MENTAL_ROTATION_ID,
+    domain: 'visual-spatial',
+    version: MENTAL_ROTATION_VERSION,
+    contentVersion: MENTAL_ROTATION_CONTENT_VERSION,
+    ...MENTAL_ROTATION_META_FA,
+  },
+}
+
+const mirrorClock: RegisteredExercise = {
+  definition: mirrorClockDefinition,
+  meta: {
+    id: MIRROR_CLOCK_ID,
+    domain: 'visual-spatial',
+    version: MIRROR_CLOCK_VERSION,
+    contentVersion: MIRROR_CLOCK_CONTENT_VERSION,
+    ...MIRROR_CLOCK_META_FA,
+  },
+}
+
+const blockHeight: RegisteredExercise = {
+  definition: blockHeightDefinition,
+  meta: {
+    id: BLOCK_HEIGHT_ID,
+    domain: 'visual-spatial',
+    version: BLOCK_HEIGHT_VERSION,
+    contentVersion: BLOCK_HEIGHT_CONTENT_VERSION,
+    ...BLOCK_HEIGHT_META_FA,
+  },
+}
+
+const taskSwitching: RegisteredExercise = {
+  definition: taskSwitchingDefinition,
+  meta: {
+    id: TASK_SWITCHING_ID,
+    domain: 'attention-control',
+    version: TASK_SWITCHING_VERSION,
+    contentVersion: TASK_SWITCHING_CONTENT_VERSION,
+    ...TASK_SWITCHING_META_FA,
+  },
+}
+
 export function createAppRegistry(): GameRegistry {
   const registry = new GameRegistry()
   registry.register(numberSequence)
@@ -485,6 +582,11 @@ export function createAppRegistry(): GameRegistry {
   registry.register(continuousCountdown)
   registry.register(missingOperator)
   registry.register(numberComparison)
+  registry.register(objectTracking)
+  registry.register(mentalRotation)
+  registry.register(mirrorClock)
+  registry.register(blockHeight)
+  registry.register(taskSwitching)
   return registry
 }
 
@@ -526,6 +628,16 @@ export function createExerciseConfig(exerciseId: string, difficulty: number): Ex
       return missopConfigForDifficulty(difficulty)
     case NUMBER_COMPARISON_ID:
       return numcmpConfigForDifficulty(difficulty)
+    case OBJECT_TRACKING_ID:
+      return otConfigForDifficulty(difficulty)
+    case MENTAL_ROTATION_ID:
+      return mrConfigForDifficulty(difficulty)
+    case MIRROR_CLOCK_ID:
+      return mcConfigForDifficulty(difficulty)
+    case BLOCK_HEIGHT_ID:
+      return bhConfigForDifficulty(difficulty)
+    case TASK_SWITCHING_ID:
+      return tsConfigForDifficulty(difficulty)
     default:
       throw new Error(`config برای تمرین ${exerciseId} تعریف نشده است`)
   }
