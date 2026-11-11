@@ -20,6 +20,18 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
   useEffect(() => {
     submittedRef.current = false
     setEntry('')
+    // رفع ریس pause بین پذیرش پاسخ و advance: اگر این مرحله از پیش پاسخ
+    // داده شده ولی پیشروی رخ نداده (تعبیهٔ تب در همان پنجرهٔ چندمیلی‌ثانیه‌ای)،
+    // پس از بازگشت همین‌جا پیشروی کن تا جلسه قفل نشود (الگوی محاسبه ×۱۰۰)
+    const outcome = ctx.lastOutcome
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
+      submittedRef.current = true
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان قطع/تکمیل شده؛ پوسته مسیر خودش را می‌رود
+      }
+    }
   }, [trial.trialIndex])
 
   const press = (key: string) => {
@@ -36,7 +48,14 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
     const value = Number.parseInt(entry, 10)
     const result = await ctx.submit(value)
     if (result.accepted && !result.sessionCompleted) {
-      ctx.advance()
+      // اگر pause/خروج دقیقاً بین پذیرش پاسخ و این لحظه فرود آید، advance
+      // روی فاز غیرِACTIVE خطا می‌دهد — بی‌اثر رها می‌شود و مسیر بازیابیِ
+      // افکتِ remount ادامه می‌دهد
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان متوقف/قطع/تکمیل شده
+      }
     } else if (!result.accepted) {
       submittedRef.current = false
     }
