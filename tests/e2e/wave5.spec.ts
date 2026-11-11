@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { startExercise, waitForResults } from './helpers'
+import { startExercise, waitForResults, waitProgressAdvance } from './helpers'
 import { trackPageErrors } from './qa-helpers'
 
 /**
@@ -7,28 +7,6 @@ import { trackPageErrors } from './qa-helpers'
  * چرخش ذهنی، ساعت آینه‌ای، ارتفاع بلوک‌ها، جابه‌جایی تکلیف.
  * همهٔ جلسه‌ها کامل اجرا می‌شوند و بدون هیچ pageerror باید پایان یابند.
  */
-
-const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹'
-
-/** انتظار برای افزایش شمارندهٔ «مرحله n / m» هدر — سنکرون مقاوم هر مرحله */
-async function waitProgressAdvance(page: import('@playwright/test').Page, prev: number): Promise<number> {
-  await page.waitForFunction(
-    (prevCount) => {
-      if (document.querySelector('[data-testid="results"]')) return true
-      const header = document.querySelector('section[data-phase] header')
-      const first = (header?.textContent ?? '').trim().match(/[۰-۹]+/)?.[0]
-      if (!first) return false
-      const num = [...first].reduce((acc, ch) => {
-        const idx = FA_DIGITS.indexOf(ch)
-        return idx === -1 ? acc : acc * 10 + idx
-      }, 0)
-      return num > prevCount
-    },
-    prev,
-    { timeout: 20_000 },
-  )
-  return prev + 1
-}
 
 test.describe('Task Switching', () => {
   test('۴۰ مرحله: پاسخ بر اساس نشانهٔ بُعد (نگاشت ثابت راست/چپ)', async ({ page }) => {
@@ -66,7 +44,9 @@ test.describe('Task Switching', () => {
 test.describe('Mental Rotation', () => {
   test('۱۶ مرحله: قضاوت یکسان/آینه‌ای از data-same', async ({ page }) => {
     const getErrors = trackPageErrors(page)
-    await startExercise(page, 'چرخش ذهنی', 1)
+    // لنگر ^ لازم است: توضیح کارت «ساعت آینه‌ای» هم عبارت «چرخش ذهنی» را دارد
+    // و بدون لنگر، locator با نقض strict mode دو کارت را می‌گیرد.
+    await startExercise(page, '^چرخش ذهنی', 1)
 
     let progress = 0
     for (let i = 0; i < 16; i++) {

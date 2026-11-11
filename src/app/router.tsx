@@ -6,6 +6,7 @@ import { HomePage } from '../pages/HomePage'
  * / (فهرست بازی‌ها) · /play/:exerciseId · /reports · /program (برنامه امروز من)
  */
 export function createAppRouter() {
+  // basename از base ساخت (vite) می‌آید: '/' در dev/تست، '/Mind-Game/' در build استقرار
   return createBrowserRouter([
     { path: '/', element: <HomePage /> },
     {
@@ -21,5 +22,5 @@ export function createAppRouter() {
       lazy: () => import('../pages/ReportsPage').then((m) => ({ Component: m.ReportsPage })),
     },
     { path: '*', element: <Navigate to="/" replace /> },
-  ])
+  ], { basename: import.meta.env.BASE_URL })
 }

@@ -38,3 +38,39 @@ export async function waitForActive(page: Page): Promise<void> {
 export async function waitForResults(page: Page): Promise<void> {
   await expect(page.getByTestId('results')).toBeVisible({ timeout: 120_000 })
 }
+
+/**
+ * انتظار برای رندر مرحلهٔ بعدی — همگام‌سازی مقاوم هر مرحله، از طریق صفت
+ * `data-trial-index` روی section اصلی بازی (GameShell).
+ *
+ * چرا نه «تغییر متن محرک»؟ موتور می‌تواند دو محرک یکسان پشت‌سرهم تولید کند
+ * (معادلهٔ تکراری عملگر گم‌شده، رنگ جوهر تکراری استرووپ) — متن هرگز عوض
+ * نمی‌شود و تست به‌نادرست تایم‌اوت می‌خورد.
+ *
+ * چرا نه متن/aria-label هدر؟ عنوان بازی می‌تواند رقم داشته باشد («محاسبه ×
+ * ۱۰۰») و answerdTrials هم فقط «ثبت پاسخ» را نشان می‌دهد نه «رندر مرحلهٔ بعدی»
+ * را — بازی‌های دارای فلش بازخورد (×۱۰۰) مرحلهٔ بعد را با تأخیر رندر می‌کنند
+ * و تایپِ پیش از رندر در پنجرهٔ بازخورد قفل می‌شود. trialIndex دقیقاً با رندر
+ * مرحلهٔ جدید زیاد می‌شود.
+ *
+ * توجه: predicate در زمینهٔ مرورگر اجرا می‌شود؛ ثابت‌های سمت Node در آن
+ * قابل ارجاع نیستند.
+ *
+ * @returns شاخص مرحلهٔ جدید (prev + 1)
+ */
+export async function waitProgressAdvance(page: Page, prev: number): Promise<number> {
+  await page.waitForFunction(
+    (prevCount) => {
+      if (document.querySelector('[data-testid="results"]')) return true
+      const attr = document
+        .querySelector('section[data-phase]')
+        ?.getAttribute('data-trial-index')
+      if (attr === null || attr === undefined) return false
+      const num = Number(attr)
+      return Number.isFinite(num) && num > prevCount
+    },
+    prev,
+    { timeout: 20_000 },
+  )
+  return prev + 1
+}

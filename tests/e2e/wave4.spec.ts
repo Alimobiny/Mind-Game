@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { startExercise, waitForResults, faToNumber } from './helpers'
+import { startExercise, waitForResults, faToNumber, waitProgressAdvance } from './helpers'
 import { trackPageErrors } from './qa-helpers'
 
 /**
@@ -35,6 +35,7 @@ test.describe('Calculation ×100', () => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'محاسبه × ۱۰۰', 1)
 
+    let progress = 0
     for (let i = 0; i < 100; i++) {
       const q = page.getByTestId('calc100-question')
       const text = ((await q.textContent({ timeout: 10_000 })) ?? '').trim()
@@ -46,16 +47,8 @@ test.describe('Calculation ×100', () => {
       for (let bs = 0; bs < 4; bs++) await page.keyboard.press('Backspace')
       await page.keyboard.type(String(ans), { delay: 0 })
       await page.keyboard.press('Enter')
-      // صبر تا سؤال بعدی (متن متفاوت) یا پایان جلسه
-      await page.waitForFunction(
-        (prev) => {
-          if (document.querySelector('[data-testid="results"]')) return true
-          const el = document.querySelector('[data-testid="calc100-question"]')
-          return !el || (el.textContent ?? '').trim() !== prev
-        },
-        text,
-        { timeout: 10_000 },
-      )
+      // صبر تا ثبت پاسخ — با شمارندهٔ هدر، نه تغییر متن (سؤال تکراری ممکن است)
+      progress = await waitProgressAdvance(page, progress)
     }
 
     await waitForResults(page)
@@ -130,6 +123,7 @@ test.describe('Missing Operator', () => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'عملگر گم‌شده', 1)
 
+    let progress = 0
     for (let i = 0; i < 20; i++) {
       const eq = page.getByTestId('missop-equation')
       const text = ((await eq.textContent({ timeout: 10_000 })) ?? '').trim()
@@ -142,16 +136,9 @@ test.describe('Missing Operator', () => {
       const solution = ['+', '-', '×', '÷'].find((op) => apply(a, op, b) === result)
       if (!solution) throw new Error(`عملگر برقرارکننده پیدا نشد: ${clean}`)
       await page.locator(`[data-testid="missop-choice"][data-op="${solution}"]`).click()
-      // صبر تا معادلهٔ بعدی یا پایان جلسه
-      await page.waitForFunction(
-        (prev) => {
-          if (document.querySelector('[data-testid="results"]')) return true
-          const el = document.querySelector('[data-testid="missop-equation"]')
-          return !el || (el.textContent ?? '').trim() !== prev
-        },
-        text,
-        { timeout: 10_000 },
-      )
+      // صبر تا ثبت پاسخ — با شمارندهٔ هدر، نه تغییر متن (ریشهٔ flake سابق:
+      // موتور می‌تواند دو معادلهٔ یکسان پشت‌سرهم تولید کند و متن هرگز عوض نشود)
+      progress = await waitProgressAdvance(page, progress)
     }
 
     await waitForResults(page)
@@ -164,19 +151,8 @@ test.describe('Number Comparison', () => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'مقایسه اعداد', 1)
 
-    let prevPair = ''
+    let progress = 0
     for (let i = 0; i < 36; i++) {
-      // انتظار برای جفت جدید (مهلت سطح ۱ = ۴ ثانیه) یا پایان جلسه
-      await page.waitForFunction(
-        (prev) => {
-          if (document.querySelector('[data-testid="results"]')) return true
-          const l = (document.querySelector('[data-testid="numcmp-left"]')?.textContent ?? '').trim()
-          const r = (document.querySelector('[data-testid="numcmp-right"]')?.textContent ?? '').trim()
-          return !!l && !!r && l + '|' + r !== prev
-        },
-        prevPair,
-        { timeout: 10_000 },
-      )
       if (await page.getByTestId('results').isVisible().catch(() => false)) break
 
       const pair = (await page.evaluate(() => ({
@@ -184,13 +160,14 @@ test.describe('Number Comparison', () => {
         r: (document.querySelector('[data-testid="numcmp-right"]')?.textContent ?? '').trim(),
       }))) as { l: string; r: string }
       const combined = `${pair.l}|${pair.r}`
-      prevPair = combined
 
       // رشته‌رقم جداشده هم مقدار عددی همان ارقام پشت‌سرهم است
       const lv = faToNumber(pair.l.replace(/\s+/g, ''))
       const rv = faToNumber(pair.r.replace(/\s+/g, ''))
       if (lv === rv) throw new Error(`جفت برابر تولید شد: ${combined}`)
       await page.getByTestId(lv > rv ? 'numcmp-left' : 'numcmp-right').click()
+      // صبر تا ثبت پاسخ — با شمارندهٔ هدر، نه جفتِ متفاوت (جفت تکراری ممکن است)
+      progress = await waitProgressAdvance(page, progress)
     }
 
     await waitForResults(page)
@@ -220,23 +197,7 @@ test.describe('رگرسیون — پایان جلسه در بازی‌های ز�
       await expect(word).toBeVisible({ timeout: 10_000 })
       const ink = (await word.getAttribute('data-ink')) as string
       await page.getByRole('button', { name: STROOP_LABELS[ink] as string, exact: true }).click()
-      await page.waitForFunction(
-        (prev) => {
-          if (document.querySelector('[data-testid="results"]')) return true
-          const header = document.querySelector('section[data-phase] header')
-          const first = (header?.textContent ?? '').trim().match(/[۰-۹]+/)?.[0]
-          if (!first) return false
-          const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹'
-          const num = [...first].reduce((acc, ch) => {
-            const idx = FA_DIGITS.indexOf(ch)
-            return idx === -1 ? acc : acc * 10 + idx
-          }, 0)
-          return num > prev
-        },
-        prevCount,
-        { timeout: 8000 },
-      )
-      prevCount += 1
+      prevCount = await waitProgressAdvance(page, prevCount)
     }
     await waitForResults(page)
     expect(getErrors(), 'استرووپ نباید در پایان جلسه خطای مهارنشده داشته باشد').toEqual([])

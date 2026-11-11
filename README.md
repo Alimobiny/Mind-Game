@@ -6,6 +6,18 @@
 
 ## اجرا
 
+### آنلاین (GitHub Pages)
+
+نسخهٔ منتشرشده: **[alimobiny.github.io/Mind-Game](https://alimobiny.github.io/Mind-Game/)** — با هر push به `main`، گردشکار `.github/workflows/deploy-pages.yml` به‌طور خودکار build می‌گیرد و مستقر می‌کند (با `base: /Mind-Game/` و fallback فایل `404.html` برای روتینگ SPA).
+
+> 💡 دادهٔ IndexedDB به‌ازای هر origin جدا است: دادهٔ نسخهٔ آنلاین با دادهٔ نسخهٔ localhost یکی نیست — برای جابه‌جایی از Export/JSON (بخش «پشتیبان‌گیری و انتقال داده») استفاده کنید.
+
+### دسکتاپ (ویندوز)
+
+دوبارکلیک روی **`start-game.bat`** — سرور بی‌صدا بالا می‌آید و بازی در مرورگر باز می‌شود. راهنمای کامل: `docs/DESKTOP-LAUNCHER.md`.
+
+### خط فرمان
+
 ```bash
 npm install
 npm run dev        # اجرای توسعه روی http://localhost:5173
@@ -13,6 +25,8 @@ npm test           # تست‌های unit + integration + کامپوننت (Vite
 npm run build      # بررسی نوع + ساخت نسخه نهایی
 npm run e2e        # تست‌های مرورگر (Playwright — نیازمند Chrome نصب‌شده)
 ```
+
+نکتهٔ استقرار: build محلی بدون `DEPLOY_BASE` با base `/` ساخته می‌شود؛ CI مقدار `DEPLOY_BASE=/Mind-Game/` را می‌دهد.
 
 ## معماری (تصمیمات قفل‌شده MVP)
 

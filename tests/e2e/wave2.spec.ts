@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { startExercise, waitForResults } from './helpers'
+import { startExercise, waitForResults, waitProgressAdvance } from './helpers'
 
 /**
  * E2E موج دوم — چهار بازی جدید: Stroop، Reaction Time، N-Back،
@@ -19,6 +19,9 @@ test.describe('Stroop (تمرین رنگ‌ها)', () => {
     await startExercise(page, 'استرووپ', 1)
     const results = page.getByTestId('results')
 
+    // صبر تا ثبت پاسخ با شمارندهٔ هدر — نه تغییر رنگ جوهر (محرک هم‌رنگِ
+    // متوالی ممکن است و آنگاه تغییر ink هرگز رخ نمی‌دهد و تست تایم‌اوت می‌خورد)
+    let progress = 0
     for (let i = 0; i < 20; i++) {
       if (await results.isVisible().catch(() => false)) break
       const word = page.getByTestId('stroop-word')
@@ -27,15 +30,7 @@ test.describe('Stroop (تمرین رنگ‌ها)', () => {
       const label = STROOP_LABELS[ink]
       if (!label) throw new Error(`رنگ جوهر ناشناخته: ${ink}`)
       await page.getByRole('button', { name: label, exact: true }).click()
-      // صبر تا محرک بعدی (یا حذف word در پایان)
-      await page.waitForFunction(
-        (prev) => {
-          const el = document.querySelector('[data-testid="stroop-word"]')
-          return !el || el.getAttribute('data-ink') !== prev
-        },
-        ink,
-        { timeout: 8000 },
-      )
+      progress = await waitProgressAdvance(page, progress)
     }
 
     await waitForResults(page)

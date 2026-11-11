@@ -154,7 +154,15 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
   }, [phase, snapshot.currentTrial, snapshot.answeredTrials, snapshot.lastOutcome, snapshot.machine.phase, manager])
 
   return (
-    <section className={styles.shell} data-phase={phase}>
+    // data-trial-index: قلاب پایدار E2E — سنکرون روی «رندر مرحلهٔ بعدی» (نه ثبت
+    // پاسخ؛ بازی‌های دارای فلش بازخورد مثل ×۱۰۰ مرحله را با تأخیر رندر می‌کنند و
+    // تایپِ پیش از رندر در پنجرهٔ بازخورد قفل است). پارس متن هدر هم به‌دلیل ارقام
+    // احتمالی در عنوان بازی (محاسبه × ۱۰۰) ناامن است.
+    <section
+      className={styles.shell}
+      data-phase={phase}
+      data-trial-index={snapshot.currentTrial !== null ? snapshot.currentTrial.trialIndex : undefined}
+    >
       <header className={styles.header}>
         <h1 className={styles.headerTitle}>{registered.meta.nameFa}</h1>
         {phase === 'ACTIVE' || phase === 'PAUSED' || phase === 'COUNTDOWN' ? (

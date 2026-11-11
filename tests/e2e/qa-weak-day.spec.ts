@@ -10,7 +10,18 @@ import { fakeCompletedSession, seedSessions, trackPageErrors } from './qa-helper
  * جلسه واقعی تماماً غلط در سطح ۲، سپس سطح پیشنهادی بعد باید ۱ باشد.
  */
 
-const DAY_MS = 86_400_000
+/**
+ * ظهرِ (۱۲:۰۰) k روز تقویمی قبل — لنگر روز-محور، مستقل از ساعتِ اجرای تست.
+ * فرمول قبلی «now − k×DAY + 12h» در اجراهای بعدازظهر، بذرِ «دیروز» را به
+ * صبحِ همان روزِ جلسهٔ واقعی می‌انداخت؛ روزِ ادغام‌شده با قاعدهٔ روز-محور
+ * «روز ضعیف» سازگار نبود و تست فقط پیش از ظهر سبز می‌شد.
+ */
+function daysAgoAtNoon(days: number): number {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  d.setHours(12, 0, 0, 0)
+  return d.getTime()
+}
 
 /** شروع دستی محاسبه ×۲۰ در سطح مشخص (بدون هلپر startExercise برای کنترل سطح) */
 async function startCalculationAt(page: Page, level: number): Promise<void> {
@@ -36,7 +47,6 @@ test.describe('QA4: قاعده روز ضعیف پس از جلسه تماماً �
     const getErrors = trackPageErrors(page)
 
     // ۱) بذر تاریخچه: سه روز تقویمی متوالی موفق در سطح ۱ → پیشنهادی ۲
-    const now = Date.now()
     await page.goto('/')
     await seedSessions(page, [
       fakeCompletedSession({
@@ -45,7 +55,7 @@ test.describe('QA4: قاعده روز ضعیف پس از جلسه تماماً �
         domain: 'processing-speed',
         difficulty: 1,
         accuracy: 90,
-        startedAtMs: now - 3 * DAY_MS + 12 * 3_600_000,
+        startedAtMs: daysAgoAtNoon(3),
       }),
       fakeCompletedSession({
         id: 'seed-d2',
@@ -53,7 +63,7 @@ test.describe('QA4: قاعده روز ضعیف پس از جلسه تماماً �
         domain: 'processing-speed',
         difficulty: 1,
         accuracy: 85,
-        startedAtMs: now - 2 * DAY_MS + 12 * 3_600_000,
+        startedAtMs: daysAgoAtNoon(2),
       }),
       fakeCompletedSession({
         id: 'seed-d3',
@@ -61,7 +71,7 @@ test.describe('QA4: قاعده روز ضعیف پس از جلسه تماماً �
         domain: 'processing-speed',
         difficulty: 1,
         accuracy: 95,
-        startedAtMs: now - 1 * DAY_MS + 12 * 3_600_000,
+        startedAtMs: daysAgoAtNoon(1),
       }),
     ])
 
