@@ -190,4 +190,33 @@ describe('GameShell — چرخه کامل UI', () => {
     expect(all[0]?.summary?.correctTrials).toBe(2)
     expect(await trials.countBySession(all[0]?.id as string)).toBe(2)
   }, 20_000)
+
+  it('در فاز شمارش معکوس دکمه خروج دیده می‌شود و جلسه را aborted می‌کند', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const sessions = new InMemorySessionRepository()
+    const props = makeProps({ deps: { sessions, trialEvents: new InMemoryTrialEventRepository(), settings: new InMemoryExerciseSettingsRepository() } })
+
+    render(
+      <MemoryRouter>
+        <GameShell {...props} />
+      </MemoryRouter>,
+    )
+
+    // تا میانهٔ شمارش معکوس جلو برویم — بدون دکمهٔ خروج، تنها راه خروج
+    // همین ۳ ثانیه، تعویض تب (غیرمستقیم) بود
+    await user.click(await screen.findByRole('button', { name: 'شروع تمرین' }))
+    await screen.findByText('۳')
+
+    const exit = screen.getByRole('button', { name: 'خروج از جلسه' })
+    expect(exit).toBeInTheDocument()
+
+    // خروج دوتایی-تأیید
+    await user.click(exit)
+    await user.click(screen.getByRole('button', { name: 'قطع جلسه — تأیید' }))
+
+    expect(await screen.findByText('این جلسه نیمه‌کاره رها شد.')).toBeInTheDocument()
+    const all = await sessions.listRecent(10)
+    expect(all[0]?.status).toBe('aborted')
+  }, 20_000)
 })

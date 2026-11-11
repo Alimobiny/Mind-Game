@@ -6,6 +6,7 @@ import type { AnyExerciseDefinition } from '../registry/game-registry'
 import { SessionTimer } from '../timer/session-timer'
 import type { Clock } from '../timer/session-timer'
 import {
+  canDispatch as smCanDispatch,
   dispatch as smDispatch,
   initialMachineState,
   type SessionMachineState,
@@ -250,9 +251,15 @@ export class ExerciseSessionManager {
 
   /** پایان جلسه توسط کاربر یا اختلال */
   async abort(): Promise<void> {
-    this.machine = smDispatch(this.machine, 'ABORT')
     const durationMs = this.timer.currentStatus === 'running' ? this.timer.stop() : this.timer.elapsedMs()
+    // ابتدا ثبت قطع در DB، بعد تغییر فاز — وگرنه re-renderِ همان کلیک
+    // صفحهٔ ABORTED را پیش از commit دیتابیس می‌کشد (و رفرشِ همان لحظه
+    // جلسه را هنوز in_progress می‌بیند). اگر هم‌زمان جلسه COMPLETE شده
+    // باشد، ABORT دیگر مجاز نیست و فقط emit می‌کنیم.
     await this.persistFinal('aborted', durationMs)
+    if (smCanDispatch(this.machine, 'ABORT')) {
+      this.machine = smDispatch(this.machine, 'ABORT')
+    }
     this.emit()
   }
 

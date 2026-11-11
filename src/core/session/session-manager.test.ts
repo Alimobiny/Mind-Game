@@ -249,6 +249,21 @@ describe('ExerciseSessionManager — integration با بازی آزمایشی', 
     expect(stored?.summary).toBeNull()
   })
 
+  it('abort: فاز تا پایان ثبت در DB در حالت اجرا می‌ماند (رندر ABORTED پیش از commit نمی‌شود)', async () => {
+    const { manager } = await createManager()
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    const pending = manager.abort()
+    // پیش از تکمیل persistFinal فاز هنوز ACTIVE است — re-renderِ همان کلیک
+    // نباید صفحهٔ ABORTED را زودتر از commit دیتابیس بکشد
+    expect(manager.getSnapshot().machine.phase).toBe('ACTIVE')
+
+    await pending
+    expect(manager.getSnapshot().machine.phase).toBe('ABORTED')
+  })
+
   it('timeRemainingMs برای مرحله دارای مهلت و بدون مهلت درست کار می‌کند', async () => {
     const { manager, clock } = await createManager()
     await manager.start()

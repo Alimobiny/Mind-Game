@@ -17,8 +17,8 @@ async function latestSession(page: Page, exerciseId: string) {
 }
 
 /**
- * انتظار برای وضعیت نهایی جلسه در IndexedDB — UI فاز ABORTED کمی
- * زودتر از commit نوشتن DB رندر می‌شود؛ مرز sync درست «داده» است.
+ * انتظار برای وضعیت نهایی جلسه در IndexedDB — مرز sync درست «داده» است
+ * (فاز ABORTED حالا پس از commit دیتابیس عوض می‌شود، ولی poll می‌مانیم).
  */
 async function expectSessionStatus(
   page: Page,
@@ -200,6 +200,29 @@ test.describe('QA2: پس از آخرین پاسخ تا نتایج — بدون �
     }
     await expect(page.getByTestId('results')).toBeVisible({ timeout: 15_000 })
     await page.waitForTimeout(1200)
+    expect(getErrors()).toEqual([])
+  })
+})
+
+test.describe('QA2+: خروج در فاز شمارش معکوس', () => {
+  // تصمیم طراحی رفع‌شده: دکمهٔ خروج حالا در ۳ ثانیهٔ شمارش معکوس هم هست
+  test('Go/No-Go وسط شمارش معکوس: دکمه خروج موجود و جلسه aborted ثبت می‌شود', async ({ page }) => {
+    const getErrors = trackPageErrors(page)
+    await page.goto('/')
+    await page.getByRole('link', { name: 'برو / نرو' }).click()
+    await page.getByRole('radio', { name: '۱', exact: true }).click()
+    await page.getByRole('button', { name: 'ادامه' }).click()
+    await expect(page.getByTestId('instructions')).toBeVisible()
+    await page.getByRole('button', { name: 'شروع تمرین' }).click()
+    // میانهٔ شمارش معکوس: عدد بزرگ آمادگی دیده می‌شود
+    await expect(page.locator('section[data-phase="COUNTDOWN"]')).toBeVisible({ timeout: 10_000 })
+
+    // دکمهٔ خروج در همین فاز باید موجود باشد (قبلاً نبود)
+    await dualConfirmExit(page)
+    await expect(page.locator('section[data-phase="ABORTED"]')).toBeVisible({ timeout: 10_000 })
+
+    await expectSessionStatus(page, 'go-no-go', 'aborted')
+    await expectReportsHealthy(page)
     expect(getErrors()).toEqual([])
   })
 })

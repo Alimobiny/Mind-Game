@@ -157,10 +157,13 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
     <section className={styles.shell} data-phase={phase}>
       <header className={styles.header}>
         <h1 className={styles.headerTitle}>{registered.meta.nameFa}</h1>
-        {phase === 'ACTIVE' || phase === 'PAUSED' ? (
+        {phase === 'ACTIVE' || phase === 'PAUSED' || phase === 'COUNTDOWN' ? (
           <div className={styles.headerActions}>
-            <span className={styles.progress}>
-              {toFaDigits(snapshot.answeredTrials)} / {toFaDigits(registered.meta.plannedTrials ?? 0)}
+            <span
+              className={styles.progress}
+              aria-label={`مرحلهٔ ${toFaDigits(snapshot.answeredTrials)} از ${toFaDigits(registered.meta.plannedTrials ?? 0)}`}
+            >
+              مرحله {toFaDigits(snapshot.answeredTrials)} / {toFaDigits(registered.meta.plannedTrials ?? 0)}
             </span>
             <button
               type="button"
