@@ -17,6 +17,8 @@ export const CONTINUOUS_COUNTDOWN_META_FA: ExerciseMeta = {
   descriptionFa:
     'عدد شروع را ببین، اعداد کم‌شونده را یکی‌یکی از باقیماندهٔ ذهنی‌ات کم کن و مقدار نهایی را وارد کن — محاسبهٔ پیوسته زیر بار حافظه.',
   domain: 'processing-speed',
+  exerciseType: 'numeric',
+  effects: ['processing-speed', 'working-memory'],
   version: CONTINUOUS_COUNTDOWN_VERSION,
   contentVersion: CONTINUOUS_COUNTDOWN_CONTENT_VERSION,
   instructionsFa: [

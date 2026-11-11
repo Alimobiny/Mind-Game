@@ -6,9 +6,11 @@ import type { ExerciseMeta } from '../../../../core/registry/game-registry'
  */
 export const OBJECT_TRACKING_META_FA: Pick<
   ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
+  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
 > = {
   nameFa: 'دنبال‌کردن اشیا',
+  exerciseType: 'visual',
+  effects: ['visual-spatial', 'attention-control'],
   descriptionFa:
     'چند دایرهٔ هدف را به خاطر بسپار و در میان حرکت همهٔ دایره‌ها فقط همان‌ها را دنبال کن؛ در پایان بگو کدام‌ها بودند.',
   instructionsFa: [

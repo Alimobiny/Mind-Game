@@ -1,4 +1,5 @@
 import type { CognitiveDomain } from '../core/types'
+import type { ExerciseType } from '../core/types'
 
 /** برچسب فارسی حوزه‌های شناختی — تنها منبع متون نمایشی حوزه‌ها */
 export const DOMAIN_LABELS_FA: Readonly<Record<CognitiveDomain, string>> = {
@@ -9,6 +10,16 @@ export const DOMAIN_LABELS_FA: Readonly<Record<CognitiveDomain, string>> = {
   'visual-spatial': 'حافظه دیداری و فضایی',
   reasoning: 'استدلال و حل مسئله',
   sensorimotor: 'هماهنگی حسی و حرکتی',
+}
+
+/** برچسب فارسی انواع تمرین — جنس تکلیف (طبقه‌بندی عرضی) */
+export const EXERCISE_TYPE_LABELS_FA: Readonly<Record<ExerciseType, string>> = {
+  numeric: 'عددی و محاسبه‌ای',
+  verbal: 'کلامی',
+  visual: 'دیداری',
+  spatial: 'فضایی',
+  reaction: 'واکنشی',
+  logic: 'منطقی',
 }
 
 export const APP_TEXTS_FA = {
@@ -29,6 +40,11 @@ export const APP_TEXTS_FA = {
   getReady: 'آماده باش…',
   correct: 'درست!',
   incorrect: 'نادرست',
+  groupSwitchLabel: 'گروه‌بندی تمرین‌ها',
+  groupByDomain: 'حوزهٔ شناختی',
+  groupByType: 'نوع تمرین',
+  groupByEffect: 'اثر شناختی',
+  exerciseCountUnit: 'تمرین',
 } as const
 
 /**

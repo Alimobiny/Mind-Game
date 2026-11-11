@@ -80,6 +80,8 @@ function makeRegistered(): RegisteredExercise {
       nameFa: 'بازی آزمایشی',
       descriptionFa: 'تست پوسته مشترک',
       domain: 'working-memory',
+      exerciseType: 'numeric',
+      effects: ['working-memory'],
       version: '1.0.0',
       contentVersion: '1',
       instructionsFa: ['مرحله را پاسخ بده'],

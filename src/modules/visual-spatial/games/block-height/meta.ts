@@ -6,9 +6,11 @@ import type { ExerciseMeta } from '../../../../core/registry/game-registry'
  */
 export const BLOCK_HEIGHT_META_FA: Pick<
   ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
+  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
 > = {
   nameFa: 'ارتفاع بلوک‌ها',
+  exerciseType: 'spatial',
+  effects: ['visual-spatial', 'reasoning'],
   descriptionFa:
     'پشته‌ای از بلوک‌ها در دو ردیف عمقی ببین و کل بلوک‌ها — پیدا و پنهان — را از روی قاعدهٔ ساختار بشمار.',
   instructionsFa: [

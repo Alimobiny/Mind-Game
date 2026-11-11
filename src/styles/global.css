@@ -16,6 +16,23 @@
   --color-danger: #f87171;
   --color-warning: #fbbf24;
 
+  /* اکسنت هفت حوزهٔ شناختی — برای نشان‌ها، نوارهای رنگی و حالت‌های هاور */
+  --accent-memory: #a78bfa;
+  --accent-attention: #38bdf8;
+  --accent-speed: #fbbf24;
+  --accent-verbal: #f472b6;
+  --accent-visual: #34d399;
+  --accent-reasoning: #818cf8;
+  --accent-sensorimotor: #fb923c;
+
+  /* اکسنت انواع تمرین — جنس تکلیف */
+  --type-numeric: #fbbf24;
+  --type-verbal: #f472b6;
+  --type-visual: #34d399;
+  --type-spatial: #38bdf8;
+  --type-reaction: #fb923c;
+  --type-logic: #a78bfa;
+
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -104,4 +121,72 @@ a {
   clip: rect(0 0 0 0);
   overflow: hidden;
   white-space: nowrap;
+}
+
+/*
+  اکسنت حوزهٔ جاری: هر سکشن/کارت با data-domain، --accent خودش را می‌گیرد؛
+  فرزندان فقط از var(--accent) استفاده می‌کنند.
+*/
+[data-domain='working-memory'] {
+  --accent: var(--accent-memory);
+}
+[data-domain='attention-control'] {
+  --accent: var(--accent-attention);
+}
+[data-domain='processing-speed'] {
+  --accent: var(--accent-speed);
+}
+[data-domain='verbal-auditory'] {
+  --accent: var(--accent-verbal);
+}
+[data-domain='visual-spatial'] {
+  --accent: var(--accent-visual);
+}
+[data-domain='reasoning'] {
+  --accent: var(--accent-reasoning);
+}
+[data-domain='sensorimotor'] {
+  --accent: var(--accent-sensorimotor);
+}
+
+[data-type='numeric'] {
+  --type-accent: var(--type-numeric);
+}
+[data-type='verbal'] {
+  --type-accent: var(--type-verbal);
+}
+[data-type='visual'] {
+  --type-accent: var(--type-visual);
+}
+[data-type='spatial'] {
+  --type-accent: var(--type-spatial);
+}
+[data-type='reaction'] {
+  --type-accent: var(--type-reaction);
+}
+[data-type='logic'] {
+  --type-accent: var(--type-logic);
+}
+
+/* انیمیشن مشترک ورود عناصر — با تأخیر پلکانی از سمت مصرف‌کننده */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* احترام به کاهش حرکت: همهٔ انیمیشن‌ها عملاً لحظه‌ای می‌شوند */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

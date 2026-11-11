@@ -5,6 +5,8 @@
  */
 export const NUMBER_COMPARISON_META_FA = {
   nameFa: 'مقایسه اعداد',
+  exerciseType: 'numeric',
+  effects: ['processing-speed'],
   descriptionFa:
     'دو عدد کنار هم نمایش داده می‌شوند؛ هرچه سریع‌تر عدد بزرگ‌تر را انتخاب کن.',
   instructionsFa: [

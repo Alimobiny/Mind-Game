@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { startExercise } from './helpers'
+import { startExercise, waitProgressAdvance } from './helpers'
 import { readAnsweredCount, readTrialEvents, setDocumentHidden, toFa, trackPageErrors } from './qa-helpers'
 
 /**
@@ -118,15 +118,9 @@ test.describe('QA3: توقف خودکار با visibilitychange', () => {
     const ink = (await word.getAttribute('data-ink')) as string
     await page.getByRole('button', { name: STROOP_LABELS[ink] as string, exact: true }).click()
 
-    // محرک بعدی باید بیاید (جریان ادامه دارد)
-    await page.waitForFunction(
-      (prev) => {
-        const el = document.querySelector('[data-testid="stroop-word"]')
-        return !el || el.getAttribute('data-ink') !== prev
-      },
-      ink,
-      { timeout: 8000 },
-    )
+    // پاسخ باید ثبت و مرحلهٔ بعد رندر شود — با شمارندهٔ trialIndex، نه تغییر
+    // رنگ جوهر (محرک هم‌رنگِ متوالی ممکن است و متن هرگز عوض نمی‌شود)
+    await waitProgressAdvance(page, 0)
     expect(getErrors()).toEqual([])
   })
 })

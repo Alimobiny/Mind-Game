@@ -1,27 +1,99 @@
+/* HomePage — هیرو، سوییچ نمای گروه‌بندی، کارت‌های غنی با اکسنت حوزه/نوع */
+
 .hero {
   padding-block: var(--space-4) var(--space-3);
+  position: relative;
+  isolation: isolate;
 }
 
-.hero h1 {
-  font-size: 1.5rem;
+/* هالهٔ نوری ملایم پشت هیرو — عمق بدون شلوغی */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: -70px -60px auto;
+  height: 260px;
+  z-index: -1;
+  background:
+    radial-gradient(closest-side at 78% 20%, rgba(56, 189, 248, 0.16), transparent 72%),
+    radial-gradient(closest-side at 16% 78%, rgba(167, 139, 250, 0.13), transparent 72%);
+  pointer-events: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.logo {
+  flex-shrink: 0;
+}
+
+.brandText {
+  min-width: 0;
+}
+
+.appTitle {
+  font-size: 1.45rem;
+  background: linear-gradient(120deg, var(--color-primary), var(--accent-memory));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .subtitle {
   color: var(--color-text-muted);
-  font-size: 0.9rem;
-  margin-top: var(--space-2);
+  font-size: 0.85rem;
+  margin-top: var(--space-1);
 }
 
 .programLink {
   margin-top: var(--space-4);
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-primary);
+  align-items: center;
+  gap: var(--space-3);
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--color-primary) 7%, var(--color-surface)),
+    var(--color-surface)
+  );
+  border: 1px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   box-shadow: var(--shadow-1);
+  color: var(--color-text);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.programLink:hover,
+.programLink:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-2);
+}
+
+.programLink:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.programIconWrap {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.programTexts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .programTitle {
@@ -35,14 +107,83 @@
   font-size: 0.8rem;
 }
 
+.programArrow {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 160ms ease;
+}
+
+.programLink:hover .programArrow {
+  transform: translateX(-3px);
+  color: var(--color-primary);
+}
+
+/* سوییچ نمای گروه‌بندی: حوزه / نوع / اثر */
+.viewSwitch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.viewButton {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.viewButton:hover {
+  color: var(--color-text);
+  transform: translateY(-1px);
+}
+
+.viewButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.viewButton[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
 .domainSection {
   margin-top: var(--space-5);
 }
 
-.domainSection h2 {
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: 1.05rem;
-  color: var(--color-primary);
+  color: var(--accent, var(--color-primary));
   margin-bottom: var(--space-3);
+}
+
+.sectionIcon {
+  flex-shrink: 0;
+}
+
+.sectionIconWrap {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--type-accent, var(--color-primary));
+}
+
+.sectionCount {
+  margin-inline-start: auto;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
 }
 
 .exerciseGrid {
@@ -50,16 +191,68 @@
   gap: var(--space-3);
 }
 
+/* ورود پلکانی کارت‌ها (با تأخیر inline) */
 .exerciseCard {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+  /* نوار اکسنت حوزهٔ خودِ بازی — همیشه روشنِ ملایم، در هاور کامل */
+  border-inline-start: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   color: var(--color-text);
   box-shadow: var(--shadow-1);
+  animation: fade-up 380ms ease backwards;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.exerciseCard:hover,
+.exerciseCard:focus-visible {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--color-border));
+  border-inline-start-color: var(--accent);
+  box-shadow: var(--shadow-2);
+}
+
+.exerciseCard:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.exerciseCard:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.typeTile {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  color: var(--type-accent, var(--color-primary));
+  background: color-mix(in srgb, var(--type-accent, var(--color-primary)) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--type-accent, var(--color-primary)) 28%, transparent);
+  transition: transform 160ms ease;
+}
+
+.exerciseCard:hover .typeTile {
+  transform: scale(1.08) rotate(-3deg);
+}
+
+.cardTexts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .exerciseName {
@@ -71,6 +264,31 @@
   color: var(--color-text-muted);
   font-size: 0.85rem;
   line-height: 1.8;
+}
+
+/* چیپ‌های نوع/اثر — رنگ از data-type یا data-domain همان چیپ */
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  font-size: 0.68rem;
+  padding: 2px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  color: var(--type-accent, var(--accent, var(--color-text-muted)));
+  border: 1px solid color-mix(
+    in srgb,
+    var(--type-accent, var(--accent, var(--color-border))) 32%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--type-accent, var(--accent, var(--color-surface-2))) 9%,
+    transparent
+  );
 }
 
 .exerciseMeta {
@@ -101,7 +319,14 @@
 }
 
 .reportsLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 700;
+}
+
+.reportsIcon {
+  color: var(--color-primary);
 }
 
 .disclaimer {

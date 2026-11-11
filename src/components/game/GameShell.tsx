@@ -16,6 +16,7 @@ import {
   type SubmitResult,
 } from '../../core/session/session-manager'
 import { APP_TEXTS_FA, DOMAIN_LABELS_FA } from '../../i18n/fa'
+import { DomainEmblem } from '../icons/DomainEmblems'
 import { toFaDigits } from '../../utils/format'
 import styles from './game.module.css'
 
@@ -267,8 +268,15 @@ function InstructionsScreen({
 }) {
   return (
     <div className={`${styles.stage} ${styles.instructions}`} data-testid="instructions">
-      <div className={styles.card}>
-        <span className={styles.domainChip}>{DOMAIN_LABELS_FA[registered.meta.domain]}</span>
+      <div
+        className={styles.card}
+        data-domain={registered.meta.domain}
+        style={{ animation: 'fade-up 380ms ease backwards' }}
+      >
+        <span className={styles.domainChip}>
+          <DomainEmblem domain={registered.meta.domain} size={16} />
+          {DOMAIN_LABELS_FA[registered.meta.domain]}
+        </span>
         <h2>{registered.meta.nameFa}</h2>
         <p className={styles.hint} style={{ textAlign: 'start' }}>
           {registered.meta.descriptionFa}

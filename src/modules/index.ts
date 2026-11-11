@@ -168,6 +168,8 @@ const numberSequence: RegisteredExercise = {
     nameFa: 'توالی اعداد',
     descriptionFa: 'ارقام یکی‌یکی نمایش داده می‌شوند؛ باید همان ترتیب را از حافظه بازسازی کنی.',
     domain: 'working-memory',
+    exerciseType: 'numeric',
+    effects: ['working-memory'],
     version: NUMBER_SEQUENCE_VERSION,
     contentVersion: NUMBER_SEQUENCE_CONTENT_VERSION,
     instructionsFa: [
@@ -192,6 +194,8 @@ const goNoGo: RegisteredExercise = {
     nameFa: 'برو / نرو',
     descriptionFa: 'به دایره سریع واکنش نشان بده و به مربع هیچ واکنشی نشان نده.',
     domain: 'attention-control',
+    exerciseType: 'reaction',
+    effects: ['attention-control'],
     version: GO_NO_GO_VERSION,
     contentVersion: GO_NO_GO_CONTENT_VERSION,
     instructionsFa: [
@@ -219,6 +223,8 @@ const calculation20: RegisteredExercise = {
     nameFa: 'محاسبه × ۲۰',
     descriptionFa: 'به ۲۰ سؤال حساب سریع و دقیق پاسخ بده؛ سرعت و دقت جداگانه سنجیده می‌شوند.',
     domain: 'processing-speed',
+    exerciseType: 'numeric',
+    effects: ['processing-speed'],
     version: CALCULATION_20_VERSION,
     contentVersion: CALCULATION_20_CONTENT_VERSION,
     instructionsFa: [
@@ -243,6 +249,8 @@ const memoriseGrid: RegisteredExercise = {
     nameFa: 'شبکه حافظه',
     descriptionFa: 'مکان خانه‌های روشن شبکه را به خاطر بسپار و همان‌ها را انتخاب کن.',
     domain: 'visual-spatial',
+    exerciseType: 'spatial',
+    effects: ['visual-spatial', 'working-memory'],
     version: MEMORISE_GRID_VERSION,
     contentVersion: MEMORISE_GRID_CONTENT_VERSION,
     instructionsFa: [
@@ -268,6 +276,8 @@ const nBack: RegisteredExercise = {
     nameFa: 'ان-بک',
     descriptionFa: 'اگر حرف فعلی با حرف N مرحله قبل یکی بود، دکمه تطبیق را بزن.',
     domain: 'working-memory',
+    exerciseType: 'verbal',
+    effects: ['working-memory', 'attention-control'],
     version: NBACK_VERSION,
     contentVersion: NBACK_CONTENT_VERSION,
     instructionsFa: [
@@ -294,6 +304,8 @@ const stroop: RegisteredExercise = {
     nameFa: 'استرووپ',
     descriptionFa: 'رنگِ جوهرِ کلمه را انتخاب کن، نه معنی کلمه را — تمرین کلاسیک مهار تداخل.',
     domain: 'attention-control',
+    exerciseType: 'verbal',
+    effects: ['attention-control', 'processing-speed'],
     version: STROOP_VERSION,
     contentVersion: STROOP_CONTENT_VERSION,
     instructionsFa: [
@@ -319,6 +331,8 @@ const reactionTime: RegisteredExercise = {
     nameFa: 'زمان واکنش',
     descriptionFa: 'به محض ظاهرشدن دایره، هرچه سریع‌تر بزن؛ زودتر از موعد نزن.',
     domain: 'sensorimotor',
+    exerciseType: 'reaction',
+    effects: ['sensorimotor', 'processing-speed'],
     version: REACTION_TIME_VERSION,
     contentVersion: REACTION_TIME_CONTENT_VERSION,
     instructionsFa: [
@@ -346,6 +360,8 @@ const spatialSequence: RegisteredExercise = {
     nameFa: 'توالی مکانی',
     descriptionFa: 'خانه‌ها یکی‌یکی و به‌ترتیب روشن می‌شوند؛ همان ترتیب را بازسازی کن.',
     domain: 'visual-spatial',
+    exerciseType: 'spatial',
+    effects: ['visual-spatial', 'working-memory'],
     version: SPATIAL_SEQUENCE_VERSION,
     contentVersion: SPATIAL_SEQUENCE_CONTENT_VERSION,
     instructionsFa: [
@@ -371,6 +387,8 @@ const wordMemory: RegisteredExercise = {
     nameFa: 'حافظه واژه‌ها',
     descriptionFa: 'کلمات را یکی‌یکی به خاطر بسپار و همان‌ها را از میان واژه‌های جدید پیدا کن.',
     domain: 'verbal-auditory',
+    exerciseType: 'verbal',
+    effects: ['working-memory', 'verbal-auditory'],
     version: WORD_MEMORY_VERSION,
     contentVersion: WORD_MEMORY_CONTENT_VERSION,
     instructionsFa: [
@@ -397,6 +415,8 @@ const syllableCounting: RegisteredExercise = {
     nameFa: 'شمارش هجا',
     descriptionFa: 'تعداد هجای جمله را بشمار و با صفحه‌کلید وارد کن.',
     domain: 'verbal-auditory',
+    exerciseType: 'verbal',
+    effects: ['verbal-auditory', 'processing-speed'],
     version: SYLLABLE_COUNTING_VERSION,
     contentVersion: SYLLABLE_COUNTING_CONTENT_VERSION,
     instructionsFa: [
@@ -421,6 +441,8 @@ const sequenceLogic: RegisteredExercise = {
     nameFa: 'منطق توالی',
     descriptionFa: 'قاعده پنهان توالی اعداد را کشف کن و عدد بعدی را انتخاب کن.',
     domain: 'reasoning',
+    exerciseType: 'logic',
+    effects: ['reasoning'],
     version: SEQUENCE_LOGIC_VERSION,
     contentVersion: SEQUENCE_LOGIC_CONTENT_VERSION,
     instructionsFa: [
@@ -445,6 +467,8 @@ const patternCompletion: RegisteredExercise = {
     nameFa: 'تکمیل الگو',
     descriptionFa: 'قاعده سطر و ستون ماتریس را بفهم و خانه خالی را کامل کن.',
     domain: 'reasoning',
+    exerciseType: 'logic',
+    effects: ['reasoning', 'visual-spatial'],
     version: PATTERN_COMPLETION_VERSION,
     contentVersion: PATTERN_COMPLETION_CONTENT_VERSION,
     instructionsFa: [

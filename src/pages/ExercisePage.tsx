@@ -30,6 +30,8 @@ import { MentalRotationGame } from '../modules/visual-spatial/games/mental-rotat
 import { MirrorClockGame } from '../modules/visual-spatial/games/mirror-clock/MirrorClockGame'
 import { BlockHeightGame } from '../modules/visual-spatial/games/block-height/BlockHeightGame'
 import { TaskSwitchingGame } from '../modules/attention-control/games/task-switching/TaskSwitchingGame'
+import { TypeGlyph } from '../components/icons/TypeGlyphs'
+import { DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA } from '../i18n/fa'
 import { toFaDigits } from '../utils/format'
 import styles from './exercise.module.css'
 
@@ -146,8 +148,23 @@ export function ExercisePage() {
     const isManual = recommended !== null && difficulty !== recommended
     return (
       <main className="app-shell">
-        <div className={styles.picker}>
-          <h1>{registered.meta.nameFa}</h1>
+        <div className={styles.picker} data-domain={registered.meta.domain}>
+          <div className={styles.pickerHead}>
+            <span className={styles.pickerTile} data-type={registered.meta.exerciseType}>
+              <TypeGlyph type={registered.meta.exerciseType} size={24} />
+            </span>
+            <h1>{registered.meta.nameFa}</h1>
+          </div>
+          <div className={styles.pickerChips}>
+            <span className={styles.pickerChip} data-type={registered.meta.exerciseType}>
+              {EXERCISE_TYPE_LABELS_FA[registered.meta.exerciseType]}
+            </span>
+            {registered.meta.effects.map((effect) => (
+              <span key={effect} className={styles.pickerChip} data-domain={effect}>
+                {DOMAIN_LABELS_FA[effect]}
+              </span>
+            ))}
+          </div>
           <p className={styles.pickerHint}>
             سطح پیشنهادی سیستم به‌صورت خودکار انتخاب شده است.
             {adaptive ? ` ${describeStreakFa(adaptive)}${adaptive.todayQualified ? ' · امروز انجام شد ✓' : ''}` : ''}

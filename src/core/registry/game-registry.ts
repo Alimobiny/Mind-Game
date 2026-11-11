@@ -1,5 +1,7 @@
 import type { CognitiveDomain } from '../types'
 import { COGNITIVE_DOMAINS } from '../types'
+import type { ExerciseType } from '../types'
+import { isCognitiveDomain, isExerciseType } from '../types'
 import type { ExerciseConfig, ExerciseDefinition, ExerciseState, ExerciseTrial } from '../types'
 
 /**
@@ -15,6 +17,10 @@ export interface ExerciseMeta {
   readonly nameFa: string
   readonly descriptionFa: string
   readonly domain: CognitiveDomain
+  /** نوع تمرین — جنس تکلیف (عددی/کلامی/دیداری/فضایی/واکنشی/منطقی) */
+  readonly exerciseType: ExerciseType
+  /** اثرهای شناختی این تمرین؛ عنصر اول = اثر اصلی (مبنای گروه‌بندی) */
+  readonly effects: readonly CognitiveDomain[]
   readonly version: string
   readonly contentVersion: string
   /** دستورالعمل کوتاه — گام‌های اجرا */
@@ -41,6 +47,17 @@ export class GameRegistry {
     }
     if (entry.meta.id !== entry.definition.id) {
       throw new Error(`id متادیتا (${entry.meta.id}) با id تعریف (${entry.definition.id}) یکی نیست`)
+    }
+    if (!isExerciseType(entry.meta.exerciseType)) {
+      throw new Error(`نوع تمرین نامعتبر برای ${entry.definition.id}: ${entry.meta.exerciseType}`)
+    }
+    if (
+      entry.meta.effects.length === 0 ||
+      !entry.meta.effects.every((d) => isCognitiveDomain(d))
+    ) {
+      throw new Error(
+        `اثرهای شناختی نامعتبر برای ${entry.definition.id}: ${entry.meta.effects.join(', ') || 'خالی'}`,
+      )
     }
     this.exercises.set(entry.definition.id, entry)
   }

@@ -6,9 +6,11 @@ import type { ExerciseMeta } from '../../../../core/registry/game-registry'
  */
 export const MENTAL_ROTATION_META_FA: Pick<
   ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
+  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
 > = {
   nameFa: 'چرخش ذهنی',
+  exerciseType: 'spatial',
+  effects: ['visual-spatial', 'reasoning'],
   descriptionFa:
     'شکل مرجع را در ذهن بچرخان و داوری کن: گزینه همان شکلِ چرخیده است یا تصویر آینه‌ای آن؟',
   instructionsFa: [

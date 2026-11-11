@@ -6,9 +6,11 @@ import type { ExerciseMeta } from '../../../../core/registry/game-registry'
  */
 export const CALCULATION_100_META_FA: Pick<
   ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
+  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
 > = {
   nameFa: 'محاسبه × ۱۰۰',
+  exerciseType: 'numeric',
+  effects: ['processing-speed'],
   descriptionFa:
     'به ۱۰۰ سؤال حساب کوتاه و پیوسته پاسخ بده؛ سرعت و دقت جداگانه سنجیده می‌شوند.',
   instructionsFa: [

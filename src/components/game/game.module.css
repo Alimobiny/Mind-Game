@@ -104,10 +104,13 @@
 }
 
 .domainChip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.75rem;
-  color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--accent, var(--color-primary));
+  background: color-mix(in srgb, var(--accent, var(--color-primary)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, var(--color-primary)) 26%, transparent);
   border-radius: 999px;
   padding: 2px 10px;
   margin-bottom: var(--space-3);

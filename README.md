@@ -58,9 +58,14 @@ src/
 │   ├── verbal-auditory/games/{word-memory, syllable-counting}/
 │   └── reasoning/games/{sequence-logic, pattern-completion}/
 ├── components/game/ # GameShell مشترک: دستورالعمل → شمارش معکوس → بازی → نتایج
+├── components/icons/ # نشان‌های SVG: لوگو، هفت حوزه، شش نوع تمرین، گلیف‌های UI
 ├── pages/           # Home / Exercise / Program / Reports
 └── analytics/       # تجمیع داشبورد از داده خام
 ```
+
+## طبقه‌بندی و دسترسی به تمرین‌ها
+
+فهرست اصلی سه نمای گروه‌بندی دارد (سوییچ بالای فهرست): **حوزهٔ شناختی** (پیش‌فرض) · **نوع تمرین** (جنس تکلیف: عددی/کلامی/دیداری/فضایی/واکنشی/منطقی — `EXERCISE_TYPES` در `core/types/taxonomy.ts`) · **اثر شناختی** (هر بازی زیر اثر اصلی‌اش؛ اثرهای فرعی به‌صورت چیپ روی کارت). هر تمرین در متادیتای خود `exerciseType` و `effects` (اولین = اصلی) دارد که Registry اعتبارسنجی‌شان می‌کند — افزودن بازی جدید یعنی تعیین این دو فیلد هم (نگاه کنید به `core/registry/taxonomy.test.ts`).
 
 ## قرارداد بازی (Exercise Definition)
 

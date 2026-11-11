@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { startExercise, waitForResults } from './helpers'
+import { startExercise, waitForResults, waitProgressAdvance } from './helpers'
 
 /**
  * E2E موج سوم — چهار بازی جدید + Export/Import (انتقال به «دستگاه دیگر»).
@@ -58,6 +58,7 @@ test.describe('Syllable Counting', () => {
   test('۱۲ سؤال: ورود عدد و تأیید', async ({ page }) => {
     await startExercise(page, 'شمارش هجا', 1)
 
+    let progress = 0
     for (let i = 0; i < 12; i++) {
       const sentence = page.getByTestId('syllable-sentence')
       await expect(sentence).toBeVisible({ timeout: 10_000 })
@@ -66,15 +67,8 @@ test.describe('Syllable Counting', () => {
       // ورود پاسخ ثابت (E2E فقط جریان را می‌سنجد؛ دقت در unit تست شده)
       await page.getByRole('button', { name: FA[5], exact: true }).click()
       await page.getByRole('button', { name: 'تأیید' }).click()
-      // انتقال به جمله بعدی
-      await page.waitForFunction(
-        (prev) => {
-          const el = document.querySelector('[data-testid="syllable-sentence"]')
-          return !el || (el.textContent ?? '').trim() !== prev
-        },
-        text.trim(),
-        { timeout: 10_000 },
-      )
+      // انتقال به مرحلهٔ بعد — با شمارندهٔ trialIndex (جملهٔ تکراری ممکن است)
+      progress = await waitProgressAdvance(page, progress)
     }
 
     await waitForResults(page)

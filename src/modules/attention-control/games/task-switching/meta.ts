@@ -10,9 +10,11 @@ import type { ExerciseMeta } from '../../../../core/registry/game-registry'
  */
 export const TASK_SWITCHING_META_FA: Pick<
   ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
+  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
 > = {
   nameFa: 'جابه‌جایی تکلیف',
+  exerciseType: 'visual',
+  effects: ['attention-control'],
   descriptionFa:
     'نشانهٔ بالای صفحه می‌گوید این‌بار به کدام ویژگی شکل پاسخ بدهی — رنگ، شکل یا اندازه. سرعتِ تطبیق ذهن‌ات با عوض‌شدن قاعده به‌صورت «هزینهٔ جابه‌جایی» اندازه‌گیری می‌شود.',
   instructionsFa: [

@@ -7,12 +7,16 @@
 export interface MissingOperatorMetaFa {
   readonly nameFa: string
   readonly descriptionFa: string
+  readonly exerciseType: 'numeric'
+  readonly effects: readonly ['processing-speed', 'reasoning']
   readonly instructionsFa: readonly string[]
   readonly metricLabelsFa: Readonly<Record<string, string>>
 }
 
 export const MISSING_OPERATOR_META_FA: MissingOperatorMetaFa = {
   nameFa: 'عملگر گم‌شده',
+  exerciseType: 'numeric',
+  effects: ['processing-speed', 'reasoning'],
   descriptionFa:
     'جای عملگر معادله خالی است؛ عملگری را انتخاب کن که معادله را درست کند. هر معادله از میان گزینه‌ها فقط یک جواب درست دارد.',
   instructionsFa: [

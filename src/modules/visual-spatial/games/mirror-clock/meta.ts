@@ -6,9 +6,11 @@ import type { ExerciseMeta } from '../../../../core/registry/game-registry'
  */
 export const MIRROR_CLOCK_META_FA: Pick<
   ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
+  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
 > = {
   nameFa: 'ساعت آینه‌ای',
+  exerciseType: 'spatial',
+  effects: ['visual-spatial', 'reasoning'],
   descriptionFa:
     'ساعت آنالوگ را در آینه ببین و زمان واقعی را از میان چهار گزینه تشخیص بده؛ چرخش ذهنی و تصویرسازی دیداری را تمرین می‌کند.',
   instructionsFa: [
