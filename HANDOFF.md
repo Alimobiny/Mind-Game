@@ -6,7 +6,7 @@
 ## ۱. وضعیت فعلی پروژه (خلاصه)
 
 - **مسیر:** `E:\Mind Game` — React 18 + TypeScript strict + Vite · فارسی/RTL · Mobile-first · Local-first (IndexedDB، بدون backend)
-- **گیت‌هاب:** `origin → https://github.com/Alimobiny/Mind-Game` — کامیت‌ها تا آخر این نشست push می‌شوند (نشست بعد `git pull --ff-only`)
+- **گیت‌هاب:** `origin → https://github.com/Alimobiny/Mind-Game` — ویژگی‌های این نشست تا `4eb45b0` push شده‌اند. **⚠️ یک کامیت لوکالِ pushنشده بالای آن هست** («معلق‌سازی دیپلوی + HANDOFF»): توکن git فاقد دامنهٔ `workflow` بود و تغییر فایل workflow را رد کرد؛ این کامیت باید با کلاینت مجاز (VS Code / GitHub Desktop واردشده به Alimobiny، یا `git credential-manager github login` مجدد) push شود. `git pull --ff-only` در نشست بعد باید no-op بماند (local ahead 1).
 - **دیپلوی Pages: معلق** (درخواست کاربر). گردش کار `.github/workflows/deploy-pages.yml` فقط `workflow_dispatch` دارد. راه‌اندازی مجدد: (۱) Settings ← Pages ← Source: «GitHub Actions» — یک‌بار دستی؛ توکن Actions اجازهٔ «ساخت» سایت را نمی‌دهد (خطای «Resource not accessible by integration»)؛ (۲) تریگر push را از کامنت خارج کنید. `start-game.bat` + `docs/DESKTOP-LAUNCHER.md` برای اجرای دسکتاپ فعال‌اند.
 - **۲۱ بازی در ۷ حوزه** + برنامهٔ روزانه، دشواری تطبیقی، Export/Import، DB نسخه ۲ — پایدار
 - **طبقه‌بندی جدید:** هر تمرین `exerciseType` (۶ نوع: عددی/کلامی/دیداری/فضایی/واکنشی/منطقی — `src/core/types/taxonomy.ts`) و `effects` (اثرهای شناختی؛ [0] = اصلی) دارد؛ فهرست اصلی سه نمای گروه‌بندی دارد: حوزهٔ شناختی (پیش‌فرض) / نوع تمرین / اثر شناختی.
