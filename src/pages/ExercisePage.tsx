@@ -48,6 +48,10 @@ import { TaskSwitchingGame } from '../modules/attention-control/games/task-switc
 import { OperationSpanGame } from '../modules/working-memory/games/operation-span/OperationSpanGame'
 import { SymmetrySpanGame } from '../modules/visual-spatial/games/symmetry-span/SymmetrySpanGame'
 import { RuleDiscoveryCardSortingGame } from '../modules/reasoning/games/rule-discovery-card-sorting/RuleDiscoveryCardSortingGame'
+import { ReadingAloudGame } from '../modules/verbal-auditory/games/reading-aloud/ReadingAloudGame'
+import { WordScrambleGame } from '../modules/verbal-auditory/games/word-scramble/WordScrambleGame'
+import { AudioRecallGame } from '../modules/verbal-auditory/games/audio-recall/AudioRecallGame'
+import { WordBlendGame } from '../modules/verbal-auditory/games/word-blend/WordBlendGame'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA } from '../i18n/fa'
 import { formatDuration, toFaDigits } from '../utils/format'
@@ -112,6 +116,14 @@ function renderGame(exerciseId: string) {
       return (ctx: Parameters<typeof SymmetrySpanGame>[0]['ctx']) => <SymmetrySpanGame ctx={ctx} />
     case 'rule-discovery-card-sorting':
       return (ctx: Parameters<typeof RuleDiscoveryCardSortingGame>[0]['ctx']) => <RuleDiscoveryCardSortingGame ctx={ctx} />
+    case 'reading-aloud':
+      return (ctx: Parameters<typeof ReadingAloudGame>[0]['ctx']) => <ReadingAloudGame ctx={ctx} />
+    case 'word-scramble':
+      return (ctx: Parameters<typeof WordScrambleGame>[0]['ctx']) => <WordScrambleGame ctx={ctx} />
+    case 'audio-recall':
+      return (ctx: Parameters<typeof AudioRecallGame>[0]['ctx']) => <AudioRecallGame ctx={ctx} />
+    case 'word-blend':
+      return (ctx: Parameters<typeof WordBlendGame>[0]['ctx']) => <WordBlendGame ctx={ctx} />
     default:
       return null
   }

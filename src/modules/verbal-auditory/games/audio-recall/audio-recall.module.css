@@ -1,0 +1,133 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.studyArea,
+.recallArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.wordFlash {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  animation: wordPop 0.25s ease;
+}
+
+@keyframes wordPop {
+  from {
+    transform: scale(0.85);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.speakerIcon {
+  font-size: 2.6rem;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.progress {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.selectedRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  min-height: 2.5rem;
+  width: 100%;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.chipNumber {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.optionButton {
+  min-height: 52px;
+  padding: var(--space-2);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.optionButton:active {
+  transform: scale(0.97);
+}
+
+.optionSelected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.optionOrder {
+  margin-inline-end: var(--space-1);
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.actionRow {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  width: 100%;
+}
+
+.secondaryButton {
+  min-height: 48px;
+  padding: var(--space-2) var(--space-4);
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

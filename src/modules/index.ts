@@ -203,6 +203,38 @@ import {
   ruleDiscoveryCardSortingDefinition,
 } from './reasoning/games/rule-discovery-card-sorting/engine'
 import { RULE_DISCOVERY_CARD_SORTING_META_FA } from './reasoning/games/rule-discovery-card-sorting/meta'
+import {
+  READING_ALOUD_CONTENT_VERSION,
+  READING_ALOUD_ID,
+  READING_ALOUD_VERSION,
+  configForDifficulty as raConfigForDifficulty,
+  readingAloudDefinition,
+} from './verbal-auditory/games/reading-aloud/engine'
+import { READING_ALOUD_META_FA } from './verbal-auditory/games/reading-aloud/meta'
+import {
+  WORD_SCRAMBLE_CONTENT_VERSION,
+  WORD_SCRAMBLE_ID,
+  WORD_SCRAMBLE_VERSION,
+  configForDifficulty as wsConfigForDifficulty,
+  wordScrambleDefinition,
+} from './verbal-auditory/games/word-scramble/engine'
+import { WORD_SCRAMBLE_META_FA } from './verbal-auditory/games/word-scramble/meta'
+import {
+  AUDIO_RECALL_CONTENT_VERSION,
+  AUDIO_RECALL_ID,
+  AUDIO_RECALL_VERSION,
+  configForDifficulty as arConfigForDifficulty,
+  audioRecallDefinition,
+} from './verbal-auditory/games/audio-recall/engine'
+import { AUDIO_RECALL_META_FA } from './verbal-auditory/games/audio-recall/meta'
+import {
+  WORD_BLEND_CONTENT_VERSION,
+  WORD_BLEND_ID,
+  WORD_BLEND_VERSION,
+  configForDifficulty as wbConfigForDifficulty,
+  wordBlendDefinition,
+} from './verbal-auditory/games/word-blend/engine'
+import { WORD_BLEND_META_FA } from './verbal-auditory/games/word-blend/meta'
 
 /**
  * ثبت صریح تمرین‌های MVP در Registry — هیچ ثبت خودکار/جادویی وجود ندارد؛
@@ -706,6 +738,51 @@ const ruleDiscoveryCardSorting: RegisteredExercise = {
   },
 }
 
+/** موج زبانی — چهار بازی کلامی/شنیداری با صدای کاملاً محلی */
+const readingAloud: RegisteredExercise = {
+  definition: readingAloudDefinition,
+  meta: {
+    id: READING_ALOUD_ID,
+    domain: 'verbal-auditory',
+    version: READING_ALOUD_VERSION,
+    contentVersion: READING_ALOUD_CONTENT_VERSION,
+    ...READING_ALOUD_META_FA,
+  },
+}
+
+const wordScramble: RegisteredExercise = {
+  definition: wordScrambleDefinition,
+  meta: {
+    id: WORD_SCRAMBLE_ID,
+    domain: 'verbal-auditory',
+    version: WORD_SCRAMBLE_VERSION,
+    contentVersion: WORD_SCRAMBLE_CONTENT_VERSION,
+    ...WORD_SCRAMBLE_META_FA,
+  },
+}
+
+const audioRecall: RegisteredExercise = {
+  definition: audioRecallDefinition,
+  meta: {
+    id: AUDIO_RECALL_ID,
+    domain: 'verbal-auditory',
+    version: AUDIO_RECALL_VERSION,
+    contentVersion: AUDIO_RECALL_CONTENT_VERSION,
+    ...AUDIO_RECALL_META_FA,
+  },
+}
+
+const wordBlend: RegisteredExercise = {
+  definition: wordBlendDefinition,
+  meta: {
+    id: WORD_BLEND_ID,
+    domain: 'verbal-auditory',
+    version: WORD_BLEND_VERSION,
+    contentVersion: WORD_BLEND_CONTENT_VERSION,
+    ...WORD_BLEND_META_FA,
+  },
+}
+
 export function createAppRegistry(): GameRegistry {
   const registry = new GameRegistry()
   registry.register(numberSequence)
@@ -735,6 +812,10 @@ export function createAppRegistry(): GameRegistry {
   registry.register(operationSpan)
   registry.register(symmetrySpan)
   registry.register(ruleDiscoveryCardSorting)
+  registry.register(readingAloud)
+  registry.register(wordScramble)
+  registry.register(audioRecall)
+  registry.register(wordBlend)
   return registry
 }
 
@@ -798,6 +879,14 @@ export function createExerciseConfig(exerciseId: string, difficulty: number): Ex
       return symspanConfigForDifficulty(difficulty)
     case RULE_DISCOVERY_CARD_SORTING_ID:
       return rdcsConfigForDifficulty(difficulty)
+    case READING_ALOUD_ID:
+      return raConfigForDifficulty(difficulty)
+    case WORD_SCRAMBLE_ID:
+      return wsConfigForDifficulty(difficulty)
+    case AUDIO_RECALL_ID:
+      return arConfigForDifficulty(difficulty)
+    case WORD_BLEND_ID:
+      return wbConfigForDifficulty(difficulty)
     default:
       throw new Error(`config برای تمرین ${exerciseId} تعریف نشده است`)
   }

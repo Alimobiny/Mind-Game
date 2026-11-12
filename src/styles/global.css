@@ -50,6 +50,10 @@
   --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.25);
   --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.35);
 
+  /* سطوح و حاشیه‌های کمکی برای کارت‌ها و دکمه‌های داخل بازی‌ها */
+  --surface-raised: var(--color-surface-2);
+  --border-subtle: color-mix(in srgb, var(--color-border) 55%, transparent);
+
   --tap-target: 48px;
 }
 

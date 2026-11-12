@@ -19,6 +19,8 @@ export async function startExercise(
   difficulty = 1,
 ): Promise<void> {
   await page.goto('/')
+  // دسترسی سریع: بازی از نوار جستجوی خانه (فهرستِ تاشو، بازی‌ها لزوماً باز نیستند)
+  await page.getByTestId('game-search').fill(exerciseName)
   await page.getByRole('link', { name: new RegExp(exerciseName) }).click()
   // انتخاب سطح دشواری (رادیو) — دکمه‌های سطح با متن رقمی فارسی
   await page.getByRole('radio', { name: FA_DIGITS[difficulty] as string, exact: true }).click()

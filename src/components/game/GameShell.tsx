@@ -219,6 +219,7 @@ export function GameShell({
     // احتمالی در عنوان بازی (محاسبه × ۱۰۰) ناامن است.
     <section
       className={styles.shell}
+      data-domain={registered.meta.domain}
       data-phase={phase}
       data-trial-index={snapshot.currentTrial !== null ? snapshot.currentTrial.trialIndex : undefined}
     >

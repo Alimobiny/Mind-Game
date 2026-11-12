@@ -51,13 +51,14 @@ src/
 │   ├── program/     # منطق خالص برنامه تمرینی روزانه (تولید قطعی برنامه)
 │   └── registry/    # Game Registry
 ├── data/            # IndexedDB (استورها + migration) + repositoryها + in-memory
-├── modules/         # بیست‌وهفت تمرین — منطق (engine خالص) جدا از UI
+├── modules/         # سی‌ویک تمرین — منطق (engine خالص) جدا از UI
 │   ├── working-memory/games/{number-sequence, n-back, dual-n-back, operation-span}/
 │   ├── attention-control/games/{go-no-go, stroop, task-switching}/
 │   ├── processing-speed/games/{calculation-20, calculation-100, continuous-countdown, missing-operator, number-comparison, pasat}/
 │   ├── visual-spatial/games/{memorise-grid, spatial-sequence, object-tracking, mental-rotation, mirror-clock, block-height, symmetry-span}/
 │   ├── sensorimotor/games/reaction-time/
-│   ├── verbal-auditory/games/{word-memory, syllable-counting}/
+│   ├── verbal-auditory/games/{word-memory, syllable-counting, reading-aloud, word-scramble, audio-recall, word-blend}/
+│   ├── verbal-auditory/audio/ # پوشش گفتار کاملاً محلی (SpeechSynthesis دستگاه)
 │   ├── reasoning/games/{sequence-logic, pattern-completion, rule-discovery-card-sorting}/
 │   ├── long-term-memory/games/associative-pairs/
 │   └── shared/      # اسکلت مشترک دهانهٔ مرکب (امتیاز اعتبار جزئی و …)
@@ -66,6 +67,10 @@ src/
 ├── pages/           # Home / Exercise / Program / Journey / Reports
 └── analytics/       # تجمیع داشبورد و سیر پیشرفت از داده خام
 ```
+
+## صدا در بازی‌های شنیداری — کاملاً محلی
+
+بازی‌های صوتی (ترکیب واژه، یادآوری شنیداری و بعداً ان-بک شنیداری) از `SpeechSynthesis` خود مرورگر استفاده می‌کنند: صدا را موتور نصب‌شدهٔ همان دستگاه می‌سازد. هیچ سرویس ابری، کلید API، هزینه یا تبدیل گفتار-به-متن وجود ندارد و همه‌چیز آفلاین کار می‌کند. اگر دستگاه صدای فارسی نداشته باشد، بازی خودکار به «جبران نمایشی» می‌رود (آیتم‌ها به‌جای شنیدن دیده می‌شوند) تا روی هر دستگاهی قابل اجرا بماند — پیاده‌سازی در `src/modules/verbal-auditory/audio/speech.ts`.
 
 ## طبقه‌بندی و دسترسی به تمرین‌ها
 
@@ -102,7 +107,7 @@ interface ExerciseDefinition<Config, State, Trial, Answer> {
 5. **گاردهای الزامی کامپوننت** (درس‌های باگ‌یابی نشست ۲): قفل `submittedRef` علیه double-fire · عدم `advance` پس از `result.sessionCompleted` · همه تایمرها در `timeoutsRef` با پاک‌سازی
 6. افزودن زمان تقریبی هر مرحله به `src/core/program/time-estimation.ts` (وگرنه پیش‌فرض ۱۰ث برای بودجهٔ برنامه روزانه بیش‌برآورد می‌شود)
 
-## تمرین‌های فعال (۲۷ بازی در ۸ حوزه شناختی)
+## تمرین‌های فعال (۳۱ بازی در ۸ حوزه شناختی)
 
 | بازی | حوزه | الگوی تعاملی |
 | --- | --- | --- |
@@ -129,6 +134,10 @@ interface ExerciseDefinition<Config, State, Trial, Answer> {
 | زمان واکنش (Reaction Time) | حسی-حرکتی | تپ سریع پس از محرک ناگهانی + شناسایی پیش‌دستی |
 | حافظه واژه‌ها (Word Memory) | زبانی | مطالعه واژه‌ها → بازیابی از میان حواس‌پرتی‌ها |
 | شمارش هجا (Syllable Counting) | زبانی | شمارش هجای جمله با بانک محتوای از پیش اعتبارسنجی‌شده |
+| بلندخوانی (Reading Aloud) | زبانی | خواندن خودتنظیم متن + سنجش سرعت و فهم — بدون میکروفون |
+| واژهٔ به‌هم‌ریخته (Word Scramble) | زبانی | بازسازی واژه از حروف جابه‌جا (+ حرف فریب در سطوح بالا) |
+| یادآوری شنیداری (Audio Recall) | زبانی | شنیدن/دیدن توالی واژه‌ها و بازیابی به همان ترتیب |
+| ترکیب واژه (Word Blend) | زبانی | شنیدن قطعات واژه و ترکیب ذهنی آن — نخستین بازی صوتی |
 | منطق توالی (Sequence Logic) | استدلال | کشف قاعده توالی → انتخاب ادامه |
 | تکمیل الگو (Pattern Completion) | استدلال | ماتریس ۳×۳ با قاعده سطر/ستون |
 | کارت‌بندی قاعده (Rule Discovery) | استدلال | کشف قاعدهٔ پنهان رنگ/شکل/تعداد از بازخورد + انعطاف پس از تعویض |

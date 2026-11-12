@@ -1,0 +1,100 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.passageCard {
+  padding: var(--space-4);
+  background: var(--surface-raised, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.passageText {
+  font-size: 1.08rem;
+  line-height: 2.1;
+  color: var(--color-text);
+  margin: 0;
+  text-align: start;
+}
+
+.passageMeta {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.actionRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.primaryButton {
+  min-height: 52px;
+  padding: var(--space-2) var(--space-5);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-bg);
+  background: var(--accent, var(--color-primary));
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.primaryButton:active {
+  transform: scale(0.97);
+}
+
+.questionsArea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.questionBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.questionPrompt {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-text);
+  text-align: start;
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--space-2);
+}
+
+.choiceButton {
+  min-height: 48px;
+  padding: var(--space-2);
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--surface-raised, var(--color-surface));
+  border: 1px solid var(--border-subtle, var(--color-border));
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.choiceButton:active {
+  transform: scale(0.97);
+}
+
+.choiceSelected {
+  border-color: var(--accent, var(--color-primary));
+  background: color-mix(in srgb, var(--accent, var(--color-primary)) 16%, transparent);
+}

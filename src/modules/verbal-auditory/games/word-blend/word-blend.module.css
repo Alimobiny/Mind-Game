@@ -1,0 +1,74 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.presentArea,
+.chooseArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.partFlash {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  animation: partPop 0.25s ease;
+}
+
+@keyframes partPop {
+  from {
+    transform: scale(0.85);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.speakerIcon {
+  font-size: 2.6rem;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.progress {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.choiceButton {
+  min-height: 56px;
+  padding: var(--space-2);
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.choiceButton:active {
+  transform: scale(0.97);
+}
