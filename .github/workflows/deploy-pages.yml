@@ -1,23 +1,16 @@
-# استقرار خودکار روی GitHub Pages
+# استقرار خودکار روی GitHub Pages با هر push به main
 # آدرس نهایی: https://alimobiny.github.io/Mind-Game/
 # مکانیزم: اکشن‌های رسمی گیت‌هاب (بدون شاخهٔ gh-pages، استقرار اتمی آرتیفکت)
-#
-# ⏸ تریگر push موقتاً غیرفعال است (درخواست کاربر: دیپلوی عقب افتاد).
-# برای راه‌اندازی مجدد:
-#   ۱) در گیت‌هاب: Settings ← Pages ← Source: «GitHub Actions» (یک‌بار، دستی —
-#      توکن Actions اجازهٔ «ساخت» سایت را ندارد؛ خطای «Resource not accessible»)
-#   ۲) بلوک push: زیر را از کامنت خارج کنید
 name: Deploy to GitHub Pages
 
 on:
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
-  deployments: write
   id-token: write
 
 # استقرار‌های هم‌زمان یکدیگر را لغو نکنند؛ فقط آخرین push مهم است
@@ -54,12 +47,10 @@ jobs:
       - name: Disable Jekyll processing
         run: touch dist/.nojekyll
 
-      # نکته: enablement حذف شد — GITHUB_TOKEN در این حساب اجازهٔ «ساخت» سایت
-      # Pages را ندارد (Resource not accessible by integration). سایت باید یک‌بار
-      # دستی فعال شود: Settings → Pages → Source: GitHub Actions. پس از آن این
-      # گام فقط پیکربندی را می‌خواند و deploy-pages کار می‌کند.
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
