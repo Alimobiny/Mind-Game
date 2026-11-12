@@ -26,6 +26,13 @@ test.describe('سیر پیشرفت', () => {
     expect(getErrors()).toEqual([])
   })
 
+  test('حالت خالی: کارت فعالیت فشردهٔ صفحهٔ اول مخفی است', async ({ page }) => {
+    const getErrors = trackPageErrors(page)
+    await page.goto('/')
+    await expect(page.getByTestId('home-heatmap')).toHaveCount(0)
+    expect(getErrors()).toEqual([])
+  })
+
   test('با تاریخچهٔ ۵ روزه: تقویم، رکورد، نشان و خط زمانی رندر می‌شوند', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await page.goto('/')
@@ -93,6 +100,42 @@ test.describe('سیر پیشرفت', () => {
     const days = page.getByTestId('journey-day')
     await expect(days).toHaveCount(5)
     await expect(days.first()).toContainText('زمان واکنش')
+
+    expect(getErrors()).toEqual([])
+  })
+
+  test('با تاریخچه: کارت فعالیت فشردهٔ صفحهٔ اول سلول‌های سطح‌دار دارد و به سیر پیشرفت می‌رود', async ({ page }) => {
+    const getErrors = trackPageErrors(page)
+    await page.goto('/')
+
+    await seedSessions(page, [
+      fakeCompletedSession({
+        id: 'h-d1',
+        exerciseId: 'n-back',
+        domain: 'working-memory',
+        difficulty: 1,
+        accuracy: 90,
+        startedAtMs: daysAgoAtNoon(1),
+      }),
+      fakeCompletedSession({
+        id: 'h-d0',
+        exerciseId: 'stroop',
+        domain: 'attention-control',
+        difficulty: 2,
+        accuracy: 86,
+        startedAtMs: daysAgoAtNoon(0),
+      }),
+    ])
+
+    // کارت فشرده پس از تازه‌سازی ظاهر می‌شود (رویداد focus آن را بازمی‌گرداند)
+    await page.reload()
+    const compact = page.getByTestId('home-heatmap')
+    await expect(compact).toBeVisible()
+    await expect(compact.locator('[data-testid="heat-cell"][data-level="1"]')).toHaveCount(2)
+
+    // کارت، لینک به صفحهٔ سیر پیشرفت است
+    await compact.click()
+    await expect(page.getByRole('heading', { name: 'سیر پیشرفت' })).toBeVisible()
 
     expect(getErrors()).toEqual([])
   })

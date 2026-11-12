@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { loadProgressForExercises } from '../analytics/dashboard'
 import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-difficulty'
-import { describeStreakFa } from '../core/difficulty/adaptive-difficulty'
+import { describeStreakFa, toLocalIsoDate } from '../core/difficulty/adaptive-difficulty'
+import { buildHeatmapWeeks, groupSessionsByDay } from '../analytics/journey'
+import type { HeatCell } from '../analytics/journey'
 import { getAppData } from '../data/app-data'
 import { APP_TEXTS_FA, DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA, PROGRAM_TEXTS_FA } from '../i18n/fa'
 import { COGNITIVE_DOMAINS, EXERCISE_TYPES } from '../core/types'
@@ -13,7 +15,8 @@ import { formatDate, toFaDigits } from '../utils/format'
 import { LogoMark } from '../components/icons/LogoMark'
 import { DomainEmblem } from '../components/icons/DomainEmblems'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
-import { CalendarGlyph, ChartGlyph, FlagGlyph, ForwardGlyph } from '../components/icons/UiGlyphs'
+import { ActivityHeatmap } from '../components/journey/ActivityHeatmap'
+import { CalendarGlyph, ChartGlyph, FlagGlyph, FlameGlyph, ForwardGlyph } from '../components/icons/UiGlyphs'
 import styles from './home.module.css'
 
 const registry = createAppRegistry()
@@ -40,12 +43,19 @@ export function HomePage() {
   const activeDomains = useMemo(() => registry.activeDomains(), [])
   const [viewMode, setViewMode] = useState<ViewMode>('domain')
   const [progress, setProgress] = useState<Record<string, AdaptiveDifficultyResult> | null>(null)
+  /** ستون‌های تقویم فشردهٔ فعالیت — مسیر سبک، بدون محاسبهٔ سنگین سیر پیشرفت */
+  const [heatmapWeeks, setHeatmapWeeks] = useState<ReadonlyArray<ReadonlyArray<HeatCell>>>([])
   const [refreshKey, setRefreshKey] = useState(0)
 
   // وضعیت پیشرفت هر بازی (سطح پیشنهادی، رکورد، آخرین تمرین) از داده خام
   useEffect(() => {
     let cancelled = false
     void getAppData().then((appData) => {
+      void appData.sessions.listRecent(Number.MAX_SAFE_INTEGER).then((recent) => {
+        if (cancelled) return
+        const days = groupSessionsByDay(recent)
+        setHeatmapWeeks(buildHeatmapWeeks(days, toLocalIsoDate(Date.now()), 8))
+      })
       void loadProgressForExercises(
         appData.sessions,
         exercises.map((e) => e.meta.id),
@@ -88,6 +98,12 @@ export function HomePage() {
     return byDomain((e) => e.meta.domain, 'domain')
   }, [viewMode, exercises])
 
+  // کارت فعالیت فقط برای کاربرِ سابقه‌دار — نقشهٔ همه‌خامث برای کاربر تازه نویز است
+  const hasActivity = useMemo(
+    () => heatmapWeeks.some((week) => week.some((cell) => cell.level > 0)),
+    [heatmapWeeks],
+  )
+
   return (
     <main className="app-shell">
       <header className={styles.hero}>
@@ -108,6 +124,17 @@ export function HomePage() {
           </span>
           <ForwardGlyph size={18} className={styles.programArrow} />
         </Link>
+        {hasActivity ? (
+          <Link to="/journey" className={styles.activityLink} data-testid="home-heatmap">
+            <span className={styles.activityHead}>
+              <FlameGlyph size={18} className={styles.activityIcon} />
+              <span className={styles.activityTitle}>{APP_TEXTS_FA.recentActivity}</span>
+              <span className={styles.activityHint}>{APP_TEXTS_FA.recentActivityHint}</span>
+              <ForwardGlyph size={16} className={styles.programArrow} />
+            </span>
+            <ActivityHeatmap weeks={heatmapWeeks} compact />
+          </Link>
+        ) : null}
       </header>
 
       <div className={styles.viewSwitch} role="group" aria-label={APP_TEXTS_FA.groupSwitchLabel}>

@@ -33,6 +33,9 @@ import { MentalRotationGame } from '../modules/visual-spatial/games/mental-rotat
 import { MirrorClockGame } from '../modules/visual-spatial/games/mirror-clock/MirrorClockGame'
 import { BlockHeightGame } from '../modules/visual-spatial/games/block-height/BlockHeightGame'
 import { TaskSwitchingGame } from '../modules/attention-control/games/task-switching/TaskSwitchingGame'
+import { OperationSpanGame } from '../modules/working-memory/games/operation-span/OperationSpanGame'
+import { SymmetrySpanGame } from '../modules/visual-spatial/games/symmetry-span/SymmetrySpanGame'
+import { RuleDiscoveryCardSortingGame } from '../modules/reasoning/games/rule-discovery-card-sorting/RuleDiscoveryCardSortingGame'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA } from '../i18n/fa'
 import { toFaDigits } from '../utils/format'
@@ -91,6 +94,12 @@ function renderGame(exerciseId: string) {
       return (ctx: Parameters<typeof BlockHeightGame>[0]['ctx']) => <BlockHeightGame ctx={ctx} />
     case 'task-switching':
       return (ctx: Parameters<typeof TaskSwitchingGame>[0]['ctx']) => <TaskSwitchingGame ctx={ctx} />
+    case 'operation-span':
+      return (ctx: Parameters<typeof OperationSpanGame>[0]['ctx']) => <OperationSpanGame ctx={ctx} />
+    case 'symmetry-span':
+      return (ctx: Parameters<typeof SymmetrySpanGame>[0]['ctx']) => <SymmetrySpanGame ctx={ctx} />
+    case 'rule-discovery-card-sorting':
+      return (ctx: Parameters<typeof RuleDiscoveryCardSortingGame>[0]['ctx']) => <RuleDiscoveryCardSortingGame ctx={ctx} />
     default:
       return null
   }

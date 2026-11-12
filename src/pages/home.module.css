@@ -119,6 +119,60 @@
   color: var(--color-primary);
 }
 
+/* کارت فشردهٔ فعالیت — هم‌خانوادهٔ کارت برنامه، ولی با نقشهٔ حرارتی داخلش */
+.activityLink {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-1);
+  color: var(--color-text);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.activityLink:hover,
+.activityLink:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-2);
+}
+
+.activityLink:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.activityHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.activityIcon {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.activityTitle {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.activityHint {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* سوییچ نمای گروه‌بندی: حوزه / نوع / اثر */
 .viewSwitch {
   display: flex;

@@ -10,6 +10,7 @@ import { createAppRegistry } from '../modules'
 import { formatDate, formatDuration, toFaDigits } from '../utils/format'
 import { DomainEmblem } from '../components/icons/DomainEmblems'
 import { ChartGlyph, FlagGlyph, FlameGlyph } from '../components/icons/UiGlyphs'
+import { ActivityHeatmap } from '../components/journey/ActivityHeatmap'
 import styles from './journey.module.css'
 
 const registry = createAppRegistry()
@@ -160,21 +161,7 @@ export function JourneyPage() {
           </section>
 
           <h2 className={styles.sectionTitle}>{JOURNEY_TEXTS_FA.heatmapLabel}</h2>
-          <div className={styles.heatmap} role="img" aria-label={JOURNEY_TEXTS_FA.heatmapLabel}>
-            {weeks.map((week, wi) => (
-              <div className={styles.heatColumn} key={wi}>
-                {week.map((cell) => (
-                  <span
-                    key={cell.isoDate}
-                    className={styles.heatCell}
-                    data-testid="heat-cell"
-                    data-level={cell.level}
-                    title={`${cell.isoDate} — ${JOURNEY_TEXTS_FA.heatmapCellTitle(cell.completedSessions)}`}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
+          <ActivityHeatmap weeks={weeks} />
 
           <h2 className={styles.sectionTitle}>{JOURNEY_TEXTS_FA.milestonesLabel}</h2>
           <p className={styles.honestNote}>{JOURNEY_TEXTS_FA.milestonesHonestNote}</p>

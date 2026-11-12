@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test'
  * هر نما هر ۲۱ تمرین را دقیقاً یک‌بار نشان می‌دهد و پیمایش به picker سالم است.
  */
 
-const TOTAL_EXERCISES = 24
+const TOTAL_EXERCISES = 27
 
 test.describe('طبقه‌بندی فهرست تمرین‌ها', () => {
   test('سه نمای گروه‌بندی: سرفصل‌ها عوض می‌شوند و هر نما همهٔ ۲۱ تمرین را یک‌بار دارد', async ({

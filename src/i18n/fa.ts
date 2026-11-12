@@ -47,6 +47,8 @@ export const APP_TEXTS_FA = {
   groupByEffect: 'اثر شناختی',
   exerciseCountUnit: 'تمرین',
   journey: 'سیر پیشرفت',
+  recentActivity: 'فعالیت تمرین — ۸ هفتهٔ گذشته',
+  recentActivityHint: 'برای تقویم کامل و نشان‌ها بزن',
 } as const
 
 /**

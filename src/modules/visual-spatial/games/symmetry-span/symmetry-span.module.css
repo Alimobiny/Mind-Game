@@ -1,0 +1,179 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.phaseArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.patternGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  direction: ltr;
+  width: min(19rem, 82vw);
+  padding: var(--space-2);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.patternCell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+}
+
+.patternFilled {
+  background: var(--accent);
+}
+
+.patternTarget {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  animation: targetPop 0.25s ease;
+}
+
+@keyframes targetPop {
+  from {
+    transform: scale(0.7);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.recallCell {
+  aspect-ratio: 1;
+  min-width: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: inherit;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+.recallCell:active {
+  transform: scale(0.94);
+}
+
+.recallSelected {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  border-color: var(--accent);
+}
+
+.recallOrder {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.judgeRow {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  justify-content: center;
+}
+
+.judgeButton {
+  flex: 0 1 9rem;
+  min-height: 56px;
+  padding: var(--space-2) var(--space-4);
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.judgeButton:active {
+  transform: scale(0.97);
+  border-color: var(--accent);
+}
+
+.feedbackFlash {
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+}
+
+.feedbackCorrect {
+  color: #34d399;
+  background: color-mix(in srgb, #34d399 12%, transparent);
+}
+
+.feedbackWrong {
+  color: #f87171;
+  background: color-mix(in srgb, #f87171 12%, transparent);
+}
+
+.feedbackNone {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+}
+
+.selectedRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  min-height: 2.5rem;
+  width: 100%;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.chipNumber {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.actionRow {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  width: 100%;
+}
+
+.secondaryButton {
+  min-height: 48px;
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

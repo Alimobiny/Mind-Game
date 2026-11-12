@@ -179,6 +179,30 @@ import {
   taskSwitchingDefinition,
 } from './attention-control/games/task-switching/engine'
 import { TASK_SWITCHING_META_FA } from './attention-control/games/task-switching/meta'
+import {
+  OPERATION_SPAN_CONTENT_VERSION,
+  OPERATION_SPAN_ID,
+  OPERATION_SPAN_VERSION,
+  configForDifficulty as ospanConfigForDifficulty,
+  operationSpanDefinition,
+} from './working-memory/games/operation-span/engine'
+import { OPERATION_SPAN_META_FA } from './working-memory/games/operation-span/meta'
+import {
+  SYMMETRY_SPAN_CONTENT_VERSION,
+  SYMMETRY_SPAN_ID,
+  SYMMETRY_SPAN_VERSION,
+  configForDifficulty as symspanConfigForDifficulty,
+  symmetrySpanDefinition,
+} from './visual-spatial/games/symmetry-span/engine'
+import { SYMMETRY_SPAN_META_FA } from './visual-spatial/games/symmetry-span/meta'
+import {
+  RULE_DISCOVERY_CARD_SORTING_CONTENT_VERSION,
+  RULE_DISCOVERY_CARD_SORTING_ID,
+  RULE_DISCOVERY_CARD_SORTING_VERSION,
+  configForDifficulty as rdcsConfigForDifficulty,
+  ruleDiscoveryCardSortingDefinition,
+} from './reasoning/games/rule-discovery-card-sorting/engine'
+import { RULE_DISCOVERY_CARD_SORTING_META_FA } from './reasoning/games/rule-discovery-card-sorting/meta'
 
 /**
  * ثبت صریح تمرین‌های MVP در Registry — هیچ ثبت خودکار/جادویی وجود ندارد؛
@@ -648,6 +672,40 @@ const taskSwitching: RegisteredExercise = {
   },
 }
 
+/** موج ۷ — سه بازی سند پژوهش: دو دهانهٔ مرکب + کارت‌بندی قاعده */
+const operationSpan: RegisteredExercise = {
+  definition: operationSpanDefinition,
+  meta: {
+    id: OPERATION_SPAN_ID,
+    domain: 'working-memory',
+    version: OPERATION_SPAN_VERSION,
+    contentVersion: OPERATION_SPAN_CONTENT_VERSION,
+    ...OPERATION_SPAN_META_FA,
+  },
+}
+
+const symmetrySpan: RegisteredExercise = {
+  definition: symmetrySpanDefinition,
+  meta: {
+    id: SYMMETRY_SPAN_ID,
+    domain: 'visual-spatial',
+    version: SYMMETRY_SPAN_VERSION,
+    contentVersion: SYMMETRY_SPAN_CONTENT_VERSION,
+    ...SYMMETRY_SPAN_META_FA,
+  },
+}
+
+const ruleDiscoveryCardSorting: RegisteredExercise = {
+  definition: ruleDiscoveryCardSortingDefinition,
+  meta: {
+    id: RULE_DISCOVERY_CARD_SORTING_ID,
+    domain: 'reasoning',
+    version: RULE_DISCOVERY_CARD_SORTING_VERSION,
+    contentVersion: RULE_DISCOVERY_CARD_SORTING_CONTENT_VERSION,
+    ...RULE_DISCOVERY_CARD_SORTING_META_FA,
+  },
+}
+
 export function createAppRegistry(): GameRegistry {
   const registry = new GameRegistry()
   registry.register(numberSequence)
@@ -674,6 +732,9 @@ export function createAppRegistry(): GameRegistry {
   registry.register(mirrorClock)
   registry.register(blockHeight)
   registry.register(taskSwitching)
+  registry.register(operationSpan)
+  registry.register(symmetrySpan)
+  registry.register(ruleDiscoveryCardSorting)
   return registry
 }
 
@@ -731,6 +792,12 @@ export function createExerciseConfig(exerciseId: string, difficulty: number): Ex
       return bhConfigForDifficulty(difficulty)
     case TASK_SWITCHING_ID:
       return tsConfigForDifficulty(difficulty)
+    case OPERATION_SPAN_ID:
+      return ospanConfigForDifficulty(difficulty)
+    case SYMMETRY_SPAN_ID:
+      return symspanConfigForDifficulty(difficulty)
+    case RULE_DISCOVERY_CARD_SORTING_ID:
+      return rdcsConfigForDifficulty(difficulty)
     default:
       throw new Error(`config برای تمرین ${exerciseId} تعریف نشده است`)
   }

@@ -1,0 +1,128 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  direction: ltr;
+}
+
+.currentCardArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: var(--space-2) var(--space-3);
+  min-width: 4.5rem;
+  min-height: 3.2rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.cardLarge {
+  min-width: 7rem;
+  min-height: 5rem;
+  padding: var(--space-3) var(--space-4);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: var(--shadow-md);
+}
+
+.glyph {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.glyphLarge {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.pilesRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.pileColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.pileButton {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-1);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.pileButton:active {
+  transform: scale(0.96);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.pileButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.feedbackFlash {
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  animation: feedbackPop 0.2s ease;
+}
+
+@keyframes feedbackPop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.feedbackCorrect {
+  color: #34d399;
+  background: color-mix(in srgb, #34d399 12%, transparent);
+}
+
+.feedbackWrong {
+  color: #f87171;
+  background: color-mix(in srgb, #f87171 12%, transparent);
+}
+
+.feedbackNone {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+}
