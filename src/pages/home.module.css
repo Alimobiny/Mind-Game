@@ -213,13 +213,106 @@
   margin-top: var(--space-5);
 }
 
-.sectionHeading {
+/* جستجوی دسترسی سریع — نوار بالای سوییچ گروه‌بندی */
+.searchRow {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  margin-top: var(--space-4);
+  position: relative;
+}
+
+.searchInput {
+  width: 100%;
+  min-height: 46px;
+  padding: var(--space-2) var(--space-4);
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.searchInput:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.searchClear {
+  position: absolute;
+  inset-inline-end: var(--space-2);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.searchEmpty {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-5) var(--space-3);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
   font-size: 1.05rem;
   color: var(--accent, var(--color-primary));
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+/* سرفصل تاشو — دکمهٔ تمام‌عرض داخل h2 (نقش heading برای تست‌ها حفظ می‌شود) */
+.sectionToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-1);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.sectionToggle:hover,
+.sectionToggle:focus-visible {
+  color: var(--color-primary);
+  outline: none;
+}
+
+.sectionLabel {
+  white-space: nowrap;
+}
+
+/* شورون چرخان — نشانگر باز/بسته */
+.chevron {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  margin-inline-start: auto;
+  border-inline-start: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+
+.chevronOpen {
+  transform: rotate(-135deg);
 }
 
 .sectionIcon {
@@ -234,10 +327,10 @@
 }
 
 .sectionCount {
-  margin-inline-start: auto;
   font-size: 0.7rem;
   font-weight: 400;
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .exerciseGrid {

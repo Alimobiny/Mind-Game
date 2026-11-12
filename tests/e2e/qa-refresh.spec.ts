@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { openExerciseFromHome } from './helpers'
 import { readAllSessions, trackPageErrors } from './qa-helpers'
 
 /**
@@ -23,8 +24,7 @@ async function sessionsOf(page: Page, exerciseId: string): Promise<SessionRow[]>
 
 /** شروع بازی از صفحه اصلی تا ACTIVE با انتخاب سطح ۱ */
 async function beginExercise(page: Page, linkName: string | RegExp): Promise<void> {
-  await page.goto('/')
-  await page.getByRole('link', { name: linkName }).click()
+  await openExerciseFromHome(page, linkName)
   await page.getByRole('radio', { name: '۱', exact: true }).click()
   await page.getByRole('button', { name: 'ادامه' }).click()
   await page.getByRole('button', { name: 'شروع تمرین' }).click()

@@ -8,12 +8,13 @@ import { expect, test, type Page } from '@playwright/test'
 
 const TOTAL_EXERCISES = 31
 
-/** باز کردن همهٔ بخش‌های تاشو — پیش از شمارش کارت‌ها */
+/** باز کردن همهٔ بخش‌های تاشو — پیش از شمارش کارت‌ها.
+ *  همیشه «نخستینِ بسته» کلیک می‌شود؛ باز شدنِ هر بخش فهرست بسته‌ها را
+ *  جابه‌جا می‌کند و اندیس گرفتنِ یک‌باره برای nth خطای کهنه می‌دهد. */
 async function expandAllSections(page: Page): Promise<void> {
   const collapsed = page.locator('[data-testid="section-toggle"][aria-expanded="false"]')
-  const count = await collapsed.count()
-  for (let i = 0; i < count; i += 1) {
-    await collapsed.nth(i).click()
+  while ((await collapsed.count()) > 0) {
+    await collapsed.first().click()
   }
 }
 

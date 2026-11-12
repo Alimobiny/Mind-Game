@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { faToNumber, startExercise, waitForResults } from './helpers'
+import { faToNumber, openExerciseFromHome, startExercise, waitForResults } from './helpers'
 import {
   countAnsweredEvents,
   expectProgress,
@@ -137,8 +137,7 @@ test.describe('QA1: double-fire روی دکمه تأیید بازی‌های خ�
 
   test('Number Sequence: دوبل‌کلیک تأیید با پاسخ درست — بازخورد «درست!» و بدون خطای صفحه', async ({ page }) => {
     const getErrors = trackPageErrors(page)
-    await page.goto('/')
-    await page.getByRole('link', { name: /^توالی اعداد/ }).click()
+    await openExerciseFromHome(page, /^توالی اعداد/)
     await page.getByRole('radio', { name: '۱', exact: true }).click()
     await page.getByRole('button', { name: 'ادامه' }).click()
     await page.getByRole('button', { name: 'شروع تمرین' }).click()

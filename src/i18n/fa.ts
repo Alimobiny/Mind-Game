@@ -49,6 +49,10 @@ export const APP_TEXTS_FA = {
   journey: 'سیر پیشرفت',
   recentActivity: 'فعالیت تمرین — ۸ هفتهٔ گذشته',
   recentActivityHint: 'برای تقویم کامل و نشان‌ها بزن',
+  searchPlaceholder: 'جستجوی بازی…',
+  searchResults: 'نتایج جستجو',
+  searchEmpty: 'بازی‌ای با این نام پیدا نشد.',
+  searchClear: 'پاک‌کردن جستجو',
 } as const
 
 /**

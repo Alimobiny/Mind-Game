@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { faToNumber, startExercise, waitForResults } from './helpers'
+import { faToNumber, openExerciseFromHome, startExercise, waitForResults } from './helpers'
 
 /**
  * E2E مسیر خوش‌بخیت چهار بازی MVP + ماندگاری داده پس از reload.
@@ -35,13 +35,15 @@ async function playFullCalculation(page: Page): Promise<void> {
 }
 
 test.describe('صفحه اصلی', () => {
-  test('هر چهار بازی MVP در فهرست دیده می‌شوند', async ({ page }) => {
+  test('چهار بازی MVP از جستجوی خانه پیدا می‌شوند (فهرست تاشو)', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('heading', { name: 'آزمایشگاه تمرین شناختی' })).toBeVisible()
-    await expect(page.getByRole('link', { name: /^توالی اعداد/ })).toBeVisible()
-    await expect(page.getByRole('link', { name: /برو \/ نرو/ })).toBeVisible()
-    await expect(page.getByRole('link', { name: /محاسبه × ۲۰/ })).toBeVisible()
-    await expect(page.getByRole('link', { name: /شبکه حافظه/ })).toBeVisible()
+    // فهرست بخش‌ها تاشوست — حضور هر بازی از مسیر جستجو تأیید می‌شود.
+    // «توالی اعداد» در توضیحِ «منطق توالی» هم هست → first (و not strict).
+    for (const name of ['توالی اعداد', 'برو / نرو', 'محاسبه × ۲۰', 'شبکه حافظه']) {
+      await page.getByTestId('game-search').fill(name)
+      await expect(page.getByRole('link', { name: new RegExp(name) }).first()).toBeVisible()
+    }
   })
 })
 
@@ -57,8 +59,7 @@ test.describe('Calculation × 20', () => {
 test.describe('Number Sequence', () => {
   test('۱۰ مرحله با ثبت ارقام نمایش‌داده‌شده کامل می‌شود', async ({ page }) => {
     // شروع دستی تا در فاز COUNTDOWN بتوان ضبط‌کننده ارقام را نصب کرد
-    await page.goto('/')
-    await page.getByRole('link', { name: /^توالی اعداد/ }).click()
+    await openExerciseFromHome(page, /^توالی اعداد/)
     await page.getByRole('radio', { name: '۱', exact: true }).click()
     await page.getByRole('button', { name: 'ادامه' }).click()
     await page.getByRole('button', { name: 'شروع تمرین' }).click()

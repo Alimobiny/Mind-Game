@@ -12,16 +12,39 @@ export function faToNumber(text: string): number {
   }, 0)
 }
 
+/** تبدیل الگوی لنگردار (^… / (?!…) / \\/) به متن قابل‌تایپ در جستجو */
+function searchQueryOf(exerciseName: string | RegExp): string {
+  const source = typeof exerciseName === 'string' ? exerciseName : exerciseName.source
+  return source
+    .replace(/\\/g, '')
+    .replace(/\(\?![^)]*\)/g, '')
+    .replace(/[\^$]/g, '')
+    .trim()
+}
+
+/**
+ * باز کردن بازی از صفحهٔ اصلی از مسیر جستجو — بخش‌های خانه تاشویند و
+ * لینک بازی لزوماً در DOM نیست؛ ناوبری تست‌ها باید از نوار جستجو بگذرد.
+ */
+export async function openExerciseFromHome(
+  page: Page,
+  exerciseName: string | RegExp,
+): Promise<void> {
+  await page.goto('/')
+  await page.getByTestId('game-search').fill(searchQueryOf(exerciseName))
+  // رشتهٔ ورودی مثل گذشته به RegExp تبدیل می‌شود — نام‌های لنگردار
+  // ('^ان-بک(?! دوگانه)') به‌صورت متن لفظی با هیچ لینکی مچ نمی‌شوند
+  const linkName = typeof exerciseName === 'string' ? new RegExp(exerciseName) : exerciseName
+  await page.getByRole('link', { name: linkName }).click()
+}
+
 /** شروع یک بازی از صفحه اصلی تا ورود به فاز ACTIVE */
 export async function startExercise(
   page: Page,
   exerciseName: string,
   difficulty = 1,
 ): Promise<void> {
-  await page.goto('/')
-  // دسترسی سریع: بازی از نوار جستجوی خانه (فهرستِ تاشو، بازی‌ها لزوماً باز نیستند)
-  await page.getByTestId('game-search').fill(exerciseName)
-  await page.getByRole('link', { name: new RegExp(exerciseName) }).click()
+  await openExerciseFromHome(page, exerciseName)
   // انتخاب سطح دشواری (رادیو) — دکمه‌های سطح با متن رقمی فارسی
   await page.getByRole('radio', { name: FA_DIGITS[difficulty] as string, exact: true }).click()
   await page.getByRole('button', { name: 'ادامه' }).click()

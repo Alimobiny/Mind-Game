@@ -12,6 +12,7 @@ import type { CognitiveDomain, ExerciseType } from '../core/types'
 import { createAppRegistry } from '../modules'
 import type { RegisteredExercise } from '../core/registry/game-registry'
 import { formatDate, toFaDigits } from '../utils/format'
+import { normalizePersian } from '../utils/persian'
 import { LogoMark } from '../components/icons/LogoMark'
 import { DomainEmblem } from '../components/icons/DomainEmblems'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
@@ -42,6 +43,10 @@ export function HomePage() {
   const exercises = useMemo(() => registry.list(), [])
   const activeDomains = useMemo(() => registry.activeDomains(), [])
   const [viewMode, setViewMode] = useState<ViewMode>('domain')
+  /** جستجوی زندهٔ بازی — خالی یعنی حالت مرور گروه‌بندی‌شده */
+  const [search, setSearch] = useState('')
+  /** بخش‌های تاشوی باز — پیش‌فرض فقط نخستین بخش هر نما */
+  const [openSections, setOpenSections] = useState<ReadonlySet<string>>(() => new Set())
   const [progress, setProgress] = useState<Record<string, AdaptiveDifficultyResult> | null>(null)
   /** ستون‌های تقویم فشردهٔ فعالیت — مسیر سبک، بدون محاسبهٔ سنگین سیر پیشرفت */
   const [heatmapWeeks, setHeatmapWeeks] = useState<ReadonlyArray<ReadonlyArray<HeatCell>>>([])
@@ -98,11 +103,90 @@ export function HomePage() {
     return byDomain((e) => e.meta.domain, 'domain')
   }, [viewMode, exercises])
 
+  // با تعویض نما، حالت تاشو به پیش‌فرض برمی‌گردد: فقط نخستین بخش باز
+  const firstGroupKey = groups.length > 0 ? `${viewMode}-${groups[0]?.key}` : null
+  useEffect(() => {
+    if (firstGroupKey !== null) {
+      setOpenSections(new Set([firstGroupKey]))
+    }
+  }, [viewMode, firstGroupKey])
+
+  const toggleSection = (sectionKey: string) => {
+    setOpenSections((current) => {
+      const next = new Set(current)
+      if (next.has(sectionKey)) next.delete(sectionKey)
+      else next.add(sectionKey)
+      return next
+    })
+  }
+
+  /** جستجوی نرمال‌شده روی نام/توضیح/برچسب‌ها — با ۳۱ بازی، مسیر سریع اصلی */
+  const trimmedQuery = search.trim()
+  const searchResults = useMemo(() => {
+    if (trimmedQuery === '') return null
+    const q = normalizePersian(trimmedQuery)
+    return exercises.filter((e) => {
+      const haystack = [
+        e.meta.nameFa,
+        e.meta.descriptionFa,
+        DOMAIN_LABELS_FA[e.meta.domain],
+        EXERCISE_TYPE_LABELS_FA[e.meta.exerciseType],
+      ]
+        .map(normalizePersian)
+        .join(' ')
+      return haystack.includes(q)
+    })
+  }, [exercises, trimmedQuery])
+
   // کارت فعالیت فقط برای کاربرِ سابقه‌دار — نقشهٔ همه‌خامث برای کاربر تازه نویز است
   const hasActivity = useMemo(
     () => heatmapWeeks.some((week) => week.some((cell) => cell.level > 0)),
     [heatmapWeeks],
   )
+
+  /** کارت تمرین — مشترک بین بخش‌های تاشو و نتایج جستجو (مارک‌آپ واحد برای تست‌ها) */
+  const renderExerciseCard = (exercise: RegisteredExercise, index: number) => {
+    const p = progress?.[exercise.meta.id]
+    return (
+      <Link
+        to={`/play/${exercise.meta.id}`}
+        className={styles.exerciseCard}
+        key={exercise.meta.id}
+        data-domain={exercise.meta.domain}
+        style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
+      >
+        <span className={styles.cardHead}>
+          <span className={styles.typeTile} data-type={exercise.meta.exerciseType}>
+            <TypeGlyph type={exercise.meta.exerciseType} size={22} />
+          </span>
+          <span className={styles.cardTexts}>
+            <span className={styles.exerciseName}>{exercise.meta.nameFa}</span>
+            <span className={styles.exerciseDesc}>{exercise.meta.descriptionFa}</span>
+          </span>
+        </span>
+        <span className={styles.chipRow}>
+          <span className={styles.chip} data-type={exercise.meta.exerciseType}>
+            {EXERCISE_TYPE_LABELS_FA[exercise.meta.exerciseType]}
+          </span>
+          {exercise.meta.effects.map((effect) => (
+            <span key={effect} className={styles.chip} data-domain={effect}>
+              {DOMAIN_LABELS_FA[effect]}
+            </span>
+          ))}
+        </span>
+        <span className={styles.exerciseMeta}>
+          {p
+            ? `سطح ${toFaDigits(p.recommendedLevel)} · ${toFaDigits(p.totalSessions)} جلسه · ${describeStreakFa(p)}`
+            : `${toFaDigits(exercise.meta.difficultyLevels.length)} سطح · نسخه ${exercise.meta.version}`}
+        </span>
+        {p?.lastPlayedIsoDate ? (
+          <span className={styles.lastPlayed}>
+            آخرین تمرین: {formatDate(new Date(`${p.lastPlayedIsoDate}T12:00:00`).getTime())}
+          </span>
+        ) : null}
+      </Link>
+    )
+  }
 
   return (
     <main className="app-shell">
@@ -137,87 +221,109 @@ export function HomePage() {
         ) : null}
       </header>
 
-      <div className={styles.viewSwitch} role="group" aria-label={APP_TEXTS_FA.groupSwitchLabel}>
-        {(Object.keys(VIEW_LABELS) as ViewMode[]).map((mode) => (
+      {/* دسترسی سریع — جستجوی زندهٔ بازی؛ الگوی ترکیبی NN/g برای فهرست‌های طولانی دسته‌بندی‌شده */}
+      <div className={styles.searchRow} role="search">
+        <input
+          type="search"
+          className={styles.searchInput}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder={APP_TEXTS_FA.searchPlaceholder}
+          aria-label={APP_TEXTS_FA.searchPlaceholder}
+          data-testid="game-search"
+        />
+        {trimmedQuery !== '' ? (
           <button
-            key={mode}
             type="button"
-            className={styles.viewButton}
-            aria-pressed={viewMode === mode}
-            onClick={() => setViewMode(mode)}
-            data-testid={`view-${mode}`}
+            className={styles.searchClear}
+            onClick={() => setSearch('')}
+            aria-label={APP_TEXTS_FA.searchClear}
+            data-testid="game-search-clear"
           >
-            {VIEW_LABELS[mode]}
+            ✕
           </button>
-        ))}
+        ) : null}
       </div>
 
-      {groups.map((group) => (
-        <section
-          key={`${viewMode}-${group.key}`}
-          className={styles.domainSection}
-          data-domain={group.kind === 'domain' ? group.key : undefined}
-          aria-labelledby={`group-${viewMode}-${group.key}`}
-        >
-          <h2 id={`group-${viewMode}-${group.key}`} className={styles.sectionHeading}>
-            {group.kind === 'domain' ? (
-              <DomainEmblem domain={group.key as CognitiveDomain} size={20} className={styles.sectionIcon} />
-            ) : (
-              <span data-type={group.key} className={styles.sectionIconWrap}>
-                <TypeGlyph type={group.key as ExerciseType} size={20} />
-              </span>
-            )}
-            <span>{group.label}</span>
+      {searchResults !== null ? (
+        // نمای نتایج جستجو — تخت، با همان کارت‌های فهرست
+        <section className={styles.domainSection} aria-label={APP_TEXTS_FA.searchResults}>
+          <h2 className={styles.sectionHeading}>
+            {APP_TEXTS_FA.searchResults}
             <span className={styles.sectionCount}>
-              {toFaDigits(group.list.length)} {APP_TEXTS_FA.exerciseCountUnit}
+              {toFaDigits(searchResults.length)} {APP_TEXTS_FA.exerciseCountUnit}
             </span>
           </h2>
-          <div className={styles.exerciseGrid}>
-            {group.list.map((exercise, index) => {
-              const p = progress?.[exercise.meta.id]
-              return (
-                <Link
-                  to={`/play/${exercise.meta.id}`}
-                  className={styles.exerciseCard}
-                  key={exercise.meta.id}
-                  data-domain={exercise.meta.domain}
-                  style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
-                >
-                  <span className={styles.cardHead}>
-                    <span className={styles.typeTile} data-type={exercise.meta.exerciseType}>
-                      <TypeGlyph type={exercise.meta.exerciseType} size={22} />
-                    </span>
-                    <span className={styles.cardTexts}>
-                      <span className={styles.exerciseName}>{exercise.meta.nameFa}</span>
-                      <span className={styles.exerciseDesc}>{exercise.meta.descriptionFa}</span>
-                    </span>
-                  </span>
-                  <span className={styles.chipRow}>
-                    <span className={styles.chip} data-type={exercise.meta.exerciseType}>
-                      {EXERCISE_TYPE_LABELS_FA[exercise.meta.exerciseType]}
-                    </span>
-                    {exercise.meta.effects.map((effect) => (
-                      <span key={effect} className={styles.chip} data-domain={effect}>
-                        {DOMAIN_LABELS_FA[effect]}
-                      </span>
-                    ))}
-                  </span>
-                  <span className={styles.exerciseMeta}>
-                    {p
-                      ? `سطح ${toFaDigits(p.recommendedLevel)} · ${toFaDigits(p.totalSessions)} جلسه · ${describeStreakFa(p)}`
-                      : `${toFaDigits(exercise.meta.difficultyLevels.length)} سطح · نسخه ${exercise.meta.version}`}
-                  </span>
-                  {p?.lastPlayedIsoDate ? (
-                    <span className={styles.lastPlayed}>
-                      آخرین تمرین: {formatDate(new Date(`${p.lastPlayedIsoDate}T12:00:00`).getTime())}
-                    </span>
-                  ) : null}
-                </Link>
-              )
-            })}
-          </div>
+          {searchResults.length === 0 ? (
+            <p className={styles.searchEmpty} data-testid="search-empty">
+              {APP_TEXTS_FA.searchEmpty}
+            </p>
+          ) : (
+            <div className={styles.exerciseGrid}>
+              {searchResults.map((exercise, index) => renderExerciseCard(exercise, index))}
+            </div>
+          )}
         </section>
-      ))}
+      ) : (
+        <>
+          <div className={styles.viewSwitch} role="group" aria-label={APP_TEXTS_FA.groupSwitchLabel}>
+            {(Object.keys(VIEW_LABELS) as ViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={styles.viewButton}
+                aria-pressed={viewMode === mode}
+                onClick={() => setViewMode(mode)}
+                data-testid={`view-${mode}`}
+              >
+                {VIEW_LABELS[mode]}
+              </button>
+            ))}
+          </div>
+
+          {groups.map((group) => {
+            const sectionKey = `${viewMode}-${group.key}`
+            const open = openSections.has(sectionKey)
+            return (
+              <section
+                key={sectionKey}
+                className={styles.domainSection}
+                data-domain={group.kind === 'domain' ? group.key : undefined}
+                aria-labelledby={`group-${sectionKey}`}
+              >
+                <h2 id={`group-${sectionKey}`} className={styles.sectionHeading}>
+                  <button
+                    type="button"
+                    className={styles.sectionToggle}
+                    data-testid="section-toggle"
+                    aria-expanded={open}
+                    aria-controls={`content-${sectionKey}`}
+                    onClick={() => toggleSection(sectionKey)}
+                  >
+                    {group.kind === 'domain' ? (
+                      <DomainEmblem domain={group.key as CognitiveDomain} size={20} className={styles.sectionIcon} />
+                    ) : (
+                      <span data-type={group.key} className={styles.sectionIconWrap}>
+                        <TypeGlyph type={group.key as ExerciseType} size={20} />
+                      </span>
+                    )}
+                    <span className={styles.sectionLabel}>{group.label}</span>
+                    <span className={styles.sectionCount}>
+                      {toFaDigits(group.list.length)} {APP_TEXTS_FA.exerciseCountUnit}
+                    </span>
+                    <span className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`} aria-hidden="true" />
+                  </button>
+                </h2>
+                {open ? (
+                  <div className={styles.exerciseGrid} id={`content-${sectionKey}`}>
+                    {group.list.map((exercise, index) => renderExerciseCard(exercise, index))}
+                  </div>
+                ) : null}
+              </section>
+            )
+          })}
+        </>
+      )}
 
       {COGNITIVE_DOMAINS.length > activeDomains.length ? (
         <p className={styles.comingSoon}>

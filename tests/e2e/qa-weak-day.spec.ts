@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { faToNumber } from './helpers'
+import { faToNumber, openExerciseFromHome } from './helpers'
 import { fakeCompletedSession, seedSessions, trackPageErrors } from './qa-helpers'
 
 /**
@@ -25,8 +25,7 @@ function daysAgoAtNoon(days: number): number {
 
 /** شروع دستی محاسبه ×۲۰ در سطح مشخص (بدون هلپر startExercise برای کنترل سطح) */
 async function startCalculationAt(page: Page, level: number): Promise<void> {
-  await page.goto('/')
-  await page.getByRole('link', { name: /محاسبه × ۲۰/ }).click()
+  await openExerciseFromHome(page, /محاسبه × ۲۰/)
   await page.getByRole('radio', { name: ['۱', '۲', '۳', '۴', '۵'][level - 1] as string, exact: true }).click()
   await page.getByRole('button', { name: 'ادامه' }).click()
   await page.getByTestId('instructions')

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { startExercise, waitForActive } from './helpers'
+import { openExerciseFromHome, startExercise, waitForActive } from './helpers'
 import { dualConfirmExit, readAllSessions, trackPageErrors } from './qa-helpers'
 
 /**
@@ -111,8 +111,7 @@ test.describe('QA2: پس از آخرین پاسخ تا نتایج — بدون �
     page,
   }) => {
     const getErrors = trackPageErrors(page)
-    await page.goto('/')
-    await page.getByRole('link', { name: /^توالی اعداد/ }).click()
+    await openExerciseFromHome(page, /^توالی اعداد/)
     await page.getByRole('radio', { name: '۱', exact: true }).click()
     await page.getByRole('button', { name: 'ادامه' }).click()
     await page.getByRole('button', { name: 'شروع تمرین' }).click()
@@ -208,8 +207,7 @@ test.describe('QA2+: خروج در فاز شمارش معکوس', () => {
   // تصمیم طراحی رفع‌شده: دکمهٔ خروج حالا در ۳ ثانیهٔ شمارش معکوس هم هست
   test('Go/No-Go وسط شمارش معکوس: دکمه خروج موجود و جلسه aborted ثبت می‌شود', async ({ page }) => {
     const getErrors = trackPageErrors(page)
-    await page.goto('/')
-    await page.getByRole('link', { name: 'برو / نرو' }).click()
+    await openExerciseFromHome(page, 'برو / نرو')
     await page.getByRole('radio', { name: '۱', exact: true }).click()
     await page.getByRole('button', { name: 'ادامه' }).click()
     await expect(page.getByTestId('instructions')).toBeVisible()
