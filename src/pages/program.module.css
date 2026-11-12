@@ -195,3 +195,70 @@
   text-align: center;
   padding-block: var(--space-6);
 }
+
+/* اجرای خودکار زنجیرهٔ برنامه — دکمهٔ اصلی و کارت خلاصهٔ اجرا */
+
+.runLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--color-primary) 10%, var(--color-surface)),
+    var(--color-surface)
+  );
+  border: 1px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.runLink:hover,
+.runLink:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-2);
+}
+
+.runLinkTitle {
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.runLinkHint {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+
+.runLinkArrow {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.runSummaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-block: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-subtle, var(--color-border));
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.runSummaryTitle {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-primary);
+}
+
+.runSummaryLine {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}

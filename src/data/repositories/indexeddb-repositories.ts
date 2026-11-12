@@ -1,9 +1,10 @@
 import type { SessionRecord, SessionStatus, TrialEventRecord } from '../../core/types'
-import type { TrainingPlanRecord } from '../../core/program/types'
+import type { ProgramRunRecord, TrainingPlanRecord } from '../../core/program/types'
 import { STORES, requestToPromise, transactionDone } from '../database/db'
 import type {
   ExerciseSettingsRecord,
   ExerciseSettingsRepository,
+  ProgramRunRepository,
   SessionRepository,
   TrainingPlanRepository,
   TrialEventRepository,
@@ -154,5 +155,55 @@ export class IdbTrainingPlanRepository implements TrainingPlanRepository {
     return all
       .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
       .slice(0, limit)
+  }
+}
+
+export class IdbProgramRunRepository implements ProgramRunRepository {
+  constructor(private readonly db: IDBDatabase) {}
+
+  async create(record: ProgramRunRecord): Promise<void> {
+    const existing = await this.get(record.id)
+    if (existing) {
+      throw new Error(`اجرای ${record.id} از قبل وجود دارد`)
+    }
+    const tx = this.db.transaction(STORES.programRuns, 'readwrite')
+    tx.objectStore(STORES.programRuns).put(record)
+    await transactionDone(tx)
+  }
+
+  async update(record: ProgramRunRecord): Promise<void> {
+    const existing = await this.get(record.id)
+    if (!existing) {
+      throw new Error(`اجرای ${record.id} برای به‌روزرسانی وجود ندارد`)
+    }
+    const tx = this.db.transaction(STORES.programRuns, 'readwrite')
+    tx.objectStore(STORES.programRuns).put(record)
+    await transactionDone(tx)
+  }
+
+  async get(id: string): Promise<ProgramRunRecord | null> {
+    const tx = this.db.transaction(STORES.programRuns, 'readonly')
+    const result = await requestToPromise(
+      tx.objectStore(STORES.programRuns).get(id) as IDBRequest<ProgramRunRecord | undefined>,
+    )
+    return result ?? null
+  }
+
+  async listByDate(date: string): Promise<ProgramRunRecord[]> {
+    const tx = this.db.transaction(STORES.programRuns, 'readonly')
+    const result = await requestToPromise(
+      tx.objectStore(STORES.programRuns).index('by_date').getAll(date) as IDBRequest<
+        ProgramRunRecord[]
+      >,
+    )
+    return result.sort((a, b) => a.startedAt - b.startedAt)
+  }
+
+  async listAll(): Promise<ProgramRunRecord[]> {
+    const tx = this.db.transaction(STORES.programRuns, 'readonly')
+    const result = await requestToPromise(
+      tx.objectStore(STORES.programRuns).getAll() as IDBRequest<ProgramRunRecord[]>,
+    )
+    return result.sort((a, b) => a.startedAt - b.startedAt)
   }
 }

@@ -1,16 +1,18 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { SessionRecord, TrialEventRecord } from '../../core/types'
-import type { TrainingPlanRecord } from '../../core/program/types'
+import type { ProgramRunRecord, TrainingPlanRecord } from '../../core/program/types'
 import { DB_NAME, STORES, deleteDatabase, openDatabase, requestToPromise } from '../database/db'
 import {
   IdbExerciseSettingsRepository,
+  IdbProgramRunRepository,
   IdbSessionRepository,
   IdbTrainingPlanRepository,
   IdbTrialEventRepository,
 } from './indexeddb-repositories'
 import type {
   ExerciseSettingsRepository,
+  ProgramRunRepository,
   SessionRepository,
   TrainingPlanRepository,
   TrialEventRepository,
@@ -27,6 +29,7 @@ function repositoryContract(
     trials: TrialEventRepository
     settings: ExerciseSettingsRepository
     plans: TrainingPlanRepository
+    runs: ProgramRunRepository
   }>,
 ) {
   describe(`قرارداد repository — ${name}`, () => {
@@ -34,9 +37,10 @@ function repositoryContract(
     let trials: TrialEventRepository
     let settings: ExerciseSettingsRepository
     let plans: TrainingPlanRepository
+    let runs: ProgramRunRepository
 
     beforeEach(async () => {
-      ;({ sessions, trials, settings, plans } = await make())
+      ;({ sessions, trials, settings, plans, runs } = await make())
     })
 
     it('جلسه ایجاد و خوانده می‌شود', async () => {
@@ -127,6 +131,25 @@ function repositoryContract(
       const recent = await plans.listRecent(2)
       expect(recent.map((p) => p.date)).toEqual(['2026-11-11', '2026-11-10'])
     })
+
+    it('اجرای برنامه ایجاد/خوانده/به‌روزرسانی می‌شود؛ تکراری و ناموجود خطا', async () => {
+      expect(await runs.get('r1')).toBeNull()
+      await runs.create(makeRun('r1', '2026-11-12', 1000))
+      expect((await runs.get('r1'))?.status).toBe('in_progress')
+      await expect(runs.create(makeRun('r1', '2026-11-12', 2000))).rejects.toThrow()
+      await runs.update({ ...makeRun('r1', '2026-11-12', 1000), status: 'completed', endedAt: 5000, durationMs: 4000, sessionIds: ['s1'] })
+      expect((await runs.get('r1'))?.status).toBe('completed')
+      await expect(runs.update(makeRun('rX', '2026-11-12', 1))).rejects.toThrow()
+    })
+
+    it('listByDate اجراهای همان روز را قدیم → جدید می‌دهد؛ listAll همه را', async () => {
+      await runs.create(makeRun('r2', '2026-11-12', 2000))
+      await runs.create(makeRun('r1', '2026-11-12', 1000))
+      await runs.create(makeRun('r0', '2026-11-11', 500))
+      const today = await runs.listByDate('2026-11-12')
+      expect(today.map((r) => r.id)).toEqual(['r1', 'r2'])
+      expect((await runs.listAll()).map((r) => r.id)).toEqual(['r0', 'r1', 'r2'])
+    })
   })
 }
 
@@ -183,6 +206,18 @@ function makePlan(date: string, exerciseIds: readonly string[]): TrainingPlanRec
   }
 }
 
+function makeRun(id: string, date: string, startedAt: number): ProgramRunRecord {
+  return {
+    id,
+    date,
+    startedAt,
+    endedAt: null,
+    durationMs: null,
+    sessionIds: [],
+    status: 'in_progress',
+  }
+}
+
 repositoryContract('IndexedDB (fake-indexeddb)', async () => {
   // دیتابیس fake بین تست‌ها state نگه می‌دارد؛ برای ایزوله‌بودن هر تست از نو ساخته می‌شود
   await deleteDatabase()
@@ -192,6 +227,7 @@ repositoryContract('IndexedDB (fake-indexeddb)', async () => {
     trials: new IdbTrialEventRepository(db),
     settings: new IdbExerciseSettingsRepository(db),
     plans: new IdbTrainingPlanRepository(db),
+    runs: new IdbProgramRunRepository(db),
   }
 })
 
@@ -199,6 +235,7 @@ repositoryContract('IndexedDB (fake-indexeddb)', async () => {
 repositoryContract('InMemory', async () => {
   const {
     InMemoryExerciseSettingsRepository,
+    InMemoryProgramRunRepository,
     InMemorySessionRepository,
     InMemoryTrainingPlanRepository,
     InMemoryTrialEventRepository,
@@ -208,6 +245,7 @@ repositoryContract('InMemory', async () => {
     trials: new InMemoryTrialEventRepository(),
     settings: new InMemoryExerciseSettingsRepository(),
     plans: new InMemoryTrainingPlanRepository(),
+    runs: new InMemoryProgramRunRepository(),
   }
 })
 
@@ -216,10 +254,10 @@ describe('openDatabase (migrations)', () => {
     await deleteDatabase()
   })
 
-  it('دیتابیس تازه با نسخه ۲ ساخته می‌شود و همه استورها وجود دارند', async () => {
+  it('دیتابیس تازه با نسخه ۳ ساخته می‌شود و همه استورها وجود دارند', async () => {
     const db = await openDatabase()
     expect(db.name).toBe(DB_NAME)
-    expect(db.version).toBe(2)
+    expect(db.version).toBe(3)
     for (const store of Object.values(STORES)) {
       expect(db.objectStoreNames.contains(store)).toBe(true)
     }
@@ -227,20 +265,24 @@ describe('openDatabase (migrations)', () => {
     db.close()
   })
 
-  it('ارتقا از نسخه ۱ به ۲: training_plans ساخته می‌شود و داده قبلی سالم می‌ماند', async () => {
+  it('ارتقا از نسخه ۱ به ۳: همه استورهای جدید ساخته می‌شوند و داده قبلی سالم می‌ماند', async () => {
     await openLegacyV1Database()
     const db = await openDatabase()
-    expect(db.version).toBe(2)
+    expect(db.version).toBe(3)
     expect(db.objectStoreNames.contains(STORES.trainingPlans)).toBe(true)
+    expect(db.objectStoreNames.contains(STORES.programRuns)).toBe(true)
 
     // داده‌های نسخه ۱ دست‌نخورده مانده‌اند
     const sessions = new IdbSessionRepository(db)
     expect(await sessions.get('legacy-1')).not.toBeNull()
 
-    // استور جدید قابل نوشتن است و schema_meta به‌روز شده است
+    // استورهای جدید قابل نوشتن‌اند
     const plans = new IdbTrainingPlanRepository(db)
     await plans.put(makePlan('2026-11-11', ['go-no-go']))
     expect((await plans.getByDate('2026-11-11'))?.items).toHaveLength(1)
+    const runs = new IdbProgramRunRepository(db)
+    await runs.create(makeRun('r-legacy', '2026-11-11', 1000))
+    expect((await runs.get('r-legacy'))?.status).toBe('in_progress')
 
     const metaTx = db.transaction(STORES.schemaMeta, 'readonly')
     const meta = await requestToPromise(
@@ -248,10 +290,59 @@ describe('openDatabase (migrations)', () => {
         { key: string; value: number } | undefined
       >,
     )
-    expect(meta?.value).toBe(2)
+    expect(meta?.value).toBe(3)
+    db.close()
+  })
+
+  it('ارتقا از نسخه ۲ به ۳: program_runs ساخته می‌شود و طرح‌های موجود سالم می‌مانند', async () => {
+    await openLegacyV2Database()
+    const db = await openDatabase()
+    expect(db.version).toBe(3)
+    expect(db.objectStoreNames.contains(STORES.programRuns)).toBe(true)
+
+    // طرح نسخه ۲ دست‌نخورده
+    const plans = new IdbTrainingPlanRepository(db)
+    expect((await plans.getByDate('2026-11-10'))?.items.map((i) => i.exerciseId)).toEqual([
+      'stroop',
+    ])
+
+    // استور جدید از طریق ایندکس by_date هم کار می‌کند
+    const runs = new IdbProgramRunRepository(db)
+    await runs.create(makeRun('r-v3', '2026-11-10', 2000))
+    expect((await runs.listByDate('2026-11-10')).map((r) => r.id)).toEqual(['r-v3'])
     db.close()
   })
 })
+
+/** ساخت دیتابیس ساختگی نسخه ۲ (بدون program_runs) با یک طرح — شبیه‌سازی نصب موج ۶ */
+function openLegacyV2Database(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 2)
+    request.onupgradeneeded = () => {
+      const db = request.result
+      const sessions = db.createObjectStore(STORES.exerciseSessions, { keyPath: 'id' })
+      sessions.createIndex('by_exercise', 'exerciseId', { unique: false })
+      sessions.createIndex('by_started', 'startedAt', { unique: false })
+      db.createObjectStore(STORES.trialEvents, { keyPath: 'id' })
+      db.createObjectStore(STORES.exerciseSettings, { keyPath: 'exerciseId' })
+      db.createObjectStore(STORES.userPreferences, { keyPath: 'key' })
+      db.createObjectStore(STORES.schemaMeta, { keyPath: 'key' })
+      db.createObjectStore(STORES.trainingPlans, { keyPath: 'date' })
+      request.transaction?.objectStore(STORES.schemaMeta).put({ key: 'schema_version', value: 2 })
+    }
+    request.onsuccess = () => {
+      const db = request.result
+      const tx = db.transaction(STORES.trainingPlans, 'readwrite')
+      tx.objectStore(STORES.trainingPlans).put(makePlan('2026-11-10', ['stroop']))
+      tx.oncomplete = () => {
+        db.close()
+        resolve()
+      }
+      tx.onerror = () => reject(tx.error ?? new Error('legacy v2 seed failed'))
+    }
+    request.onerror = () => reject(request.error ?? new Error('legacy v2 open failed'))
+  })
+}
 
 /** ساخت دیتابیس ساختگی نسخه ۱ (بدون training_plans) با یک جلسه — شبیه‌سازی نصب قدیمی */
 function openLegacyV1Database(): Promise<void> {

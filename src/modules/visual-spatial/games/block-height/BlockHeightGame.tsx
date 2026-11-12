@@ -6,13 +6,16 @@ import type { BlockHeightTrial } from './engine'
 import styles from './block-height.module.css'
 
 /**
- * Block Height — UI
+ * Block Height — UI (رندر ایزومتریک)
  *
- * شکل SVG از دو ردیف عمقی بلوک: ردیف پشتی (روشن، باریک) پشت ردیف جلویی
- * (تیره، پهن) کشیده می‌شود؛ هر دو روی یک خط زمین و با شبکهٔ ردیفهای
- * یکسان، پس «بیرون‌زدگی» ستون پشتی دقیقاً بر حسب بلوک قابل شمارش است
- * (قاعدهٔ مستند در engine.ts). پاسخ کل با صفحه‌کلید عددی (یا کلیدهای
- * دستگاه + Enter) وارد و تأیید می‌شود. مرحله مهلت ندارد.
+ * هر ستون یک جفت پشتهٔ هم‌قاعده است: مکعب‌های جلویی (آبی، پهن‌تر) جلوی
+ * مکعب‌های پشتی (سبز، باریک‌تر) که با آفست عمق بالاتر و راست‌تر کشیده
+ * می‌شوند — «پشت‌بودن» در خود پرسپکتیو دیده می‌شود، نه فقط در متن.
+ * هر ستون سکوی زمین خودش را دارد تا تعلق بلوک‌ها به ستون بدیهی باشد.
+ * پس از ثبت پاسخ، بلوک‌های پنهانِ ستون پشتی با کانتور خط‌چین آشکار
+ * می‌شوند (آموزش چشمی قاعده: پنهان‌ها = ارتفاع ستون جلویی).
+ * پاسخ کل با صفحه‌کلید عددی (یا کلیدهای دستگاه + Enter) وارد می‌شود؛
+ * مرحله مهلت ندارد.
  *
  * نگهبان‌های اجباری:
  *  ۱) قفل submittedRef: تپ دومی روی «تأیید»/Enter نباید پاسخ دومی بفرستد؛
@@ -26,9 +29,9 @@ import styles from './block-height.module.css'
  * و پیشروی دوباره زمان‌بندی می‌شود تا جلسه قفل نماند (الگوی Calculation100).
  */
 
-/** مدت بازخورد (ms) — شمارش بی‌مهلتی است، فلش می‌تواند نفس‌دار باشد */
-const FLASH_CORRECT_MS = 1100
-const FLASH_WRONG_MS = 2200
+/** مدت بازخورد (ms) — غلط طولانی‌تر تا آشکارسازی خط‌چین دیده شود */
+const FLASH_CORRECT_MS = 1200
+const FLASH_WRONG_MS = 3200
 
 /** بیشترین کل ممکن ۳۰ است ⇒ دو رقم کافی است */
 const MAX_ENTRY_DIGITS = 2
@@ -57,16 +60,37 @@ const KEY_TO_DIGIT: Readonly<Record<string, string>> = {
   '۹': '9',
 }
 
-/* ─── هندسهٔ ترسیم SVG (واحد کاربر) ─── */
-const LANE_W = 52 // عرض هر لَن
-const PAD_X = 12 // حاشیهٔ کناری
-const BLOCK_H = 38 // ارتفاع یک بلوک (ردیف‌ها یکسان برای دو ردیف عمقی)
-const FRONT_W = 40 // بلوک جلویی: پهن و تیره
-const FRONT_OFF = 6
-const BACK_W = 26 // بلوک پشتی: باریک و روشن
-const BACK_OFF = 13
-const GROUND_H = 12 // نوار زمین
-const TOP_PAD = 10
+/* ─── هندسهٔ ایزومتریک (واحد کاربر SVG) ─── */
+/** بلوک جلویی: پهن و آبی */
+const FRONT_HW = 21 // نیم‌عرض لوزی بالایی
+const FRONT_BH = 26 // ارتفاع وجه کناری
+/** بلوک پشتی: باریک‌تر و سبز — هم‌گام ردیف با جلویی (همان BH) */
+const BACK_HW = 15
+const BACK_BH = 26
+/** آفست عمق ستون پشتی: راست‌تر و بالاتر = دورتر */
+const BACK_DX = 12
+const BACK_DY = 10
+const LANE_W = 64
+const PAD_X = 22
+const GROUND_PAD = 30 // جای سکو + حاشیهٔ پایین
+const TOP_PAD = 14
+
+interface IsoPoint {
+  readonly x: number
+  readonly y: number
+}
+
+/** وجه‌های یک مکعب ایزومتریک حول مرکزِ وجه بالایی */
+function cubeFaces(cx: number, cyTop: number, hw: number, bh: number) {
+  const n: IsoPoint = { x: cx, y: cyTop - hw / 2 }
+  const e: IsoPoint = { x: cx + hw, y: cyTop }
+  const s: IsoPoint = { x: cx, y: cyTop + hw / 2 }
+  const w: IsoPoint = { x: cx - hw, y: cyTop }
+  const top = `${n.x},${n.y} ${e.x},${e.y} ${s.x},${s.y} ${w.x},${w.y}`
+  const left = `${w.x},${w.y} ${s.x},${s.y} ${s.x},${s.y + bh} ${w.x},${w.y + bh}`
+  const right = `${s.x},${s.y} ${e.x},${e.y} ${e.x},${e.y + bh} ${s.x},${s.y + bh}`
+  return { top, left, right }
+}
 
 interface FlashState {
   readonly correct: boolean
@@ -169,16 +193,48 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
     return () => window.removeEventListener('keydown', onKeyDown)
   })
 
-  // ابعاد شکل از دادهٔ مرحله
+  /* ─── چیدمان شکل از دادهٔ مرحله ─── */
   const lanes = trial.columns
   const maxBack = lanes.reduce((max, col) => Math.max(max, col.backHeight), 1)
-  const width = lanes.length * LANE_W + 2 * PAD_X
-  const height = TOP_PAD + maxBack * BLOCK_H + GROUND_H
-  const groundY = height - GROUND_H + 2
-  const rowY = (row: number) => height - GROUND_H - (row + 1) * BLOCK_H
+  const width = lanes.length * LANE_W + 2 * PAD_X + BACK_DX
+  const groundY = TOP_PAD + BACK_DY + maxBack * BACK_BH + FRONT_HW / 2 + 14
+  const height = groundY + GROUND_PAD
+  const laneCx = (i: number) => PAD_X + LANE_W / 2 + i * LANE_W
+  /** مرکز وجه بالایی بلوک k ام ستون جلویی (k=۰ پایین‌ترین) */
+  const frontTop = (i: number, k: number) => ({
+    x: laneCx(i),
+    y: groundY - (k + 1) * FRONT_BH - FRONT_HW / 2,
+  })
+  /** ستون پشتی: هم‌گام ردیف با جلویی، با آفست عمق */
+  const backTop = (i: number, k: number) => ({
+    x: laneCx(i) + BACK_DX,
+    y: groundY - BACK_DY - (k + 1) * BACK_BH - BACK_HW / 2,
+  })
+
+  const reveal = flash !== null
 
   return (
     <>
+      {/* راهنمای چشمی جنس دو ردیف — قبل از شکل، همیشه پیدا */}
+      <div className={styles.legend} aria-hidden="true">
+        <span className={styles.legendItem}>
+          <svg viewBox="0 0 40 44" className={styles.legendCube}>
+            <polygon points={cubeFaces(20, 15, 10, 13).top} className={styles.frontTop} />
+            <polygon points={cubeFaces(20, 15, 10, 13).left} className={styles.frontLeft} />
+            <polygon points={cubeFaces(20, 15, 10, 13).right} className={styles.frontRight} />
+          </svg>
+          <span className={styles.legendLabel}>جلویی</span>
+        </span>
+        <span className={styles.legendItem}>
+          <svg viewBox="0 0 40 44" className={styles.legendCube}>
+            <polygon points={cubeFaces(20, 15, 8, 13).top} className={styles.backTop} />
+            <polygon points={cubeFaces(20, 15, 8, 13).left} className={styles.backLeft} />
+            <polygon points={cubeFaces(20, 15, 8, 13).right} className={styles.backRight} />
+          </svg>
+          <span className={styles.legendLabel}>پشتی (دورتر)</span>
+        </span>
+      </div>
+
       <div className={styles.figureWrap}>
         <svg
           className={styles.figure}
@@ -187,35 +243,64 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
           data-testid="bh-figure"
           data-total={trial.totalBlocks}
           role="img"
-          aria-label="پشتهٔ بلوک‌ها: ردیف جلویی تیره و پهن، ردیف پشتی روشن و باریک"
+          aria-label="ستون‌های مکعبی: جلویی آبی و پهن، پشتی سبز و باریک که پشت آن ایستاده و ادامه‌اش پنهان است"
         >
-          <line className={styles.groundLine} x1={3} y1={groundY} x2={width - 3} y2={groundY} />
-          {lanes.map((col, i) =>
-            Array.from({ length: col.backHeight }, (_, row) => (
-              <rect
-                key={`b${i}-${row}`}
-                className={styles.blockBack}
-                x={PAD_X + i * LANE_W + BACK_OFF}
-                y={rowY(row)}
-                width={BACK_W}
-                height={BLOCK_H}
-                rx={3}
+          {/* سکوی زمین هر ستون — تعلق بلوک‌ها به ستون را روشن می‌کند */}
+          {lanes.map((_, i) => {
+            const cx = laneCx(i) + BACK_DX / 2
+            const hw = FRONT_HW + 8
+            const py = groundY + 5
+            return (
+              <polygon
+                key={`p${i}`}
+                points={`${cx},${py - hw / 2} ${cx + hw},${py} ${cx},${py + hw / 2} ${cx - hw},${py}`}
+                className={styles.platform}
               />
-            )),
-          )}
-          {lanes.map((col, i) =>
-            Array.from({ length: col.frontHeight }, (_, row) => (
-              <rect
-                key={`f${i}-${row}`}
-                className={styles.blockFront}
-                x={PAD_X + i * LANE_W + FRONT_OFF}
-                y={rowY(row)}
-                width={FRONT_W}
-                height={BLOCK_H}
-                rx={3}
-              />
-            )),
-          )}
+            )
+          })}
+
+          {lanes.map((col, i) => (
+            <g key={`lane${i}`}>
+              {/* پشتهٔ پشتی — اول کشیده می‌شود تا جلویی رویش بنشیند */}
+              {Array.from({ length: col.backHeight }, (_, row) => {
+                const t = backTop(i, row)
+                const faces = cubeFaces(t.x, t.y, BACK_HW, BACK_BH)
+                return (
+                  <g key={`b${i}-${row}`}>
+                    <polygon points={faces.left} className={styles.backLeft} />
+                    <polygon points={faces.right} className={styles.backRight} />
+                    <polygon points={faces.top} className={styles.backTop} />
+                  </g>
+                )
+              })}
+              {/* پشتهٔ جلویی — روی پشتی */}
+              {Array.from({ length: col.frontHeight }, (_, row) => {
+                const t = frontTop(i, row)
+                const faces = cubeFaces(t.x, t.y, FRONT_HW, FRONT_BH)
+                return (
+                  <g key={`f${i}-${row}`}>
+                    <polygon points={faces.left} className={styles.frontLeft} />
+                    <polygon points={faces.right} className={styles.frontRight} />
+                    <polygon points={faces.top} className={styles.frontTop} />
+                  </g>
+                )
+              })}
+              {/* آشکارسازی بازخورد: کانتور خط‌چین بلوک‌های پنهانِ پشتهٔ پشتی */}
+              {reveal
+                ? Array.from({ length: col.frontHeight }, (_, row) => {
+                    const t = backTop(i, row)
+                    const faces = cubeFaces(t.x, t.y, BACK_HW, BACK_BH)
+                    return (
+                      <g key={`h${i}-${row}`} className={styles.hiddenGroup}>
+                        <polygon points={faces.left} className={styles.hiddenOutline} />
+                        <polygon points={faces.right} className={styles.hiddenOutline} />
+                        <polygon points={faces.top} className={styles.hiddenOutline} />
+                      </g>
+                    )
+                  })
+                : null}
+            </g>
+          ))}
         </svg>
       </div>
 
@@ -230,7 +315,7 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
           >
             {flash.correct
               ? 'درست ✓'
-              : `پاسخ درست: ${toFaDigits(flash.expected)} بلوک`}
+              : `پاسخ درست: ${toFaDigits(flash.expected)} بلوک — بلوک‌های پنهان خط‌چین شدند`}
           </p>
         ) : null}
       </div>
@@ -282,8 +367,8 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
       </div>
 
       <p className={gameStyles.hint}>
-        بلوک‌های پنهانِ هر ستون = ارتفاع ستون جلوییِ همان لَن · با کلیدهای عددی دستگاه هم
-        می‌توانی تایپ کنی · Enter = تأیید
+        ستون سبز پشتِ ستون آبی ایستاده و پایینش پنهان است — پنهان‌های هر ستون دقیقاً به
+        اندازهٔ آبی‌های همان ستون · با کلیدهای عددی دستگاه هم می‌توانی تایپ کنی · Enter = تأیید
       </p>
     </>
   )

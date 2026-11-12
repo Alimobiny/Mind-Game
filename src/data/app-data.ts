@@ -1,6 +1,7 @@
 import { openDatabase } from './database/db'
 import {
   IdbExerciseSettingsRepository,
+  IdbProgramRunRepository,
   IdbSessionRepository,
   IdbTrainingPlanRepository,
   IdbTrialEventRepository,
@@ -8,6 +9,7 @@ import {
 import { abortStaleSessions } from '../core/session/session-manager'
 import type {
   ExerciseSettingsRepository,
+  ProgramRunRepository,
   SessionRepository,
   TrainingPlanRepository,
   TrialEventRepository,
@@ -18,6 +20,7 @@ export interface AppData {
   readonly trialEvents: TrialEventRepository
   readonly settings: ExerciseSettingsRepository
   readonly plans: TrainingPlanRepository
+  readonly runs: ProgramRunRepository
 }
 
 let appDataPromise: Promise<AppData> | null = null
@@ -34,9 +37,10 @@ export function getAppData(): Promise<AppData> {
       const trialEvents = new IdbTrialEventRepository(db)
       const settings = new IdbExerciseSettingsRepository(db)
       const plans = new IdbTrainingPlanRepository(db)
+      const runs = new IdbProgramRunRepository(db)
       // جلسات in_progress از اجرای قبلی (refresh/بستن تب) قطع‌شده‌اند
       await abortStaleSessions(sessions)
-      return { sessions, trialEvents, settings, plans }
+      return { sessions, trialEvents, settings, plans, runs }
     })()
   }
   return appDataPromise

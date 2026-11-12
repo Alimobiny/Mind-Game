@@ -32,3 +32,27 @@ export interface ProgramExerciseEntry {
   readonly plannedTrials: number
   readonly difficultyLevels: readonly number[]
 }
+
+/** وضعیت یک اجرای زنجیره‌ای برنامهٔ روزانه */
+export type ProgramRunStatus = 'in_progress' | 'completed' | 'aborted'
+
+/**
+ * رکورد «اجرای برنامه» — یک گذر خودکار/زنجیره‌ای روی آیتم‌های برنامهٔ یک روز.
+ * کلید id یکتاست (نه تاریخ): یک روز می‌تواند چند اجرا داشته باشد.
+ * زمان کل دیواری است (از شروع زنجیره تا پایان آخرین جلسه) — زمان فعال هر
+ * جلسه از خود SessionRecordها می‌آید.
+ */
+export interface ProgramRunRecord {
+  /** id یکتا — مثلاً `${date}-${startedAt}` */
+  readonly id: string
+  /** تاریخ ISO محلی yyyy-mm-dd — همان کلید طرح برنامه */
+  readonly date: string
+  readonly startedAt: number
+  /** پایان زنجیره (کامل یا قطع) — تا وقتی در حال اجراست null */
+  readonly endedAt: number | null
+  /** endedAt − startedAt (ms) — پس از نهایی‌شدن مقدار دارد */
+  readonly durationMs: number | null
+  /** شناسهٔ جلسه‌های ثبت‌شده در همین زنجیره، به ترتیب اجرا */
+  readonly sessionIds: readonly string[]
+  readonly status: ProgramRunStatus
+}

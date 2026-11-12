@@ -1,8 +1,9 @@
 import type { SessionRecord, SessionStatus, TrialEventRecord } from '../../core/types'
-import type { TrainingPlanRecord } from '../../core/program/types'
+import type { ProgramRunRecord, TrainingPlanRecord } from '../../core/program/types'
 import type {
   ExerciseSettingsRecord,
   ExerciseSettingsRepository,
+  ProgramRunRepository,
   SessionRepository,
   TrainingPlanRepository,
   TrialEventRepository,
@@ -110,5 +111,37 @@ export class InMemoryTrainingPlanRepository implements TrainingPlanRepository {
     return [...this.plans.values()]
       .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
       .slice(0, limit)
+  }
+}
+
+export class InMemoryProgramRunRepository implements ProgramRunRepository {
+  private readonly runs = new Map<string, ProgramRunRecord>()
+
+  async create(record: ProgramRunRecord): Promise<void> {
+    if (this.runs.has(record.id)) {
+      throw new Error(`اجرای ${record.id} از قبل وجود دارد`)
+    }
+    this.runs.set(record.id, record)
+  }
+
+  async update(record: ProgramRunRecord): Promise<void> {
+    if (!this.runs.has(record.id)) {
+      throw new Error(`اجرای ${record.id} برای به‌روزرسانی وجود ندارد`)
+    }
+    this.runs.set(record.id, record)
+  }
+
+  async get(id: string): Promise<ProgramRunRecord | null> {
+    return this.runs.get(id) ?? null
+  }
+
+  async listByDate(date: string): Promise<ProgramRunRecord[]> {
+    return [...this.runs.values()]
+      .filter((r) => r.date === date)
+      .sort((a, b) => a.startedAt - b.startedAt)
+  }
+
+  async listAll(): Promise<ProgramRunRecord[]> {
+    return [...this.runs.values()].sort((a, b) => a.startedAt - b.startedAt)
   }
 }

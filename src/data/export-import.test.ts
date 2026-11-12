@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SessionRecord, TrialEventRecord } from '../core/types'
 import { toTrialEventRecord } from '../core/types'
+import type { ProgramRunRecord } from '../core/program/types'
 import {
+  InMemoryProgramRunRepository,
   InMemorySessionRepository,
   InMemoryTrialEventRepository,
 } from './repositories/in-memory-repositories'
@@ -44,29 +46,67 @@ function makeTrial(sessionId: string, trialIndex: number): TrialEventRecord {
   )
 }
 
+function makeRun(id: string, sessionIds: readonly string[] = []): ProgramRunRecord {
+  return {
+    id,
+    date: '2026-11-12',
+    startedAt: 1_700_000_000_000,
+    endedAt: 1_700_001_000_000,
+    durationMs: 1_000_000,
+    sessionIds,
+    status: 'completed',
+  }
+}
+
 describe('Export/Import', () => {
   it('چرخه کامل: ساخت پشتیبان → پاک‌سازی → بازیابی → داده یکسان', async () => {
     const sessions = new InMemorySessionRepository()
     const trials = new InMemoryTrialEventRepository()
+    const runs = new InMemoryProgramRunRepository()
     await sessions.create(makeSession('s1'))
     await sessions.create(makeSession('s2', { exerciseId: 'stroop', status: 'aborted' }))
     await trials.appendMany([makeTrial('s1', 0), makeTrial('s1', 1)])
+    await runs.create(makeRun('run-1', ['s1']))
 
-    const backup = await createBackup(sessions, trials)
+    const backup = await createBackup(sessions, trials, runs)
     expect(backup.app).toBe('cognitive-training-lab')
-    expect(backup.schemaVersion).toBe(1)
+    expect(backup.schemaVersion).toBe(2)
     expect(backup.sessions).toHaveLength(2)
     expect(backup.trialEvents).toHaveLength(2)
+    expect(backup.programRuns).toHaveLength(1)
     expect(backup.exportedAt).toBeTruthy()
 
     // شبیه‌سازی دستگاه جدید: دیتابیس خالی
     const freshSessions = new InMemorySessionRepository()
     const freshTrials = new InMemoryTrialEventRepository()
+    const freshRuns = new InMemoryProgramRunRepository()
     const validated = validateBackup(JSON.parse(JSON.stringify(backup)))
-    const result = await restoreBackup(validated, freshSessions, freshTrials)
-    expect(result).toEqual({ sessionsImported: 2, trialEventsImported: 2 })
+    const result = await restoreBackup(validated, freshSessions, freshTrials, freshRuns)
+    expect(result).toEqual({ sessionsImported: 2, trialEventsImported: 2, programRunsImported: 1 })
     expect(await freshSessions.get('s1')).toEqual(makeSession('s1'))
     expect((await freshTrials.listBySession('s1')).map((e) => e.trialIndex)).toEqual([0, 1])
+    expect((await freshRuns.get('run-1'))?.sessionIds).toEqual(['s1'])
+  })
+
+  it('پشتیبان نسخهٔ ۱ (بدون programRuns) پذیرفته و بدون اجرا بازیابی می‌شود', async () => {
+    const v1 = {
+      app: 'cognitive-training-lab',
+      schemaVersion: 1,
+      exportedAt: '2026-11-01T00:00:00Z',
+      sessions: [makeSession('old-1')],
+      trialEvents: [],
+    }
+    const validated = validateBackup(JSON.parse(JSON.stringify(v1)))
+    expect(validated.programRuns).toEqual([])
+    const freshRuns = new InMemoryProgramRunRepository()
+    const result = await restoreBackup(
+      validated,
+      new InMemorySessionRepository(),
+      new InMemoryTrialEventRepository(),
+      freshRuns,
+    )
+    expect(result.programRunsImported).toBe(0)
+    expect(await freshRuns.listAll()).toEqual([])
   })
 
   it('بازیابی دوباره همان فایل، داده تکراری نمی‌سازد (idempotent)', async () => {
@@ -141,10 +181,11 @@ describe('Export/Import', () => {
       expect(() =>
         downloadBackupFile({
           app: 'cognitive-training-lab',
-          schemaVersion: 1,
+          schemaVersion: 2,
           exportedAt: '2026-11-10T00:00:00Z',
           sessions: [],
           trialEvents: [],
+          programRuns: [],
         }),
       ).not.toThrow()
       expect(createObjectURL).toHaveBeenCalled()

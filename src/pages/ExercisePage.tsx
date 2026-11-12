@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameShell } from '../components/game/GameShell'
 import {
   computeAdaptiveDifficulty,
@@ -7,7 +7,19 @@ import {
   toLocalIsoDate,
 } from '../core/difficulty/adaptive-difficulty'
 import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-difficulty'
+import { deriveCompletedExerciseIds } from '../core/program/plan-status'
+import {
+  finalizeRun,
+  findInProgressRun,
+  nextPendingItem,
+  startRun,
+  summarizeRun,
+  withSession,
+} from '../core/program/run-chain'
+import type { ProgramRunSummary } from '../core/program/run-chain'
+import type { ProgramRunRecord, TrainingPlanItem, TrainingPlanRecord } from '../core/program/types'
 import { getAppData } from '../data/app-data'
+import { PROGRAM_TEXTS_FA } from '../i18n/fa'
 import { createAppRegistry, createExerciseConfig } from '../modules'
 import { Calculation20Game } from '../modules/processing-speed/games/calculation-20/Calculation20Game'
 import { Calculation100Game } from '../modules/processing-speed/games/calculation-100/Calculation100Game'
@@ -38,7 +50,7 @@ import { SymmetrySpanGame } from '../modules/visual-spatial/games/symmetry-span/
 import { RuleDiscoveryCardSortingGame } from '../modules/reasoning/games/rule-discovery-card-sorting/RuleDiscoveryCardSortingGame'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA } from '../i18n/fa'
-import { toFaDigits } from '../utils/format'
+import { formatDuration, toFaDigits } from '../utils/format'
 import styles from './exercise.module.css'
 
 const registry = createAppRegistry()
@@ -105,9 +117,39 @@ function renderGame(exerciseId: string) {
   }
 }
 
+/**
+ * صفحهٔ تمرین — wrapper فقط پارامترها را می‌خواند و با کلیدِ ترکیبی
+ * «تمرین + تاریخ زنجیره» کامپوننت داخلی را remount می‌کند تا رفتن به
+ * تمرین بعدیِ زنجیرهٔ برنامه، state تازهٔ تمیزی بگیرد.
+ */
 export function ExercisePage() {
   const { exerciseId = '' } = useParams()
+  const [searchParams] = useSearchParams()
+  const runDate = searchParams.get('run')
+  return (
+    <ExercisePageInner
+      key={`${exerciseId}|${runDate ?? ''}`}
+      exerciseId={exerciseId}
+      runDate={runDate}
+    />
+  )
+}
+
+interface ExercisePageInnerProps {
+  readonly exerciseId: string
+  /** تاریخ طرح برنامه — وجودش یعنی حالت «اجرای زنجیره‌ای برنامه» */
+  readonly runDate: string | null
+}
+
+/** وضعیت زنجیره پس از پایان یک جلسهٔ کامل */
+interface RunNextState {
+  /** آیتم بعدی یا null وقتی همهٔ آیتم‌های طرح انجام شده */
+  readonly item: TrainingPlanItem | null
+}
+
+function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
   const navigate = useNavigate()
+  const [, setSearchParams] = useSearchParams()
   const registered = registry.get(exerciseId)
 
   const [difficulty, setDifficulty] = useState(1)
@@ -118,6 +160,11 @@ export function ExercisePage() {
   // دشواری تطبیقی: سطح پیشنهادی سیستم + وضعیت رکورد
   const [adaptive, setAdaptive] = useState<AdaptiveDifficultyResult | null>(null)
   const [progressRefreshKey, setProgressRefreshKey] = useState(0)
+  // حالت زنجیرهٔ برنامه
+  const [runPlan, setRunPlan] = useState<TrainingPlanRecord | null>(null)
+  const [run, setRun] = useState<ProgramRunRecord | null>(null)
+  const [runNext, setRunNext] = useState<RunNextState | null>(null)
+  const [runSummary, setRunSummary] = useState<ProgramRunSummary | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -129,9 +176,10 @@ export function ExercisePage() {
     }
   }, [])
 
-  // محاسبه سطح پیشنهادی از تاریخچه جلسات — با هر بازگشت به picker تازه می‌شود
+  // محاسبه سطح پیشنهادی از تاریخچه جلسات — با هر بازگشت به picker تازه می‌شود.
+  // در حالت زنجیره، سطح از آیتم طرح می‌آید و این محاسبه معلق است.
   useEffect(() => {
-    if (!appData || !registered) return
+    if (!appData || !registered || runDate) return
     let cancelled = false
     void (async () => {
       const history = await appData.sessions.listByExercise(registered.meta.id)
@@ -144,9 +192,102 @@ export function ExercisePage() {
     return () => {
       cancelled = true
     }
-  }, [appData, registered, progressRefreshKey])
+  }, [appData, registered, progressRefreshKey, runDate])
+
+  // حالت زنجیره: طرح را بارگذاری، سطح آیتم را بگذار، رکورد اجرا را تضمین کن
+  useEffect(() => {
+    if (!appData || !runDate || !registered) return
+    let cancelled = false
+    void (async () => {
+      const plan = await appData.plans.getByDate(runDate)
+      if (cancelled) return
+      const item = plan?.items.find((i) => i.exerciseId === exerciseId)
+      if (!plan || !item) {
+        // پارامتر run نامعتبر است (طرح نیست/تمرین عضو طرح نیست) → حالت عادی
+        setSearchParams({}, { replace: true })
+        return
+      }
+      setRunPlan(plan)
+      setDifficulty(item.difficulty)
+      setDifficultyConfirmed(true)
+      // ادامهٔ اجرای بازِ همان روز (رفرش وسط زنجیره) یا اجرای تازه
+      const runs = await appData.runs.listByDate(runDate)
+      let current = findInProgressRun(runs)
+      if (!current) {
+        current = startRun(runDate, Date.now())
+        await appData.runs.create(current)
+      }
+      if (!cancelled) setRun(current)
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appData, runDate, registered, exerciseId])
 
   const renderTrial = useMemo(() => (registered ? renderGame(registered.meta.id) : null), [registered])
+
+  // آخرین مقادیر برای callbackهای async (الگوی ref همگام)
+  const runRef = useRef<ProgramRunRecord | null>(null)
+  runRef.current = run
+  const runPlanRef = useRef<TrainingPlanRecord | null>(null)
+  runPlanRef.current = runPlan
+
+  /** پایان جلسه در زنجیره: ضمیمهٔ جلسه؛ کامل → محاسبهٔ بعدی یا پایان برنامه؛ قطع → بستن زنجیره */
+  const handleSessionFinished = useCallback(
+    (info: { sessionId: string; status: 'completed' | 'aborted' }) => {
+      if (!appData || !runDate) return
+      void (async () => {
+        const current = runRef.current
+        const plan = runPlanRef.current
+        if (!current || !plan) return
+        let updated = withSession(current, info.sessionId)
+        if (info.status === 'aborted') {
+          // جلسه قطع شد — زنجیره همان‌جا بسته می‌شود؛ خروج کاربر به /program می‌رود
+          updated = finalizeRun(updated, 'aborted', Date.now())
+          await appData.runs.update(updated)
+          setRun(updated)
+          return
+        }
+        // جلسهٔ کامل — آیتم بعدی از وضعیت تازهٔ جلسات مشتق می‌شود
+        const sessionsPerItem = await Promise.all(
+          plan.items.map((item) => appData.sessions.listByExercise(item.exerciseId)),
+        )
+        const doneIds = deriveCompletedExerciseIds(sessionsPerItem.flat(), plan.date)
+        const next = nextPendingItem(plan.items, doneIds)
+        if (next === null) {
+          // پایان برنامه — نهایی‌سازی و خلاصهٔ تحلیلی کل زنجیره
+          const finished = finalizeRun(updated, 'completed', Date.now())
+          await appData.runs.update(finished)
+          const recent = await appData.sessions.listRecent(Number.MAX_SAFE_INTEGER)
+          setRun(finished)
+          setRunNext({ item: null })
+          setRunSummary(summarizeRun(finished, recent))
+          return
+        }
+        await appData.runs.update(updated)
+        setRun(updated)
+        setRunNext({ item: next })
+      })()
+    },
+    [appData, runDate],
+  )
+
+  /** ترک زنجیره (خروج/توقف) — اجرای باز را قطع‌شده نهایی می‌کند و به برنامه برمی‌گردد */
+  const leaveRun = useCallback(() => {
+    const current = runRef.current
+    if (current && current.status === 'in_progress' && appData) {
+      void appData.runs.update(finalizeRun(current, 'aborted', Date.now()))
+    }
+    void navigate('/program')
+  }, [appData, navigate])
+
+  const goNextExercise = useCallback(
+    (item: TrainingPlanItem) => {
+      void navigate(`/play/${item.exerciseId}?run=${runDate ?? ''}`)
+    },
+    [navigate, runDate],
+  )
 
   if (!registered) {
     return (
@@ -157,6 +298,17 @@ export function ExercisePage() {
             بازگشت به فهرست تمرین‌ها
           </Link>
         </div>
+      </main>
+    )
+  }
+
+  // حالت زنجیره: تا آماده‌سازی طرح/رکورد اجرا، پیام آماده‌سازی (نه فلش picker)
+  if (runDate && (!difficultyConfirmed || !appData)) {
+    return (
+      <main className="app-shell">
+        <p className={styles.runLoading} data-testid="run-loading">
+          {PROGRAM_TEXTS_FA.runLoading}
+        </p>
       </main>
     )
   }
@@ -225,6 +377,22 @@ export function ExercisePage() {
     )
   }
 
+  // نوار زنجیرهٔ برنامه — پس از پایان جلسهٔ کامل در صفحهٔ نتایج
+  const runExtraActions =
+    runDate && runNext !== null
+      ? runNext.item
+        ? (
+            <RunNextBar
+              nextName={registry.get(runNext.item.exerciseId)?.meta.nameFa ?? runNext.item.exerciseId}
+              onGo={() => goNextExercise(runNext.item as TrainingPlanItem)}
+              onStop={leaveRun}
+            />
+          )
+        : (
+            <RunCompleteCard summary={runSummary} onBack={() => void navigate('/program')} />
+          )
+      : undefined
+
   return (
     <main className="app-shell">
       <GameShell
@@ -233,7 +401,15 @@ export function ExercisePage() {
         config={createExerciseConfig(registered.meta.id, difficulty)}
         deps={appData}
         renderTrial={(ctx) => renderTrial?.(ctx) ?? null}
+        autoStart={runDate !== null}
+        onSessionFinished={runDate ? handleSessionFinished : undefined}
+        extraActions={runExtraActions}
         onExit={() => {
+          if (runDate) {
+            // خروج از زنجیره — اجرا بسته می‌شود و به برنامه برمی‌گردیم
+            leaveRun()
+            return
+          }
           // بازگشت به انتخاب سطح؛ round جدید جلسه تازه و progress تازه
           setDifficultyConfirmed(false)
           setSessionRound((r) => r + 1)
@@ -242,5 +418,88 @@ export function ExercisePage() {
         }}
       />
     </main>
+  )
+}
+
+/** نوار «تمرین بعدی» در صفحهٔ نتایج — شمارش خودکار با دکمه‌های کنترل */
+function RunNextBar({
+  nextName,
+  onGo,
+  onStop,
+  autoSeconds = 8,
+}: {
+  nextName: string
+  onGo: () => void
+  onStop: () => void
+  autoSeconds?: number
+}) {
+  const [seconds, setSeconds] = useState(autoSeconds)
+  useEffect(() => {
+    if (seconds <= 0) {
+      onGo()
+      return
+    }
+    const timer = window.setTimeout(() => setSeconds((s) => s - 1), 1000)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seconds])
+
+  return (
+    <div className={styles.runBar} data-testid="program-run-next">
+      <span className={styles.runBarText}>
+        {PROGRAM_TEXTS_FA.runNextExercise(nextName)} · {toFaDigits(seconds)}
+      </span>
+      <div className={styles.runBarButtons}>
+        <button type="button" className={styles.runBarPrimary} onClick={onGo}>
+          {PROGRAM_TEXTS_FA.runGoNow}
+        </button>
+        <button type="button" className={styles.runBarSecondary} onClick={onStop}>
+          {PROGRAM_TEXTS_FA.runStop}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** کارت پایان برنامه — خلاصهٔ تحلیلی کل زنجیره و بازگشت خودکار */
+function RunCompleteCard({
+  summary,
+  onBack,
+  autoSeconds = 6,
+}: {
+  summary: ProgramRunSummary | null
+  onBack: () => void
+  autoSeconds?: number
+}) {
+  const [seconds, setSeconds] = useState(autoSeconds)
+  useEffect(() => {
+    if (seconds <= 0) {
+      onBack()
+      return
+    }
+    const timer = window.setTimeout(() => setSeconds((s) => s - 1), 1000)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seconds])
+
+  return (
+    <div className={styles.runBar} data-testid="program-run-complete">
+      <span className={styles.runBarDone}>{PROGRAM_TEXTS_FA.runCompleteTitle}</span>
+      {summary ? (
+        <span className={styles.runBarText}>
+          {PROGRAM_TEXTS_FA.runTotalTime}: {formatDuration(summary.wallDurationMs ?? 0)}
+          {' · '}
+          {PROGRAM_TEXTS_FA.runSessions}: {toFaDigits(summary.completedSessions)}
+          {summary.meanAccuracy !== null
+            ? ` · ${PROGRAM_TEXTS_FA.runMeanAccuracy}: ${toFaDigits(summary.meanAccuracy)}٪`
+            : ''}
+        </span>
+      ) : null}
+      <div className={styles.runBarButtons}>
+        <button type="button" className={styles.runBarPrimary} onClick={onBack}>
+          {PROGRAM_TEXTS_FA.runBackToProgram} ({toFaDigits(seconds)})
+        </button>
+      </div>
+    </div>
   )
 }

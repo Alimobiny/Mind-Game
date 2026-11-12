@@ -82,7 +82,8 @@ export interface VisibleColumn {
 
 export const BLOCK_HEIGHT_ID = 'block-height'
 export const BLOCK_HEIGHT_VERSION = '1.0.0'
-export const BLOCK_HEIGHT_CONTENT_VERSION = '1'
+/** ۲ = رندر ایزومتریک + دستورالعمل بازنویسی‌شده (منطق تولید بدون تغییر) */
+export const BLOCK_HEIGHT_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 12
 
 /**

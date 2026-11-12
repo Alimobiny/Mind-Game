@@ -1,5 +1,5 @@
 import type { SessionRecord, SessionStatus, TrialEventRecord } from '../../core/types'
-import type { TrainingPlanRecord } from '../../core/program/types'
+import type { ProgramRunRecord, TrainingPlanRecord } from '../../core/program/types'
 
 /** قرارداد ذخیره‌سازی جلسه‌ها — پیاده‌سازی IndexedDB و in-memory دارد */
 export interface SessionRepository {
@@ -50,4 +50,19 @@ export interface TrainingPlanRepository {
   put(record: TrainingPlanRecord): Promise<void>
   /** آخرین برنامه‌ها به ترتیب تاریخ (جدید → قدیم) — برای قاعده فاصله‌گذاری */
   listRecent(limit: number): Promise<TrainingPlanRecord[]>
+}
+
+/**
+ * قرارداد ذخیره‌سازی اجراهای زنجیره‌ای برنامهٔ روزانه.
+ * برخلاف طرح‌ها، کلید id یکتاست — put روی id موجود به‌روزرسانی همان اجراست.
+ */
+export interface ProgramRunRepository {
+  create(record: ProgramRunRecord): Promise<void>
+  /** جایگزینی رکورد موجود — برای ضمیمه‌کردن جلسه یا نهایی‌سازی */
+  update(record: ProgramRunRecord): Promise<void>
+  get(id: string): Promise<ProgramRunRecord | null>
+  /** اجراهای یک روز به ترتیب شروع (قدیمی → جدید) */
+  listByDate(date: string): Promise<ProgramRunRecord[]>
+  /** همهٔ اجراها (برای پشتیبان‌گیری) */
+  listAll(): Promise<ProgramRunRecord[]>
 }

@@ -1,12 +1,13 @@
 /**
- * باز کردن IndexedDB با ساختار نسخه ۲ و مهاجرت‌های آینده.
+ * باز کردن IndexedDB با ساختار نسخه ۳ و مهاجرت‌های آینده.
  * استورها مطابق سند معماری: exercise_sessions، trial_events،
- * exercise_settings، user_preferences، schema_meta — و از نسخه ۲:
- * training_plans (برنامه تمرینی روزانه، کلید = تاریخ ISO محلی).
+ * exercise_settings، user_preferences، schema_meta — از نسخه ۲:
+ * training_plans (برنامه تمرینی روزانه، کلید = تاریخ ISO محلی) و
+ * از نسخه ۳: program_runs (اجراهای زنجیره‌ای برنامه، کلید = id یکتا).
  */
 
 export const DB_NAME = 'cognitive-training-lab'
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 
 export const STORES = {
   exerciseSessions: 'exercise_sessions',
@@ -15,6 +16,7 @@ export const STORES = {
   userPreferences: 'user_preferences',
   schemaMeta: 'schema_meta',
   trainingPlans: 'training_plans',
+  programRuns: 'program_runs',
 } as const
 
 export function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
@@ -68,6 +70,12 @@ export function openDatabase(
       // نسخه ۲: استور برنامه تمرینی — فقط هنگام ارتقا از <۲ یا نصب تازه
       if (event.oldVersion < 2 && db.objectStoreNames.contains(STORES.trainingPlans) === false) {
         db.createObjectStore(STORES.trainingPlans, { keyPath: 'date' })
+      }
+      // نسخه ۳: استور اجراهای برنامه (زنجیرهٔ خودکار) — کلید id یکتا؛
+      // یک روز می‌تواند چند اجرا داشته باشد (شروع دوباره)
+      if (event.oldVersion < 3 && db.objectStoreNames.contains(STORES.programRuns) === false) {
+        const runs = db.createObjectStore(STORES.programRuns, { keyPath: 'id' })
+        runs.createIndex('by_date', 'date', { unique: false })
       }
       const meta = request.transaction?.objectStore(STORES.schemaMeta)
       meta?.put({ key: 'schema_version', value: DB_VERSION })

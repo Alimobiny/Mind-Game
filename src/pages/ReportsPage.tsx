@@ -65,7 +65,7 @@ export function ReportsPage() {
     setBackupMessage(null)
     try {
       const appData = await getAppData()
-      const backup = await createBackup(appData.sessions, appData.trialEvents)
+      const backup = await createBackup(appData.sessions, appData.trialEvents, appData.runs)
       downloadBackupFile(backup)
       setBackupMessage(
         `پشتیبان ساخته شد: ${toFaDigits(backup.sessions.length)} جلسه و ${toFaDigits(backup.trialEvents.length)} رویداد.`,
@@ -81,7 +81,7 @@ export function ReportsPage() {
       const text = await file.text()
       const backup = validateBackup(JSON.parse(text))
       const appData = await getAppData()
-      const result = await restoreBackup(backup, appData.sessions, appData.trialEvents)
+      const result = await restoreBackup(backup, appData.sessions, appData.trialEvents, appData.runs)
       setBackupMessage(
         `بازیابی شد: ${toFaDigits(result.sessionsImported)} جلسه و ${toFaDigits(result.trialEventsImported)} رویداد (ادغام بدون حذف).`,
       )

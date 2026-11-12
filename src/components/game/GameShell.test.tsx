@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { RecordedTrial } from '../../core/types'
@@ -220,5 +220,68 @@ describe('GameShell — چرخه کامل UI', () => {
     expect(await screen.findByText('این جلسه نیمه‌کاره رها شد.')).toBeInTheDocument()
     const all = await sessions.listRecent(10)
     expect(all[0]?.status).toBe('aborted')
+  }, 20_000)
+
+  it('autoStart: شمارش روی دکمهٔ شروع و آغاز خودکار بدون کلیک کاربر', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const props = makeProps({ autoStart: true })
+
+    render(
+      <MemoryRouter>
+        <GameShell {...props} />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByTestId('instructions')).toBeInTheDocument()
+    // دکمهٔ شروع شمارش خودکار را نشان می‌دهد
+    const start = await screen.findByTestId('game-start')
+    await waitFor(() => expect(start.textContent).toBe('شروع تمرین (۵)'))
+
+    // ۵ تیک شمارش خودکار — هر تیک با رندر ترتیبی flush می‌شود
+    const FA = '۰۱۲۳۴۵۶۷۸۹'
+    for (let s = 4; s >= 1; s -= 1) {
+      vi.advanceTimersByTime(1050)
+      await waitFor(() => expect(start.textContent).toBe(`شروع تمرین (${FA[s]})`))
+    }
+    // رسیدن به صفر → آغاز خودکار → شمارش معکوس ۳ ثانیه‌ای خود بازی
+    vi.advanceTimersByTime(1050)
+    await screen.findByText('۳')
+    vi.advanceTimersByTime(1050)
+    await screen.findByText('۲')
+    vi.advanceTimersByTime(1050)
+    await screen.findByText('۱')
+    vi.advanceTimersByTime(1050)
+
+    // ورود مستقیم به فاز فعال — کاربر هیچ دکمه‌ای نخورده است
+    expect(await screen.findByText('مرحله 1')).toBeInTheDocument()
+  }, 20_000)
+
+  it('onSessionFinished: پایان جلسه یک‌بار با شناسه و وضعیت صدا زده می‌شود', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const sessions = new InMemorySessionRepository()
+    const onSessionFinished = vi.fn()
+    const props = makeProps({
+      deps: { sessions, trialEvents: new InMemoryTrialEventRepository(), settings: new InMemoryExerciseSettingsRepository() },
+      onSessionFinished,
+    })
+
+    render(
+      <MemoryRouter>
+        <GameShell {...props} />
+      </MemoryRouter>,
+    )
+
+    await reachActivePhase(user)
+    await user.click(screen.getByRole('button', { name: 'پاسخ' }))
+    await user.click(await screen.findByRole('button', { name: 'پاسخ' }))
+    await screen.findByTestId('results')
+
+    const all = await sessions.listRecent(10)
+    expect(onSessionFinished).toHaveBeenCalledTimes(1)
+    expect(onSessionFinished).toHaveBeenCalledWith({
+      sessionId: all[0]?.id as string,
+      status: 'completed',
+    })
   }, 20_000)
 })

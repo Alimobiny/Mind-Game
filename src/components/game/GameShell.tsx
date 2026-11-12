@@ -44,11 +44,34 @@ export interface GameShellProps {
   /** render prop مرحله فعال */
   readonly renderTrial: (ctx: ActiveGameContext) => ReactNode
   readonly onExit: () => void
+  /**
+   * حالت زنجیرهٔ برنامهٔ روزانه: پس از شمارش نمایان چندثانیه‌ای، تمرین
+   * بدون فشردن دکمهٔ شروع آغاز می‌شود (دستورالعمل می‌ماند؛ خروج ممکن است).
+   */
+  readonly autoStart?: boolean
+  /** یک‌بار پس از پایان جلسه (کامل یا قطع) صدا زده می‌شود */
+  readonly onSessionFinished?: (info: {
+    readonly sessionId: string
+    readonly status: 'completed' | 'aborted'
+  }) => void
+  /** محتوای اضافی صفحهٔ نتایج — مثلاً نوار «تمرین بعدی» زنجیرهٔ برنامه */
+  readonly extraActions?: ReactNode
 }
 
 const COUNTDOWN_SECONDS = 3
+/** شمارش نمایان روی دکمهٔ شروع پیش از آغاز خودکار (ثانیه) */
+const AUTO_START_SECONDS = 5
 
-export function GameShell({ registered, config, deps, renderTrial, onExit }: GameShellProps) {
+export function GameShell({
+  registered,
+  config,
+  deps,
+  renderTrial,
+  onExit,
+  autoStart = false,
+  onSessionFinished,
+  extraActions,
+}: GameShellProps) {
   const managerRef = useRef<ExerciseSessionManager | null>(null)
   if (managerRef.current === null) {
     managerRef.current = new ExerciseSessionManager({
@@ -98,6 +121,10 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
   const confirmExitTimer = useRef<number | null>(null)
   // وضعیت دشواری تطبیقی پس از پایان جلسه — برای بازخورد حد نصاب و رکورد
   const [postAdaptive, setPostAdaptive] = useState<AdaptiveDifficultyResult | null>(null)
+  // شمارش شروع خودکار (حالت زنجیره) — روی دکمهٔ شروع نمایش داده می‌شود
+  const [autoStartSeconds, setAutoStartSeconds] = useState<number | null>(null)
+  // قفل یک‌باربه‌ازای-مانت برای onSessionFinished
+  const finishedFiredRef = useRef(false)
 
   const requestExit = useCallback(() => {
     if (!confirmExit) {
@@ -127,6 +154,37 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
     manager.beginCountdown()
     setCountdown(COUNTDOWN_SECONDS)
   }, [manager])
+
+  // حالت زنجیرهٔ برنامه: شمارش نمایان روی دکمهٔ شروع، سپس آغاز خودکار
+  useEffect(() => {
+    if (!autoStart || phase !== 'READY') return
+    setAutoStartSeconds((current) => current ?? AUTO_START_SECONDS)
+  }, [autoStart, phase])
+
+  useEffect(() => {
+    if (autoStartSeconds === null || phase !== 'READY') return
+    if (autoStartSeconds <= 0) {
+      setAutoStartSeconds(null)
+      beginCountdown()
+      return
+    }
+    const timer = window.setTimeout(
+      () => setAutoStartSeconds((s) => (s === null ? null : s - 1)),
+      1000,
+    )
+    return () => window.clearTimeout(timer)
+  }, [autoStartSeconds, phase, beginCountdown])
+
+  // گزارش یک‌بارهٔ پایان جلسه به صفحه — برای ضبط جلسه در اجرای برنامه
+  useEffect(() => {
+    if (phase !== 'COMPLETED' && phase !== 'ABORTED') return
+    if (finishedFiredRef.current || snapshot.sessionId === null) return
+    finishedFiredRef.current = true
+    onSessionFinished?.({
+      sessionId: snapshot.sessionId,
+      status: phase === 'COMPLETED' ? 'completed' : 'aborted',
+    })
+  }, [phase, snapshot.sessionId, onSessionFinished])
 
   // شمارش معکوس
   useEffect(() => {
@@ -190,7 +248,12 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
         <InstructionsScreen
           registered={registered}
           difficulty={config.difficulty}
-          onStart={beginCountdown}
+          autoStartCountdown={autoStartSeconds}
+          onStart={() => {
+            // شروع دستی شمارش خودکار را لغو می‌کند
+            setAutoStartSeconds(null)
+            beginCountdown()
+          }}
           onExit={() => {
             // خروج پیش از شروع: رکورد in_progressِ ساخته‌شده در start()
             // باید همین‌جا aborted شود، نه این که تا بوت بعدی زنده بماند
@@ -231,9 +294,12 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
           onRetry={onExit}
           adaptive={postAdaptive}
           extraActions={
-            <Link className={styles.secondaryButton} to="/reports">
-              {APP_TEXTS_FA.reports}
-            </Link>
+            <>
+              {extraActions}
+              <Link className={styles.secondaryButton} to="/reports">
+                {APP_TEXTS_FA.reports}
+              </Link>
+            </>
           }
         />
       ) : null}
@@ -258,11 +324,14 @@ export function GameShell({ registered, config, deps, renderTrial, onExit }: Gam
 function InstructionsScreen({
   registered,
   difficulty,
+  autoStartCountdown,
   onStart,
   onExit,
 }: {
   registered: RegisteredExercise
   difficulty: number
+  /** شمارش شروع خودکار (حالت زنجیره) — null یعنی حالت عادی */
+  autoStartCountdown: number | null
   onStart: () => void
   onExit: () => void
 }) {
@@ -290,8 +359,15 @@ function InstructionsScreen({
           {APP_TEXTS_FA.difficulty}: {toFaDigits(difficulty)} از {toFaDigits(5)}
         </p>
         <div className={styles.buttonRow} style={{ marginTop: 'var(--space-4)' }}>
-          <button type="button" className={styles.primaryButton} onClick={onStart}>
-            {APP_TEXTS_FA.startExercise}
+          <button
+            type="button"
+            className={styles.primaryButton}
+            onClick={onStart}
+            data-testid="game-start"
+          >
+            {autoStartCountdown !== null
+              ? `${APP_TEXTS_FA.startExercise} (${toFaDigits(autoStartCountdown)})`
+              : APP_TEXTS_FA.startExercise}
           </button>
           <button type="button" className={styles.secondaryButton} onClick={onExit}>
             {APP_TEXTS_FA.exit}
