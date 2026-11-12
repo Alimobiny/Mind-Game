@@ -1,55 +1,72 @@
+/* ProgramPage — چیدمان فشرده: هر آیتم یک ردیف، متن‌های بلند در details */
+
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-block: var(--space-4);
+  padding-block: var(--space-3) var(--space-2);
 }
 
 .header h1 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
 }
 
 .backLink {
   color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* تاریخ + مجموع تخمینی در یک ردیف فشرده */
+.dateRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-block: var(--space-1) var(--space-2);
 }
 
 .todayDate {
   color: var(--color-primary);
   font-weight: 700;
+  font-size: 0.95rem;
 }
 
 .totalLine {
   color: var(--color-text-muted);
   font-size: 0.8rem;
-  margin-top: var(--space-1);
 }
 
 .allDone {
-  margin-top: var(--space-4);
+  margin-block: var(--space-2);
   color: var(--color-success);
   font-weight: 700;
 }
 
 .itemList {
   list-style: none;
-  margin: var(--space-4) 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
+/* ردیف فشردهٔ یک‌خطی: تایل | نام+متا | نشان | دکمه */
 .item,
 .itemDone {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: var(--space-2);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-inline-start: 3px solid color-mix(in srgb, var(--accent, var(--color-primary)) 40%, transparent);
   border-radius: var(--radius-md);
-  padding: var(--space-4);
-  box-shadow: var(--shadow-1);
+  padding: 10px var(--space-3);
   animation: fade-up 380ms ease backwards;
+  transition: border-color 160ms ease;
+}
+
+.item:hover {
+  border-color: color-mix(in srgb, var(--accent, var(--color-primary)) 45%, var(--color-border));
 }
 
 .itemDone {
@@ -57,37 +74,49 @@
   border-inline-start-color: var(--color-success);
 }
 
-.itemHead {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-/* کاشی گلیف نوع تمرین — هم‌خانوادهٔ فهرست اصلی */
 .itemTile {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   flex-shrink: 0;
   color: var(--type-accent, var(--color-primary));
   background: color-mix(in srgb, var(--type-accent, var(--color-primary)) 13%, transparent);
   border: 1px solid color-mix(in srgb, var(--type-accent, var(--color-primary)) 28%, transparent);
 }
 
+.itemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
 .itemName {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemMeta {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .badgeDone,
 .badgePending {
-  font-size: 0.7rem;
-  padding: 2px 10px;
+  font-size: 0.65rem;
+  padding: 2px 8px;
   border-radius: 999px;
   white-space: nowrap;
-  margin-inline-start: auto;
+  flex-shrink: 0;
 }
 
 .badgeDone {
@@ -100,50 +129,56 @@
   border: 1px solid var(--color-warning);
 }
 
-.itemDomain {
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-}
-
-.itemMeta {
-  font-size: 0.75rem;
-  color: var(--color-primary);
-}
-
 .startLink {
-  margin-top: var(--space-2);
+  flex-shrink: 0;
   background: var(--color-primary-strong);
   color: #082f49;
-  border-radius: var(--radius-md);
-  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
   font-weight: 700;
-  min-height: var(--tap-target);
-  text-align: center;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .startLinkSecondary {
-  margin-top: var(--space-2);
+  flex-shrink: 0;
   background: transparent;
   color: var(--color-primary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 10px 20px;
-  min-height: var(--tap-target);
-  text-align: center;
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* اصول طراحی — جمع‌شونده تا صفحه کوتاه بماند */
+.guidelineDetails {
+  margin-top: var(--space-4);
+}
+
+.guidelineDetails summary {
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  padding-block: var(--space-2);
+  border-block: 1px dashed var(--color-border);
+}
+
+.guidelineDetails[open] summary {
+  border-bottom: none;
 }
 
 .guideline {
-  margin-top: var(--space-5);
   color: var(--color-text-muted);
   font-size: 0.78rem;
   line-height: 1.9;
-  border-block: 1px dashed var(--color-border);
-  padding-block: var(--space-3);
+  padding-block: var(--space-2);
+  border-bottom: 1px dashed var(--color-border);
 }
 
 .footer {
   margin-top: auto;
-  padding-block: var(--space-5);
+  padding-block: var(--space-4);
   display: grid;
   justify-items: center;
 }

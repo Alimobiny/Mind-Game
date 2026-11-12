@@ -111,11 +111,13 @@ export function ProgramPage() {
 
       {!error && data ? (
         <>
-          <p className={styles.todayDate}>{formatDate(Date.now())}</p>
-          <p className={styles.totalLine}>
-            {PROGRAM_TEXTS_FA.estimatedTotal}: {toFaDigits(totalMinutes)}{' '}
-            {PROGRAM_TEXTS_FA.minutesUnit} · {PROGRAM_TEXTS_FA.targetRange}
-          </p>
+          <div className={styles.dateRow}>
+            <span className={styles.todayDate}>{formatDate(Date.now())}</span>
+            <span className={styles.totalLine}>
+              {PROGRAM_TEXTS_FA.estimatedTotal}: {toFaDigits(totalMinutes)}{' '}
+              {PROGRAM_TEXTS_FA.minutesUnit} · {PROGRAM_TEXTS_FA.targetRange}
+            </span>
+          </div>
 
           {data.doneIds.size === data.plan.items.length && data.plan.items.length > 0 ? (
             <p className={styles.allDone}>{PROGRAM_TEXTS_FA.allDone}</p>
@@ -132,24 +134,21 @@ export function ProgramPage() {
                   data-testid="program-item"
                   data-domain={meta?.domain}
                 >
-                  <div className={styles.itemHead}>
-                    {meta ? (
-                      <span className={styles.itemTile} data-type={meta.exerciseType}>
-                        <TypeGlyph type={meta.exerciseType} size={20} />
-                      </span>
-                    ) : null}
-                    <span className={styles.itemName}>{meta?.nameFa ?? item.exerciseId}</span>
-                    <span className={done ? styles.badgeDone : styles.badgePending}>
-                      {done ? PROGRAM_TEXTS_FA.statusDone : PROGRAM_TEXTS_FA.statusPending}
+                  {meta ? (
+                    <span className={styles.itemTile} data-type={meta.exerciseType}>
+                      <TypeGlyph type={meta.exerciseType} size={18} />
                     </span>
-                  </div>
-                  <span className={styles.itemDomain}>
-                    {meta ? DOMAIN_LABELS_FA[meta.domain] : ''}
+                  ) : null}
+                  <span className={styles.itemBody}>
+                    <span className={styles.itemName}>{meta?.nameFa ?? item.exerciseId}</span>
+                    <span className={styles.itemMeta}>
+                      {meta ? DOMAIN_LABELS_FA[meta.domain] : ''} · {PROGRAM_TEXTS_FA.suggestedLevel}{' '}
+                      {toFaDigits(item.difficulty)} · {toFaDigits(item.estimatedMinutes)}{' '}
+                      {PROGRAM_TEXTS_FA.minutesUnit}
+                    </span>
                   </span>
-                  <span className={styles.itemMeta}>
-                    {PROGRAM_TEXTS_FA.suggestedLevel} {toFaDigits(item.difficulty)} ·{' '}
-                    {PROGRAM_TEXTS_FA.estimatedMinutes} {toFaDigits(item.estimatedMinutes)}{' '}
-                    {PROGRAM_TEXTS_FA.minutesUnit}
+                  <span className={done ? styles.badgeDone : styles.badgePending}>
+                    {done ? PROGRAM_TEXTS_FA.statusDone : PROGRAM_TEXTS_FA.statusPending}
                   </span>
                   <Link
                     to={`/play/${item.exerciseId}`}
@@ -167,7 +166,10 @@ export function ProgramPage() {
         <p className={styles.empty}>در حال آماده‌سازی برنامه…</p>
       ) : null}
 
-      <p className={styles.guideline}>{PROGRAM_TEXTS_FA.guideline}</p>
+      <details className={styles.guidelineDetails}>
+        <summary>اصول طراحی برنامهٔ روزانه</summary>
+        <p className={styles.guideline}>{PROGRAM_TEXTS_FA.guideline}</p>
+      </details>
       <footer className={styles.footer}>
         <p className={styles.disclaimer}>{APP_TEXTS_FA.disclaimer}</p>
       </footer>

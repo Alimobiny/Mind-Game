@@ -1,5 +1,9 @@
 # پیکربندی electron-builder — نسخهٔ دسکتاپ ویندوز
 # خروجی: release/ (داخل .gitignore)
+#
+# فقط NSIS: نصب‌شوندهٔ one-click با میانبر منوی استارت — بدون هیچ پنجرهٔ CMD.
+# (هدف portable حذف شد: لانچر پرتابل electron-builder یک فرایند console است
+#  و پنجرهٔ CMD کنار اپ باز می‌ماند و گزینهٔ خاموش‌کردنش وجود ندارد.)
 appId: io.github.alimobiny.cognitive-training-lab
 productName: Cognitive Training Lab
 directories:
@@ -13,12 +17,10 @@ files:
 win:
   icon: build/icon.png
   target:
-    - target: portable
-      # تک‌فایل exe — دوبارکلیک و بازی، بدون نصب
-      arch: [x64]
     - target: nsis
-      # نصب‌شونده با میانبر منوی استارت (هدیه)
       arch: [x64]
 nsis:
   oneClick: true
+  # بعد از نصب خودکار اجرا شود — تجربهٔ «دوبارکلیک و اپ»
+  runAfterFinish: true
   shortcutName: Cognitive Training Lab
