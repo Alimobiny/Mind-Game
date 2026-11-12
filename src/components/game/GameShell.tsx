@@ -227,6 +227,24 @@ export function GameShell({
         <h1 className={styles.headerTitle}>{registered.meta.nameFa}</h1>
         {phase === 'ACTIVE' || phase === 'PAUSED' || phase === 'COUNTDOWN' ? (
           <div className={styles.headerActions}>
+            {/* نوار پیشرفت جلسه — نمود پیشروی به رنگ اکسنت حوزه */}
+            <span
+              className={styles.progressBar}
+              data-testid="session-progress-bar"
+              role="progressbar"
+              aria-label={`مرحلهٔ ${toFaDigits(snapshot.answeredTrials)} از ${toFaDigits(registered.meta.plannedTrials ?? 0)}`}
+            >
+              <span
+                className={styles.progressBarFill}
+                style={{
+                  width: `${
+                    registered.meta.plannedTrials && registered.meta.plannedTrials > 0
+                      ? Math.min(100, Math.round((snapshot.answeredTrials / registered.meta.plannedTrials) * 100))
+                      : 0
+                  }%`,
+                }}
+              />
+            </span>
             <span
               className={styles.progress}
               aria-label={`مرحلهٔ ${toFaDigits(snapshot.answeredTrials)} از ${toFaDigits(registered.meta.plannedTrials ?? 0)}`}
@@ -267,7 +285,7 @@ export function GameShell({
       {phase === 'COUNTDOWN' && countdown !== null ? (
         <div className={styles.stage}>
           <p className={styles.hint}>{APP_TEXTS_FA.getReady}</p>
-          <div className={styles.countdownNumber}>{toFaDigits(countdown)}</div>
+          <CountdownRing seconds={countdown} total={COUNTDOWN_SECONDS} />
         </div>
       ) : null}
 
@@ -398,6 +416,8 @@ function ResultsScreen({
     <div className={styles.stage} data-testid="results">
       <div className={styles.card}>
         <h2>جلسه کامل شد</h2>
+        {thresholdMet ? <ConfettiBurst /> : null}
+        <AccuracyDonut accuracy={summary.accuracy} />
         {adaptive ? (
           <div
             className={`${styles.thresholdBanner} ${thresholdMet ? styles.thresholdMet : styles.thresholdMissed}`}
@@ -453,5 +473,99 @@ function ResultsScreen({
         </div>
       </div>
     </div>
+  )
+}
+
+/* ─── تئاتر مشترک: حلقهٔ شمارش معکوس، شمارش عددی، دونات دقت، ذرات قبولی ─── */
+
+/** حلقهٔ SVG شمارش معکوس — با هر تیک پر شدن حلقه کم می‌شود و عدد پالس می‌زند */
+function CountdownRing({ seconds, total }: { seconds: number; total: number }) {
+  const RADIUS = 44
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+  const fraction = total > 0 ? seconds / total : 0
+  return (
+    <div className={styles.countdownWrap} data-testid="countdown-ring">
+      <svg viewBox="0 0 100 100" className={styles.countdownSvg} aria-hidden="true">
+        <circle cx="50" cy="50" r={RADIUS} className={styles.ringTrack} />
+        <circle
+          cx="50"
+          cy="50"
+          r={RADIUS}
+          className={styles.ringFill}
+          strokeDasharray={CIRCUMFERENCE}
+          strokeDashoffset={CIRCUMFERENCE * (1 - fraction)}
+        />
+      </svg>
+      {/* متن عدد همان متن قبلی است — تست‌ها روی آن سوارند */}
+      <div key={seconds} className={styles.countdownNumber}>
+        {toFaDigits(seconds)}
+      </div>
+    </div>
+  )
+}
+
+/** عدد شمارشی از صفر تا مقدار — با reduced-motion بی‌درنگ مقدار نهایی */
+function CountUp({ value, durationMs = 700 }: { value: number; durationMs?: number }) {
+  const prefersReduced =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [display, setDisplay] = useState(prefersReduced ? value : 0)
+  useEffect(() => {
+    if (prefersReduced) {
+      setDisplay(value)
+      return
+    }
+    let frame = 0
+    const start = performance.now()
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setDisplay(Math.round(value * eased))
+      if (t < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, durationMs])
+  return <>{toFaDigits(display)}</>
+}
+
+/** دونات دقت جلسه — قلب بصری صفحهٔ نتایج */
+function AccuracyDonut({ accuracy }: { accuracy: number }) {
+  const RADIUS = 48
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+  const clamped = Math.max(0, Math.min(100, accuracy))
+  return (
+    <div className={styles.donutWrap} data-testid="results-donut" data-accuracy={clamped}>
+      <svg viewBox="0 0 120 120" className={styles.donutSvg} aria-hidden="true">
+        <circle cx="60" cy="60" r={RADIUS} className={styles.donutTrack} />
+        <circle
+          cx="60"
+          cy="60"
+          r={RADIUS}
+          className={styles.donutFill}
+          strokeDasharray={CIRCUMFERENCE}
+          strokeDashoffset={CIRCUMFERENCE * (1 - clamped / 100)}
+        />
+      </svg>
+      <div className={styles.donutCenter}>
+        <span className={styles.donutValue}>
+          <CountUp value={Math.round(clamped)} />٪
+        </span>
+        <span className={styles.donutLabel}>دقت جلسه</span>
+      </div>
+    </div>
+  )
+}
+
+/** ذرات کوچک جشن پاس‌شدن حد نصاب — ساده، سبک، reduced-motion-خاموش */
+function ConfettiBurst() {
+  return (
+    <span className={styles.confettiBurst} aria-hidden="true">
+      {Array.from({ length: 8 }, (_, i) => (
+        <i key={i} className={styles.confettiDot} style={{ animationDelay: `${i * 70}ms` }} />
+      ))}
+    </span>
   )
 }

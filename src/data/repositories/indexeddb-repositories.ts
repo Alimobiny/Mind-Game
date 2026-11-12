@@ -10,7 +10,13 @@ import type {
   TrialEventRepository,
 } from './types'
 
-/** پیاده‌سازی قراردادهای ذخیره‌سازی روی IndexedDB */
+/** پیاده‌سازی قراردادهای ذخیره‌سازی روی IndexedDB.
+ *
+ *  کوئری‌های جلسات از ایندکس‌ها می‌گذرند (by_exercise / by_started /
+ *  by_status) — نه GetAll کامل + فیلتر JS؛ هزینهٔ خواندن دیگر با گذر
+ *  زمان و انباشت جلسات به‌طور خطی رشد نمی‌کند. قرارداد (ترتیب/معنا)
+ *  با پیاده‌سازی in-memory یکسان است و تست قرارداد هر دو را می‌سنجد.
+ */
 
 export class IdbSessionRepository implements SessionRepository {
   constructor(private readonly db: IDBDatabase) {}
@@ -39,26 +45,39 @@ export class IdbSessionRepository implements SessionRepository {
   }
 
   async listByExercise(exerciseId: string): Promise<SessionRecord[]> {
-    const all = await this.listAll()
-    return all
-      .filter((s) => s.exerciseId === exerciseId)
-      .sort((a, b) => a.startedAt - b.startedAt)
+    const tx = this.db.transaction(STORES.exerciseSessions, 'readonly')
+    const index = tx.objectStore(STORES.exerciseSessions).index('by_exercise')
+    const rows = await requestToPromise(
+      index.getAll(exerciseId) as IDBRequest<SessionRecord[]>,
+    )
+    return rows.sort((a, b) => a.startedAt - b.startedAt)
   }
 
   async listRecent(limit: number): Promise<SessionRecord[]> {
-    const all = await this.listAll()
-    return all.sort((a, b) => b.startedAt - a.startedAt).slice(0, limit)
+    if (limit <= 0) return []
+    // cursor نزولی روی ایندکس by_started — فقط «limit» رکورد خوانده می‌شود
+    return new Promise<SessionRecord[]>((resolve, reject) => {
+      const out: SessionRecord[] = []
+      const tx = this.db.transaction(STORES.exerciseSessions, 'readonly')
+      const index = tx.objectStore(STORES.exerciseSessions).index('by_started')
+      const request = index.openCursor(null, 'prev')
+      request.onsuccess = () => {
+        const cursor = request.result
+        if (cursor === null || out.length >= limit) {
+          resolve(out)
+          return
+        }
+        out.push(cursor.value as SessionRecord)
+        cursor.continue()
+      }
+      request.onerror = () => reject(request.error ?? new Error('listRecent cursor failed'))
+    })
   }
 
   async listByStatus(status: SessionStatus): Promise<SessionRecord[]> {
-    const all = await this.listAll()
-    return all.filter((s) => s.status === status)
-  }
-
-  private async listAll(): Promise<SessionRecord[]> {
     const tx = this.db.transaction(STORES.exerciseSessions, 'readonly')
-    const store = tx.objectStore(STORES.exerciseSessions)
-    return requestToPromise(store.getAll() as IDBRequest<SessionRecord[]>)
+    const index = tx.objectStore(STORES.exerciseSessions).index('by_status')
+    return requestToPromise(index.getAll(status) as IDBRequest<SessionRecord[]>)
   }
 
   private async write(record: SessionRecord): Promise<void> {

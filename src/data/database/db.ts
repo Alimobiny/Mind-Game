@@ -1,13 +1,16 @@
 /**
- * باز کردن IndexedDB با ساختار نسخه ۳ و مهاجرت‌های آینده.
+ * باز کردن IndexedDB با ساختار نسخه ۴ و مهاجرت‌های آینده.
  * استورها مطابق سند معماری: exercise_sessions، trial_events،
  * exercise_settings، user_preferences، schema_meta — از نسخه ۲:
- * training_plans (برنامه تمرینی روزانه، کلید = تاریخ ISO محلی) و
- * از نسخه ۳: program_runs (اجراهای زنجیره‌ای برنامه، کلید = id یکتا).
+ * training_plans (برنامه تمرینی روزانه، کلید = تاریخ ISO محلی)؛
+ * نسخه ۳: program_runs (اجراهای زنجیره‌ای برنامه، کلید = id یکتا)؛
+ * نسخه ۴: ایندکس by_status روی exercise_sessions برای بوتِ بدون-اسکن
+ * (ایندکس‌های by_exercise/by_started از نسخه ۱ موجودند و از این پس
+ * واقعاً در کوئری‌ها استفاده می‌شوند — نه GetAll+فیلتر JS).
  */
 
 export const DB_NAME = 'cognitive-training-lab'
-export const DB_VERSION = 3
+export const DB_VERSION = 4
 
 export const STORES = {
   exerciseSessions: 'exercise_sessions',
@@ -76,6 +79,13 @@ export function openDatabase(
       if (event.oldVersion < 3 && db.objectStoreNames.contains(STORES.programRuns) === false) {
         const runs = db.createObjectStore(STORES.programRuns, { keyPath: 'id' })
         runs.createIndex('by_date', 'date', { unique: false })
+      }
+      // نسخه ۴: ایندکس وضعیت جلسات — abortStaleSessions بوت بدون GetAll
+      if (event.oldVersion < 4 && db.objectStoreNames.contains(STORES.exerciseSessions)) {
+        const sessions = request.transaction?.objectStore(STORES.exerciseSessions)
+        if (sessions !== undefined && sessions.indexNames.contains('by_status') === false) {
+          sessions.createIndex('by_status', 'status', { unique: false })
+        }
       }
       const meta = request.transaction?.objectStore(STORES.schemaMeta)
       meta?.put({ key: 'schema_version', value: DB_VERSION })

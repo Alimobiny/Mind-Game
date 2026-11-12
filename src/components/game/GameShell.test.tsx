@@ -284,4 +284,38 @@ describe('GameShell — چرخه کامل UI', () => {
       status: 'completed',
     })
   }, 20_000)
+
+  it('تئاتر: نوار پیشرفت در اجرا و حلقهٔ شمارش و دونات دقت در نتایج', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const props = makeProps()
+
+    render(
+      <MemoryRouter>
+        <GameShell {...props} />
+      </MemoryRouter>,
+    )
+
+    // شمارش معکوس: حلقهٔ SVG همراه عدد
+    await user.click(await screen.findByRole('button', { name: 'شروع تمرین' }))
+    expect(await screen.findByTestId('countdown-ring')).toBeInTheDocument()
+    await screen.findByText('۳')
+
+    // عبور از شمارش معکوس تا فاز اجرا
+    vi.advanceTimersByTime(1050)
+    await screen.findByText('۲')
+    vi.advanceTimersByTime(1050)
+    await screen.findByText('۱')
+    vi.advanceTimersByTime(1050)
+
+    // فاز اجرا: نوار پیشرفت جلسه
+    await screen.findByText('مرحله 1')
+    expect(screen.getByTestId('session-progress-bar')).toBeInTheDocument()
+
+    // پایان جلسه: دونات دقت با مقدار خلاصه
+    await user.click(screen.getByRole('button', { name: 'پاسخ' }))
+    await user.click(await screen.findByRole('button', { name: 'پاسخ' }))
+    const donut = await screen.findByTestId('results-donut')
+    expect(donut).toHaveAttribute('data-accuracy', '100')
+  }, 20_000)
 })

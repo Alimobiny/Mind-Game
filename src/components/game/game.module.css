@@ -282,3 +282,163 @@
   border-bottom: 3px solid var(--color-border);
   text-align: center;
 }
+
+/* ─── تئاتر مشترک: نوار پیشرفت، حلقهٔ شمارش، دونات نتیجه، ذرات قبولی ─── */
+
+/* نوار پیشرفت جلسه در هدر — رنگ اکسنت حوزهٔ فعال (data-domain روی section) */
+.progressBar {
+  position: relative;
+  display: inline-block;
+  width: clamp(64px, 22vw, 120px);
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  overflow: hidden;
+}
+
+.progressBarFill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  border-radius: 999px;
+  background: var(--accent, var(--color-primary));
+  transition: width var(--dur-med, 200ms) var(--ease-out, ease);
+}
+
+/* حلقهٔ شمارش معکوس — عدد همان countdownNumber است، داخل حلقه */
+.countdownWrap {
+  position: relative;
+  width: clamp(180px, 56vw, 240px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.countdownSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* شروع پرشدن از بالای حلقه */
+}
+
+.ringTrack {
+  fill: none;
+  stroke: var(--color-surface-2);
+  stroke-width: 7;
+}
+
+.ringFill {
+  fill: none;
+  stroke: var(--accent, var(--color-primary));
+  stroke-width: 7;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear;
+}
+
+.countdownWrap .countdownNumber {
+  font-size: clamp(3rem, 14vw, 4.5rem);
+  animation: ui-pulse 1s var(--ease-out, ease);
+}
+
+/* دونات دقت — قلب بصری صفحهٔ نتایج */
+.donutWrap {
+  position: relative;
+  width: 148px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  margin-inline: auto;
+}
+
+.donutSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.donutTrack {
+  fill: none;
+  stroke: var(--color-surface-2);
+  stroke-width: 11;
+}
+
+.donutFill {
+  fill: none;
+  stroke: var(--accent, var(--color-primary));
+  stroke-width: 11;
+  stroke-linecap: round;
+  animation: donut-fill 900ms var(--ease-out, ease) backwards;
+}
+
+@keyframes donut-fill {
+  from {
+    stroke-dashoffset: var(--donut-circumference, 301.6);
+  }
+}
+
+.donutCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.donutValue {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.donutLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* ذرات جشن پاس‌شدن حد نصاب */
+.confettiBurst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: var(--radius-lg, 14px);
+}
+
+.confettiDot {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--color-success);
+  opacity: 0;
+  animation: confetti-fly 900ms var(--ease-out, ease) backwards;
+}
+
+/* هشت ذره به هشت جهت — با nth-child پخش می‌شوند */
+.confettiDot:nth-child(1) { --cx: -90px; --cy: -50px; --rot: 200deg; background: var(--color-primary); }
+.confettiDot:nth-child(2) { --cx: -45px; --cy: -85px; --rot: -120deg; }
+.confettiDot:nth-child(3) { --cx: 0px; --cy: -95px; --rot: 80deg; background: var(--color-primary); }
+.confettiDot:nth-child(4) { --cx: 45px; --cy: -85px; --rot: -200deg; }
+.confettiDot:nth-child(5) { --cx: 90px; --cy: -50px; --rot: 140deg; background: var(--color-warning); }
+.confettiDot:nth-child(6) { --cx: 110px; --cy: 5px; --rot: -60deg; }
+.confettiDot:nth-child(7) { --cx: -110px; --cy: 5px; --rot: 300deg; background: var(--color-warning); }
+.confettiDot:nth-child(8) { --cx: 70px; --cy: -30px; --rot: -300deg; }
+
+@keyframes confetti-fly {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(0.4);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--cx, 0px), var(--cy, -60px)) rotate(var(--rot, 180deg)) scale(1);
+    opacity: 0;
+  }
+}

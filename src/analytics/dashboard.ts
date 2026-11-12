@@ -88,17 +88,34 @@ export function accuracySparklinePath(series: readonly number[], width = 220, he
 /**
  * وضعیت دشواری تطبیقی همه تمرین‌ها — مبنای UI پیشرفت
  * (سطح پیشنهادی، رکورد روزها و تاریخچه تغییر سطح هر بازی).
+ *
+ * یک خواندن کامل + گروه‌بندی در حافظه — نه N کوئری به‌ازای هر بازی
+ * (با ۳۱ بازی و صدها جلسه، تفاوت O(N) و O(N×۳۱) محسوس است).
  */
 export async function loadProgressForExercises(
   sessions: SessionRepository,
   exerciseIds: readonly string[],
 ): Promise<Record<string, AdaptiveDifficultyResult>> {
   const todayIso = toLocalIsoDate(Date.now())
-  const entries = await Promise.all(
-    exerciseIds.map(async (exerciseId) => {
-      const history = await sessions.listByExercise(exerciseId)
+  const all = await sessions.listRecent(Number.MAX_SAFE_INTEGER)
+  const byExercise = groupSessionsByExercise(all)
+  return Object.fromEntries(
+    exerciseIds.map((exerciseId) => {
+      const history = byExercise.get(exerciseId) ?? []
       return [exerciseId, computeAdaptiveDifficulty(history, todayIso)] as const
     }),
   )
-  return Object.fromEntries(entries)
+}
+
+/** گروه‌بندی جلسات بر اساس بازی به ترتیب زمان (قدیم → جدید) — مشترک بین داشبورد و سیر */
+export function groupSessionsByExercise(
+  sessions: readonly SessionRecord[],
+): ReadonlyMap<string, SessionRecord[]> {
+  const map = new Map<string, SessionRecord[]>()
+  for (const session of [...sessions].sort((a, b) => a.startedAt - b.startedAt)) {
+    const list = map.get(session.exerciseId)
+    if (list) list.push(session)
+    else map.set(session.exerciseId, [session])
+  }
+  return map
 }

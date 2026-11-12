@@ -17,7 +17,7 @@ import type {
   ProgramRunRecord,
   TrainingPlanRecord,
 } from '../core/program/types'
-import { getAppData } from '../data/app-data'
+import { getAppData, subscribeToAppDataChanges } from '../data/app-data'
 import { APP_TEXTS_FA, DOMAIN_LABELS_FA, PROGRAM_TEXTS_FA } from '../i18n/fa'
 import { createAppRegistry } from '../modules'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
@@ -96,8 +96,14 @@ export function ProgramPage() {
       const finishedRun = [...runs].reverse().find((r) => r.status !== 'in_progress') ?? null
       let runSummary: ProgramRunSummary | null = null
       if (finishedRun) {
-        const recent = await appData.sessions.listRecent(Number.MAX_SAFE_INTEGER)
-        runSummary = summarizeRun(finishedRun, recent)
+        // جلسات لینک‌شدهٔ همان اجرا با get — نه اسکن کامل جدول
+        const linked = await Promise.all(
+          finishedRun.sessionIds.map((id) => appData.sessions.get(id)),
+        )
+        runSummary = summarizeRun(
+          finishedRun,
+          linked.filter((s): s is NonNullable<typeof s> => s !== null),
+        )
       }
       return { plan, doneIds, activeRun, finishedRun, runSummary }
     })()
@@ -111,13 +117,8 @@ export function ProgramPage() {
       cancelled = true
     }
   }, [catalog, reloadKey])
-
-  // تازه‌سازی وضعیت‌ها وقتی از صفحه بازی برمی‌گردیم
-  useEffect(() => {
-    const onFocus = () => setReloadKey((k) => k + 1)
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
-  }, [])
+  // تازه‌سازی دقیق پس از تغییر واقعی داده (پایان/ایجاد جلسه) — نه هر focus
+  useEffect(() => subscribeToAppDataChanges(() => setReloadKey((k) => k + 1)), [])
 
   const totalMinutes =
     data?.plan.items.reduce((sum, item) => sum + item.estimatedMinutes, 0) ?? 0

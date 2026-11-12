@@ -254,21 +254,27 @@ describe('openDatabase (migrations)', () => {
     await deleteDatabase()
   })
 
-  it('دیتابیس تازه با نسخه ۳ ساخته می‌شود و همه استورها وجود دارند', async () => {
+  it('دیتابیس تازه با نسخه ۴ ساخته می‌شود و همه استورها و ایندکس‌ها وجود دارند', async () => {
     const db = await openDatabase()
     expect(db.name).toBe(DB_NAME)
-    expect(db.version).toBe(3)
+    expect(db.version).toBe(4)
     for (const store of Object.values(STORES)) {
       expect(db.objectStoreNames.contains(store)).toBe(true)
     }
     expect(db.objectStoreNames.contains('by_session') === false).toBe(true)
+    // ایندکس‌های کوئری — مبنای عملکرد نسخه ۴
+    const tx = db.transaction(STORES.exerciseSessions, 'readonly')
+    const indexNames = tx.objectStore(STORES.exerciseSessions).indexNames
+    expect(indexNames.contains('by_exercise')).toBe(true)
+    expect(indexNames.contains('by_started')).toBe(true)
+    expect(indexNames.contains('by_status')).toBe(true)
     db.close()
   })
 
-  it('ارتقا از نسخه ۱ به ۳: همه استورهای جدید ساخته می‌شوند و داده قبلی سالم می‌ماند', async () => {
+  it('ارتقا از نسخه ۱ به ۴: همه استورهای جدید ساخته می‌شوند و داده قبلی سالم می‌ماند', async () => {
     await openLegacyV1Database()
     const db = await openDatabase()
-    expect(db.version).toBe(3)
+    expect(db.version).toBe(4)
     expect(db.objectStoreNames.contains(STORES.trainingPlans)).toBe(true)
     expect(db.objectStoreNames.contains(STORES.programRuns)).toBe(true)
 
@@ -284,20 +290,35 @@ describe('openDatabase (migrations)', () => {
     await runs.create(makeRun('r-legacy', '2026-11-11', 1000))
     expect((await runs.get('r-legacy'))?.status).toBe('in_progress')
 
+    // ایندکس by_status برای کوئری بوت ساخته شده و کار می‌کند
+    await sessions.create(makeSession('v4-s', 500, { status: 'in_progress' }))
+    expect((await sessions.listByStatus('in_progress')).map((s) => s.id)).toContain('v4-s')
+
     const metaTx = db.transaction(STORES.schemaMeta, 'readonly')
     const meta = await requestToPromise(
       metaTx.objectStore(STORES.schemaMeta).get('schema_version') as IDBRequest<
         { key: string; value: number } | undefined
       >,
     )
-    expect(meta?.value).toBe(3)
+    expect(meta?.value).toBe(4)
     db.close()
   })
 
-  it('ارتقا از نسخه ۲ به ۳: program_runs ساخته می‌شود و طرح‌های موجود سالم می‌مانند', async () => {
+  it('ارتقا از نسخه ۳ به ۴: فقط ایندکس by_status اضافه می‌شود و اجراها سالم می‌مانند', async () => {
+    await openLegacyV3Database()
+    const db = await openDatabase()
+    expect(db.version).toBe(4)
+    const tx = db.transaction(STORES.exerciseSessions, 'readonly')
+    expect(tx.objectStore(STORES.exerciseSessions).indexNames.contains('by_status')).toBe(true)
+    const runs = new IdbProgramRunRepository(db)
+    expect((await runs.listByDate('2026-11-11')).map((r) => r.id)).toEqual(['r-v3'])
+    db.close()
+  })
+
+  it('ارتقا از نسخه ۲ به ۳ (و ۴): program_runs ساخته می‌شود و طرح‌های موجود سالم می‌مانند', async () => {
     await openLegacyV2Database()
     const db = await openDatabase()
-    expect(db.version).toBe(3)
+    expect(db.version).toBe(4)
     expect(db.objectStoreNames.contains(STORES.programRuns)).toBe(true)
 
     // طرح نسخه ۲ دست‌نخورده
@@ -313,6 +334,38 @@ describe('openDatabase (migrations)', () => {
     db.close()
   })
 })
+
+/** ساخت دیتابیس ساختگی نسخه ۳ (بدون ایندکس by_status) با یک اجرای برنامه — شبیه‌سازی نصب موج ۷ */
+function openLegacyV3Database(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 3)
+    request.onupgradeneeded = () => {
+      const db = request.result
+      const sessions = db.createObjectStore(STORES.exerciseSessions, { keyPath: 'id' })
+      sessions.createIndex('by_exercise', 'exerciseId', { unique: false })
+      sessions.createIndex('by_started', 'startedAt', { unique: false })
+      db.createObjectStore(STORES.trialEvents, { keyPath: 'id' })
+      db.createObjectStore(STORES.exerciseSettings, { keyPath: 'exerciseId' })
+      db.createObjectStore(STORES.userPreferences, { keyPath: 'key' })
+      db.createObjectStore(STORES.schemaMeta, { keyPath: 'key' })
+      db.createObjectStore(STORES.trainingPlans, { keyPath: 'date' })
+      const runs = db.createObjectStore(STORES.programRuns, { keyPath: 'id' })
+      runs.createIndex('by_date', 'date', { unique: false })
+      request.transaction?.objectStore(STORES.schemaMeta).put({ key: 'schema_version', value: 3 })
+    }
+    request.onsuccess = () => {
+      const db = request.result
+      const tx = db.transaction(STORES.programRuns, 'readwrite')
+      tx.objectStore(STORES.programRuns).put(makeRun('r-v3', '2026-11-11', 1000))
+      tx.oncomplete = () => {
+        db.close()
+        resolve()
+      }
+      tx.onerror = () => reject(tx.error ?? new Error('legacy v3 seed failed'))
+    }
+    request.onerror = () => reject(request.error ?? new Error('legacy v3 open failed'))
+  })
+}
 
 /** ساخت دیتابیس ساختگی نسخه ۲ (بدون program_runs) با یک طرح — شبیه‌سازی نصب موج ۶ */
 function openLegacyV2Database(): Promise<void> {

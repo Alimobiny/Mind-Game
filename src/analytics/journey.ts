@@ -3,6 +3,7 @@ import { COGNITIVE_DOMAINS } from '../core/types'
 import { computeAdaptiveDifficulty, toLocalIsoDate } from '../core/difficulty/adaptive-difficulty'
 import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-difficulty'
 import type { SessionRepository } from '../data/repositories/types'
+import { groupSessionsByExercise } from './dashboard'
 
 /**
  * «سیر پیشرفت» — مشتق‌سازی خالص از تاریخچهٔ جلسات (بدون ذخیرهٔ جدید).
@@ -281,7 +282,9 @@ export function buildHeatmapWeeks(
   return columns
 }
 
-/** جمع‌بندی کامل سیر — هم‌سبک loadDashboard در همین پوشه */
+/** جمع‌بندی کامل سیر — هم‌سبک loadDashboard در همین پوشه.
+ *  یک خواندن کامل + گروه‌بندی در حافظه؛ حلقهٔ سریالیِ listByExercise
+ *  به‌ازای هر بازی (N+1) حذف شده است. */
 export async function loadJourney(
   sessions: SessionRepository,
   resolveExerciseName: (exerciseId: string) => string,
@@ -291,11 +294,11 @@ export async function loadJourney(
   const days = groupSessionsByDay(all)
   const streak = computeJourneyStreak(days, todayIso)
 
-  const exerciseIds = [...new Set(all.map((s) => s.exerciseId))]
+  const byExercise = groupSessionsByExercise(all)
   const adaptiveResults: Record<string, AdaptiveDifficultyResult> = {}
-  for (const id of exerciseIds) {
+  for (const id of byExercise.keys()) {
     adaptiveResults[id] = computeAdaptiveDifficulty(
-      await sessions.listByExercise(id),
+      byExercise.get(id) as SessionRecord[],
       todayIso,
     )
   }

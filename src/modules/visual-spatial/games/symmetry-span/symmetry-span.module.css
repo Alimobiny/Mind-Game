@@ -116,13 +116,13 @@
 }
 
 .feedbackCorrect {
-  color: #34d399;
-  background: color-mix(in srgb, #34d399 12%, transparent);
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
 }
 
 .feedbackWrong {
-  color: #f87171;
-  background: color-mix(in srgb, #f87171 12%, transparent);
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
 }
 
 .feedbackNone {

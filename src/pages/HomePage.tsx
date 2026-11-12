@@ -5,7 +5,7 @@ import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-diffi
 import { describeStreakFa, toLocalIsoDate } from '../core/difficulty/adaptive-difficulty'
 import { buildHeatmapWeeks, groupSessionsByDay } from '../analytics/journey'
 import type { HeatCell } from '../analytics/journey'
-import { getAppData } from '../data/app-data'
+import { getAppData, subscribeToAppDataChanges } from '../data/app-data'
 import { APP_TEXTS_FA, DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA, PROGRAM_TEXTS_FA } from '../i18n/fa'
 import { COGNITIVE_DOMAINS, EXERCISE_TYPES } from '../core/types'
 import type { CognitiveDomain, ExerciseType } from '../core/types'
@@ -72,13 +72,8 @@ export function HomePage() {
       cancelled = true
     }
   }, [exercises, refreshKey])
-
-  // تازه‌سازی پیشرفت وقتی از صفحه بازی برمی‌گردیم
-  useEffect(() => {
-    const onFocus = () => setRefreshKey((k) => k + 1)
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
-  }, [])
+  // تازه‌سازی دقیق پس از تغییر واقعی داده (پایان/ایجاد جلسه) — نه هر focus
+  useEffect(() => subscribeToAppDataChanges(() => setRefreshKey((k) => k + 1)), [])
 
   // گروه‌بندی بر اساس نمای فعال:
   // حوزه → meta.domain · نوع → meta.exerciseType · اثر → effects[0] (اثر اصلی؛

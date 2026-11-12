@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toLocalIsoDate } from '../core/difficulty/adaptive-difficulty'
 import type { SessionRecord } from '../core/types'
-import { getAppData } from '../data/app-data'
+import { getAppData, subscribeToAppDataChanges } from '../data/app-data'
 import { APP_TEXTS_FA, JOURNEY_TEXTS_FA } from '../i18n/fa'
 import { buildHeatmapWeeks, loadJourney } from '../analytics/journey'
 import type { JourneyData, JourneyMilestone } from '../analytics/journey'
@@ -76,13 +76,8 @@ export function JourneyPage() {
       cancelled = true
     }
   }, [exerciseNames, reloadKey, todayIso])
-
-  // تازه‌سازی وقتی از صفحه بازی برمی‌گردیم
-  useEffect(() => {
-    const onFocus = () => setReloadKey((k) => k + 1)
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
-  }, [])
+  // تازه‌سازی دقیق پس از تغییر واقعی داده (پایان/ایجاد جلسه) — نه هر focus
+  useEffect(() => subscribeToAppDataChanges(() => setReloadKey((k) => k + 1)), [])
 
   const weeks = useMemo(
     () => (state.data ? buildHeatmapWeeks(state.data.days, todayIso) : []),

@@ -269,12 +269,20 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
         const next = nextPendingItem(plan.items, doneIds)
         if (next === null) {
           // پایان برنامه — نهایی‌سازی و خلاصهٔ تحلیلی کل زنجیره
+          // (جلسات لینک‌شده را با get می‌خوانیم — نه اسکن کامل جدول)
           const finished = finalizeRun(updated, 'completed', Date.now())
           await appData.runs.update(finished)
-          const recent = await appData.sessions.listRecent(Number.MAX_SAFE_INTEGER)
+          const linked = await Promise.all(
+            finished.sessionIds.map((id) => appData.sessions.get(id)),
+          )
           setRun(finished)
           setRunNext({ item: null })
-          setRunSummary(summarizeRun(finished, recent))
+          setRunSummary(
+            summarizeRun(
+              finished,
+              linked.filter((s): s is NonNullable<typeof s> => s !== null),
+            ),
+          )
           return
         }
         await appData.runs.update(updated)

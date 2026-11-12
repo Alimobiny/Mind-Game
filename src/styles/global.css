@@ -16,6 +16,13 @@
   --color-danger: #f87171;
   --color-warning: #fbbf24;
 
+  /* نام‌های مفهومی رایج در بازی‌ها — آلیاس به توکن اصلی تا هیچ declarationی
+     بی‌صدا شکسته نشود (درس ممیزی: ۴ متغیر استفاده‌شده ولی تعریف‌نشده) */
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-muted);
+  --surface-sunken: var(--color-bg-elevated);
+  --shadow-md: var(--shadow-2);
+
   /* اکسنت هفت حوزهٔ شناختی — برای نشان‌ها، نوارهای رنگی و حالت‌های هاور */
   --accent-memory: #a78bfa;
   --accent-attention: #38bdf8;
@@ -54,7 +61,58 @@
   --surface-raised: var(--color-surface-2);
   --border-subtle: color-mix(in srgb, var(--color-border) 55%, transparent);
 
+  /* زبان مشترک حرکت — بازی‌ها به‌جای عدد سرانگشتی از همین توکن‌ها استفاده می‌کنند */
+  --dur-fast: 120ms;
+  --dur-med: 200ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+
   --tap-target: 48px;
+}
+
+/* ─── کتابخانهٔ keyframe مشترک ───
+   pop: ظاهرشدن پرشی (عدد/کارت/بازخورد) · shake: خطا · pulse: تأکید تپنده */
+@keyframes ui-pop {
+  from {
+    transform: scale(0.75);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ui-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes ui-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes ui-flash-bg {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  40% {
+    background-color: color-mix(in srgb, var(--color-success) 18%, transparent);
+  }
 }
 
 * {
