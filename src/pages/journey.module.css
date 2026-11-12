@@ -1,0 +1,225 @@
+/* JourneyPage — کارت‌های آمار، تقویم فعالیت، نشان‌ها و خط زمانی */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--space-4) var(--space-3);
+}
+
+.header h1 {
+  font-size: 1.4rem;
+}
+
+.backLink {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.empty {
+  color: var(--color-text-muted);
+  padding-block: var(--space-4);
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: grid;
+  gap: 4px;
+  animation: fade-up 380ms ease backwards;
+}
+
+.cardValue {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.cardUnit {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.cardLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.sectionTitle {
+  margin-top: var(--space-5);
+  font-size: 1.05rem;
+  color: var(--color-primary);
+  margin-bottom: var(--space-3);
+}
+
+/* تقویم فعالیت — ظرف ltr تا ستون‌های زمانی (کهنه → جدید) چپ‌به‌راست خوانا باشند */
+.heatmap {
+  direction: ltr;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-block: var(--space-1);
+}
+
+.heatColumn {
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.heatCell {
+  width: 13px;
+  height: 13px;
+  border-radius: 3.5px;
+  background: var(--color-surface-2);
+  transition: transform 120ms ease;
+}
+
+.heatCell:hover {
+  transform: scale(1.35);
+}
+
+.heatCell[data-level='1'] {
+  background: color-mix(in srgb, var(--color-primary) 35%, var(--color-surface-2));
+}
+
+.heatCell[data-level='2'] {
+  background: color-mix(in srgb, var(--color-primary) 65%, transparent);
+}
+
+.heatCell[data-level='3'] {
+  background: var(--color-primary);
+}
+
+.honestNote {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  margin-bottom: var(--space-3);
+}
+
+.milestonesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.milestone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  opacity: 0.55;
+  filter: grayscale(0.6);
+  animation: fade-up 380ms ease backwards;
+}
+
+.milestoneAchieved {
+  opacity: 1;
+  filter: none;
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+.milestoneIconWrap {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.milestoneTitle {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.milestoneDate {
+  font-size: 0.7rem;
+  color: var(--color-primary);
+}
+
+.milestoneProgress {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+/* خط زمانی روزها */
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.timelineDay {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border-inline-start: 2px solid var(--color-border);
+  padding-inline-start: var(--space-3);
+}
+
+.timelineDate {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.timelineChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sessionChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-size: 0.78rem;
+  color: var(--accent, var(--color-primary));
+  border: 1px solid color-mix(in srgb, var(--accent, var(--color-primary)) 30%, transparent);
+  background: color-mix(in srgb, var(--accent, var(--color-primary)) 8%, transparent);
+}
+
+.sessionChip[data-aborted='true'] {
+  opacity: 0.6;
+}
+
+.chipName {
+  font-weight: 700;
+}
+
+.chipMeta {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.footer {
+  margin-top: auto;
+  padding-block: var(--space-5);
+}
+
+.disclaimer {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  text-align: center;
+  max-width: 40ch;
+  margin-inline: auto;
+}

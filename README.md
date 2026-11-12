@@ -14,7 +14,8 @@
 
 ### دسکتاپ (ویندوز)
 
-دوبارکلیک روی **`start-game.bat`** — سرور بی‌صدا بالا می‌آید و بازی در مرورگر باز می‌شود. راهنمای کامل: `docs/DESKTOP-LAUNCHER.md`.
+- **فایل exe (پیشنهادی):** `npm run desktop:build` → در `release/` دو فایل: **پرتابل** (`Cognitive Training Lab …exe` — دوبارکلیک، آفلاین، بدون نصب) و **نصب‌شونده** (میانبر منوی استارت). راهنمای کامل: `docs/DESKTOP-APP.md`.
+- **حالت توسعه:** دوبارکلیک روی **`start-game.bat`** — سرور بی‌صدا بالا می‌آید و بازی در مرورگر باز می‌شود. راهنما: `docs/DESKTOP-LAUNCHER.md`.
 
 ### خط فرمان
 
@@ -24,9 +25,10 @@ npm run dev        # اجرای توسعه روی http://localhost:5173
 npm test           # تست‌های unit + integration + کامپوننت (Vitest)
 npm run build      # بررسی نوع + ساخت نسخه نهایی
 npm run e2e        # تست‌های مرورگر (Playwright — نیازمند Chrome نصب‌شده)
+npm run desktop:build  # آیکون + بیلد نسبی + electron-builder → release/ (exe ویندوز)
 ```
 
-نکتهٔ استقرار: build محلی بدون `DEPLOY_BASE` با base `/` ساخته می‌شود؛ CI مقدار `DEPLOY_BASE=/Mind-Game/` را می‌دهد.
+نکتهٔ استقرار: build محلی بدون `DEPLOY_BASE` با base `/` ساخته می‌شود؛ CI مقدار `DEPLOY_BASE=/Mind-Game/` و دسکتاپ `DEPLOY_BASE=./` را می‌دهد.
 
 ## معماری (تصمیمات قفل‌شده MVP)
 
@@ -59,8 +61,8 @@ src/
 │   └── reasoning/games/{sequence-logic, pattern-completion}/
 ├── components/game/ # GameShell مشترک: دستورالعمل → شمارش معکوس → بازی → نتایج
 ├── components/icons/ # نشان‌های SVG: لوگو، هفت حوزه، شش نوع تمرین، گلیف‌های UI
-├── pages/           # Home / Exercise / Program / Reports
-└── analytics/       # تجمیع داشبورد از داده خام
+├── pages/           # Home / Exercise / Program / Journey / Reports
+└── analytics/       # تجمیع داشبورد و سیر پیشرفت از داده خام
 ```
 
 ## طبقه‌بندی و دسترسی به تمرین‌ها

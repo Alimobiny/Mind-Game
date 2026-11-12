@@ -45,3 +45,25 @@ export function ForwardGlyph({ size = 24, className }: EmblemProps) {
     </svg>
   )
 }
+
+/** پرچم مسیر — نشان «سیر پیشرفت» */
+export function FlagGlyph({ size = 24, className }: EmblemProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
+      <line x1="6" y1="3" x2="6" y2="21" {...stroke} />
+      <path d="M6 4.5h11.5l-3 3.75 3 3.75H6" {...stroke} />
+    </svg>
+  )
+}
+
+/** شعله — نشان رکورد روزهای پیاپی (Duolingo-سبک) */
+export function FlameGlyph({ size = 24, className }: EmblemProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
+      <path
+        d="M12 3c.5 3-1.6 4.6-3 6.2-1.5 1.7-2.5 3.3-2.5 5.3a5.5 5.5 0 0 0 11 0c0-2-1-3.4-2-4.6-.6 1-1.3 1.6-2.3 2-.3-2 .2-4.6-1.2-8.9Z"
+        {...stroke}
+      />
+    </svg>
+  )
+}

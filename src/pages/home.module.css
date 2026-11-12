@@ -318,11 +318,23 @@
   justify-items: center;
 }
 
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.journeyLink,
 .reportsLink {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-weight: 700;
+}
+
+.journeyIcon {
+  color: var(--accent-memory);
 }
 
 .reportsIcon {

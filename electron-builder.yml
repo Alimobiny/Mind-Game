@@ -1,0 +1,24 @@
+# پیکربندی electron-builder — نسخهٔ دسکتاپ ویندوز
+# خروجی: release/ (داخل .gitignore)
+appId: io.github.alimobiny.cognitive-training-lab
+productName: Cognitive Training Lab
+directories:
+  output: release
+  buildResources: build
+files:
+  - electron/**
+  - dist/**
+  - package.json
+# آیکون از build/icon.png (تولیدش با scripts/make-icons.mjs) — خود builder آیکو می‌سازد
+win:
+  icon: build/icon.png
+  target:
+    - target: portable
+      # تک‌فایل exe — دوبارکلیک و بازی، بدون نصب
+      arch: [x64]
+    - target: nsis
+      # نصب‌شونده با میانبر منوی استارت (هدیه)
+      arch: [x64]
+nsis:
+  oneClick: true
+  shortcutName: Cognitive Training Lab

@@ -13,7 +13,7 @@ import { formatDate, toFaDigits } from '../utils/format'
 import { LogoMark } from '../components/icons/LogoMark'
 import { DomainEmblem } from '../components/icons/DomainEmblems'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
-import { CalendarGlyph, ChartGlyph, ForwardGlyph } from '../components/icons/UiGlyphs'
+import { CalendarGlyph, ChartGlyph, FlagGlyph, ForwardGlyph } from '../components/icons/UiGlyphs'
 import styles from './home.module.css'
 
 const registry = createAppRegistry()
@@ -202,10 +202,16 @@ export function HomePage() {
       )}
 
       <footer className={styles.footer}>
-        <Link to="/reports" className={styles.reportsLink}>
-          <ChartGlyph size={18} className={styles.reportsIcon} />
-          {APP_TEXTS_FA.reports}
-        </Link>
+        <div className={styles.footerLinks}>
+          <Link to="/journey" className={styles.journeyLink}>
+            <FlagGlyph size={18} className={styles.journeyIcon} />
+            {APP_TEXTS_FA.journey}
+          </Link>
+          <Link to="/reports" className={styles.reportsLink}>
+            <ChartGlyph size={18} className={styles.reportsIcon} />
+            {APP_TEXTS_FA.reports}
+          </Link>
+        </div>
         <p className={styles.disclaimer}>{APP_TEXTS_FA.disclaimer}</p>
       </footer>
     </main>

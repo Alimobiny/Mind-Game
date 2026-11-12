@@ -8,3 +8,5 @@ playwright/.cache
 *.local
 .DS_Store
 .zcode/
+build/
+release/

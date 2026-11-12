@@ -45,6 +45,40 @@ export const APP_TEXTS_FA = {
   groupByType: 'نوع تمرین',
   groupByEffect: 'اثر شناختی',
   exerciseCountUnit: 'تمرین',
+  journey: 'سیر پیشرفت',
+} as const
+
+/**
+ * متون صفحهٔ «سیر پیشرفت» — تقویم فعالیت، رکورد روزها و نشان‌ها.
+ * نشان‌ها فقط بازتاب نظم و حجم تمرین‌اند، نه سنجش توانایی ذهنی
+ * (هم‌راستا با docs/SCIENTIFIC-VALIDATION.md).
+ */
+export const JOURNEY_TEXTS_FA = {
+  title: 'سیر پیشرفت',
+  backToHome: APP_TEXTS_FA.home,
+  loadError: 'خواندن سیر پیشرفت ناموفق بود.',
+  loading: 'در حال خواندن داده‌ها…',
+  empty: 'هنوز تمرینی ثبت نشده — اولین جلسه را شروع کن تا سیر پیشرفتت شکل بگیرد.',
+  statsLabel: 'خلاصهٔ فعالیت',
+  activeDays: 'روز فعال',
+  currentStreak: 'رکورد فعلی',
+  bestStreak: 'بهترین رکورد',
+  dayUnit: 'روز',
+  totalSessions: 'کل جلسات',
+  totalTime: 'کل زمان',
+  heatmapLabel: 'تقویم فعالیت — ۱۲ هفتهٔ گذشته',
+  heatmapCellTitle: (count: number) => (count > 0 ? `${count} جلسه` : 'بدون تمرین'),
+  milestonesLabel: 'نشان‌ها',
+  milestonesHonestNote: 'نشان‌ها فقط بازتاب نظم و حجم تمرین‌اند، نه سنجش توانایی ذهنی.',
+  achievedOn: 'دستیابی',
+  mFirstSession: 'اولین قدم',
+  mDomainCoverage: 'هفت‌گانهٔ کامل',
+  mSessions: 'جلسهٔ تمرین',
+  mStreakDays: 'روز پیاپی',
+  mLevelUp: 'ارتقای سطح',
+  levelUpDetail: (from: string, to: string) => `سطح ${from} به ${to}`,
+  timelineLabel: 'روزهای اخیر',
+  sessionAborted: 'ناتمام',
 } as const
 
 /**

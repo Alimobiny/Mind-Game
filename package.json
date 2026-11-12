@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "آزمایشگاه تمرین شناختی — تمرین‌های شناختی تعاملی با پیگیری عملکرد (local-first)",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -11,7 +12,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "icons": "node scripts/make-icons.mjs",
+    "desktop": "electron electron/main.cjs",
+    "desktop:build": "npm run icons && tsc --noEmit && DEPLOY_BASE=./ vite build && electron-builder --win portable nsis"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.1.0",
@@ -27,8 +31,11 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^45.3.1",
+    "electron-builder": "^26.18.0",
     "fake-indexeddb": "^6.0.0",
     "jsdom": "^25.0.1",
+    "sharp": "^0.35.5",
     "typescript": "^5.6.3",
     "vite": "^6.0.0",
     "vitest": "^3.0.0"
