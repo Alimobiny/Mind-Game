@@ -1,0 +1,80 @@
+/* Dual N-Back — استایل اختصاصی؛ موبایل-اول */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ناحیه حرف — ارتفاع ثابت تا با خالی‌شدن، پرش چیدمان نباشد */
+.letterArea {
+  min-height: 17vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fixation {
+  font-size: 2rem;
+  color: var(--color-text-muted);
+}
+
+/* شبکهٔ ۳×۳ مکان */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: min(64vw, 280px);
+  aspect-ratio: 1;
+}
+
+.cell {
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  display: grid;
+  place-items: center;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.cellActive {
+  border-color: var(--color-primary);
+}
+
+.cellDot {
+  width: 62%;
+  height: 62%;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+/* دو دکمهٔ تطبیق — کنار هم، هدف لمس ≥ ۴۸px */
+.buttonRow {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  justify-content: center;
+}
+
+.matchButton {
+  background: var(--color-primary-strong);
+  color: #082f49;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  min-width: min(42vw, 180px);
+  min-height: max(48px, var(--tap-target, 48px));
+  font-size: 1.05rem;
+  font-weight: 700;
+  transition: transform 80ms ease;
+}
+
+.matchButton:active {
+  transform: scale(0.97);
+}

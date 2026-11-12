@@ -1,65 +1,67 @@
 # سند انتقال به نشست بعد — Cognitive Training Lab
 
 > این سند خودکفا است: نشست بعدی بدون نیاز به تاریخچه گفتگو، از همین‌جا ادامه می‌دهد.
-> تاریخ تنظیم: ۲۰۲۶-۱۱-۱۲ (نشست دوم همان روز) · موضوع: exe دسکتاپ + صفحهٔ سیر پیشرفت
+> تاریخ تنظیم: ۲۰۲۶-۱۱-۱۲ (نشست سوم همان روز) · موضوع: موج ۶ + حوزهٔ هشتم + دیپلوی زنده
 
 ## ۱. وضعیت فعلی پروژه (خلاصه)
 
-- **مسیر:** `E:\Mind Game` — React 18 + TypeScript strict + Vite · فارسی/RTL · Mobile-first · Local-first (IndexedDB، بدون backend)
-- **گیت‌هاب:** `origin → https://github.com/Alimobiny/Mind-Game` — تا `4eb45b0` push شده. **⚠️ از نشست قبل یک کامیت لوکال pushنشده هست** (معلق‌سازی دیپلوی + HANDOFF قدیمی): توکن git دامنهٔ `workflow` ندارد؛ با کلاینت مجاز (VS Code/GitHub Desktop واردشده به Alimobiny) push شود. کامیت‌های این نشست روی همان سوار می‌شوند.
-- **نسخهٔ exe ویندوز ✅:** `npm run desktop:build` → `release/` دو فایل: **پرتابل** `Cognitive Training Lab 0.1.0.exe` (~۱۱۲MB، دوبارکلیک/آفلاین) + **Setup** (~۱۲۳MB، میانبر استارت‌منو). معماری: `electron/main.cjs` (تک‌نمونه، smoke با اسکرین‌شات) + روتر hash روی `file:` (`src/app/router.tsx` — شاخهٔ وب دست‌نخورده) + `DEPLOY_BASE=./` بیلد نسبی + `scripts/make-icons.mjs` (sharp → `build/icon.png`). راهنما: `docs/DESKTOP-APP.md`. دادهٔ exe در `%APPDATA%/Cognitive Training Lab` — انتقال با Export/JSON.
-- **صفحهٔ «سیر پیشرفت» ✅ (`/journey`):** ماژول خالص `src/analytics/journey.ts` (تقویم ۱۲هفته‌ای، رکورد Duolingo-سبک با فرصت امروز، نشان‌ها، خط زمانی) — **تماماً مشتق از دادهٔ موجود؛ بدون ذخیره/migration جدید** (ثبت فعالیت از قبل کامل است: هر جلسه + هر مرحله در IndexedDB). لینک در فوتر خانه. ایده‌ها از Duolingo/GitHub/Elevate با چارچوب صادقانه («نشان‌ها بازتاب نظم و حجم‌اند، نه سنجش ذهنی»).
-- **۲۱ بازی / ۷ حوزه + طبقه‌بندی نوع‌تمرین/اثر (نشست قبل) + برنامهٔ روزانه + دشواری تطبیقی + Export/Import — پایدار**
-- **دیپلوی Pages: معلق** (درخواست کاربر). راه‌اندازی مجدد: (۱) Settings ← Pages ← Source: «GitHub Actions» (یک‌بار دستی؛ توکن Actions اجازهٔ ساخت سایت را نمی‌دهد)؛ (۲) تریگر push را در `deploy-pages.yml` از کامنت خارج کنید. `start-game.bat` برای توسعه فعال است.
-- **وضعیت تست:** `typecheck` ✓ · `npm test` = **۳۲۲ سبز** (۳۳ فایل؛ +۱۱ journey) · `build` ✓ · e2e کامل = ۷۷ تست (نتیجهٔ دروازهٔ نهایی بخش ۸)
+- **مسیر:** `E:\Mind Game` — React 18 + TypeScript strict + Vite · فارسی/RTL · Mobile-first · Local-first (IndexedDB)
+- **گیت‌هاب:** `origin → https://github.com/Alimobiny/Mind-Game` — همگام (کامیت‌های این نشست در پایان push می‌شوند). **دیپلوی Pages زنده و خودکار است:** هر push به main → build و استقرار → `https://alimobiny.github.io/Mind-Game/` (fallback فایل 404.html برای SPA). درس دیپلوی: توکن OAuth برنامهٔ GCM فقط repo/gist/read:org دارد و دامنهٔ workflow نمی‌گیرد — برای push های حاوی تغییر workflow یا (فعال‌سازی Pages/اجرای گردش کار) از توکن با دامنهٔ repo می‌توان با API کار کرد (`git credential fill` → توکن؛ POST pages، dispatch). delta فایل workflow را خنثی کردیم تا push مجاز شود.
+- **۲۴ بازی در ۸ حوزه** (موج ۶ این نشست: +۳ بازی + حوزهٔ هشتم «حافظه بلندمدت» با تصویب صریح کاربر — `long-term-memory` انتهای COGNITIVE_DOMAINS، اکسنت #2dd4bf، نشان دو-حلقه):
+  - **ان-بک دوگانه (dual-n-back):** دو جریان هم‌زمان حرف+خانهٔ ۳×۳؛ قرارداد یک-submit-per-trial: دکمه‌ها فقط claim در ref ثبت می‌کنند و تایمر مهلت یک submit با هر دو ادعا + RT هرکدام می‌فرستد؛ متریک هشت‌گانه (hit/miss/FA/CR هر جریان).
+  - **جمع زنجیره‌ای گام‌دار (pasat):** ارقام ریتمیک؛ از رقم دوم `expected = d[i]+d[i-1]`؛ رقم اول تماشا (همیشه correct)؛ پنجرهٔ پاسخ = interval (۳→۱٫۸ث).
+  - **حافظهٔ انجمنی (associative-pairs):** طرح جلسه یک‌جا در createSession از بذر نشست (جفت‌ها + گزینه‌ها)؛ بلوک مطالعهٔ خودکار → آزمون چندگزینه‌ای → بازآزمون در سطح ۳+؛ متریک دقت بلوک اول/دوم.
+- **exe دسکتاپ:** `npm run desktop:build` → پرتابل + Setup در `release/` (الکترون، تک‌نمونه، روتر hash روی file:). راهنما `docs/DESKTOP-APP.md`.
+- **صفحهٔ سیر پیشرفت `/journey`** (تقویم/رکورد/نشان/خط زمانی — مشتق از داده، goal پوشش = ۸ حوزه) + **UI گزارش‌ها و برنامه به استاندارد جدید** (کاشی گلیف نوع + اکسنت حوزه + fade-up).
+- **وضعیت تست:** `typecheck` ✓ · `npm test` = **۳۴۶ سبز** (۳۴ فایل؛ +۲۴ موج ۶) · `build` ✓ · e2e کامل = ۸۰ تست (نتیجهٔ دروازه در بخش ۸)
 
 ## ۲. کارهای انجام‌شدهٔ این نشست
 
-1. **exe:** Electron 45 + electron-builder 26 + sharp (devDeps). درس‌ها: باینری الکترون با `node node_modules/electron/install.js` نصب شد (postinstall اول ناقص بود)؛ ماکروی `${target}` در artifactName پشتیبانی نمی‌شود (حذف شد)؛ `build/` و `release/` به .gitignore.
-2. **روتر دو-وجهی:** `createHashRouter` روی `file:` — تست‌نشده با unit ولی با smoke اسکرین‌شاتی الکترون و اجرای واقعی پرتابل تأیید شد (رندر کامل RTL/فونت/آیکون‌ها).
-3. **journey.ts + ۱۱ تست واحد** (تاریخ ثابت، ظهرِ محلی): گروه‌بندی روز، رکورد با فرصت امروز، نشان‌ها (اولین جلسه/هفت‌گانه/۱۰-۵۰-۱۰۰-۲۵۰ جلسه/۳-۷-۳۰ روز پیاپی/ارتقاها از levelHistory)، heatLevel/buildHeatmapWeeks (هفته از شنبهٔ محلی).
-4. **JourneyPage** (الگوی ReportsPage) + `journey.spec.ts` (۲ تست: خالی + ۵ روز بذری) — هر دو از اولین اجرا سبز.
-5. رفع دو خطای TS اولیه (readonly push + امضای levelUpDetail با رشته).
+1. **دیپلوی کامل زنده شد:** GCM login (browser) → توکن repo کافی برای API؛ Pages از API فعال؛ delta workflow خنثی و push (cf13bbc)؛ اجرای موفق گردش کار؛ تأیید URL ریشه (200) + deep-link (body اپ).
+2. **حوزهٔ هشتم + جاروی متن‌های هاردکد ۷** (Home/Reports/Journey داینامیک شدند به COGNITIVE_DOMAINS.length).
+3. **سه بازی جدید** با الگوی کامل: engine خالص + تست قطعی + کامپوننت با ۳ گارد + meta (exerciseType/effects) + ثبت ۴ نقطه + time-estimation + e2e.
+4. **UI حرفه‌ای Reports/Program** + اسکرین‌شات `/program` در visual-review.
+5. اصلاح تست taxonomy (شمارش ۲۴ + لنگر یکتای «ان-بک دوگانه» — پیشوند «ان-بک» دیگر یکتا نیست).
 
 ## ۳. معماری کلیدی (به‌روز)
 
-- **قرارداد بازی:** `src/core/types/exercise.ts` + meta با `exerciseType`/`effects` — دستورالعمل کامل در README «افزودن بازی جدید».
-- **E2E conventions:** پیشروی مرحله‌ای فقط با `waitProgressAdvance` (helpers) روی `data-trial-index` — نه تغییر متن/رنگ محرک (محرک تکراری)، نه هدر (رقم در عنوان)، نه answeredTrials (فلش بازخورد) · predicateهای `waitForFunction` بدون ارجاع به ثابت Node · بذر تاریخ‌ها با لنگر «ظهرِ روز تقویمی» (`daysAgoAtNoon`).
-- **سیر پیشرفت:** همهٔ محاسبات در `src/analytics/journey.ts` خالص‌اند؛ صفحه فقط رندر می‌کند. نشان‌ها هرگز ادعای شناختی ندارند (متن صریح در صفحه).
-- **دسکتاپ:** `electron/main.cjs` فایل جاوااسکریپت سادهٔ CommonJS است (خارج از tsconfig — عمداً؛ بدون تایپ، کامنت‌دار). `--smoke` = بارگذاری + ۳ث + اسکرین‌شات در test-results + خروج ۰.
-- **آیکون‌ها:** SVG درون‌خطی در `src/components/icons/`؛ اکسنت‌ها `[data-domain]`/`[data-type]` در global.css؛ `prefers-reduced-motion` جهانی.
-- **الگوی ایجنت‌های موازی مقاوم به کرش:** هر ایجنت فقط پوشهٔ خودش · tsc یک‌بار در پایان · فقط تست تکی خودت · OOM → ۳۰ث صبر + retry.
+- **قرارداد بازی:** README «افزودن بازی جدید» (۶ قام + ۳ گارد) — برای بازی زمان‌بندی‌شدهٔ جدید: تولید پس از submit (advanceTrial)، تایمرها فقط در کامپوننت با `timeRemainingMs()`، تماشا/مرحلهٔ بدون‌پاسخ = expected null و همیشه correct (پاسات/انجمنی).
+- **یک-submit-per-train در بازی‌های چندادعایی (درس dual-n-back):** دکمه‌ها claim محلی در ref با قفل per-stream؛ ددلاین یک submit با همهٔ ادعاها + RTهای اندازه‌گیری‌شدهٔ کامپوننت؛ outcome مرحله = بدترین جریان.
+- **طرح یک‌جای جلسه (درس associative-pairs):** plan کامل در state از بذر نشست؛ nextTrial فقط می‌خواند — برای بازی‌های چند-بلوکی قطعی.
+- **E2E conventions:** `waitProgressAdvance` روی `data-trial-index` · صفات هدف روی کانتینرهای همیشه-حاضر (dnback-grid/pasat-display با data-expected) · regex نام بازی یکتا باشد (پیشوندها خطر strict-mode: «ان-بک» ⊂ «ان-بک دوگانه»).
+- **دیپلوی:** استقرار خودکار زنده؛ برای تغییر workflow نیاز به کلاینت دارای دامنهٔ workflow یا خنثی‌سازی delta.
+- **exe:** `desktop:build` (icons→tsc→DEPLOY_BASE=./ vite build→electron-builder)؛ `--smoke` با اسکرین‌شات.
 
 ## ۴. دانش تجربی مهم
 
-- **MSYS/Git Bash:** مقادیر env/آرگومان شبیه مسیر تبدیل می‌شوند (`DEPLOY_BASE=/x` → `C:/Program Files/Git/x` → `MSYS2_ENV_CONV_EXCL`؛ `$_` پاورشل و `taskkill /IM` → `MSYS_NO_PATHCONV=1`)؛ `DEPLOY_BASE=./` امن است.
-- **الکترون روی این ماشین:** باینری با install.js تکمیل شود؛ exe بدون امضا → آنتی‌ویروس ممکن است هشدار دهد (راهنما نوشته شد)؛ پرتابل stdout نمی‌دهد — راستی‌آزمایی با tasklist + smoke اسکرین‌شاتی.
-- **بار میزبان ناپایدار:** یک اجرای npm test ۳۰ دقیقه طول کشید (environment ~10800s) و بعدش عادی شد — قبل از دروازه‌ها حافظهٔ آزاد را چک کنید (`FreeVirtualMemory` زیر ~۲GB خطر)؛ اکشن Playwright گیرکرده زیر بار = نشانهٔ منابع، با اجرای تکی تأیید کنید.
-- batch ویندوز فقط ASCII؛ GITHUB_TOKEN اجازهٔ ساخت Pages را ندارد (فعال‌سازی دستی).
-- **vitest سخت‌گیر نیست به TS** — typecheck جدا اجرایش کنید (دو خطای TS وسط unit سبز پنهان ماند).
+- **توکن GCM فقط repo/gist/read:org** — دامنهٔ workflow از OAuth برنامهٔش نمی‌آید. با همان repo: فعال‌سازی Pages/`workflow_dispatch` از REST API ممکن است. `git credential fill` برای استخراج توکن.
+- push با تغییر workflow رد می‌شود مگر delta خنثی (checkout origin/main -- file) — مقایسه درخت‌ها است نه کامیت‌ها.
+- MSYS: env/args شبیه مسیر تبدیل می‌شوند (`MSYS2_ENV_CONV_EXCL`/`MSYS_NO_PATHCONV=1`)؛ `./` امن.
+- اکشن Playwright زیر بار گیرکرده = منابع؛ اجرای تکی تأیید کنید. قبل از دروازه‌ها FreeVirtualMemory چک شود.
+- exe بی‌امضا → هشدار آنتی‌ویروس طبیعی. باینری الکترون با `node node_modules/electron/install.js` در صورت نصب ناقص.
 
 ## ۵. مأموریت‌های تصویب‌شدهٔ نشست بعد
 
-1. **بازی‌های بعدی از پژوهش C:** ان‌بک دوگانه (از موتور ان-بک) → حافظهٔ انجمنی (حوزهٔ هشتم — تصویب صریح) → پاسات + WCST.
-2. **موج ۶ زبانی:** Reading Aloud، Word Scramble (نرمال‌ساز فارسی)، Audio Recall، Word Blend (Web Audio).
-3. **پیشنهادی جدید:** تقویم فعالیت روی صفحهٔ خانه (نسخهٔ فشرده) / پوشش نشان‌ها در گزارش‌ها — با تصویب کاربر.
-4. بازگشت دیپلوی Pages هر وقت کاربر خواست (دو قام بخش ۱).
+1. **بازی‌های بعدی سند پژوهش:** عملیات-اسپن + تقارن-اسپن (حافظه کاری مرکب) → WCST (کارت‌بندی قاعده) → سایمون · ماتریس‌های پیشرونده · چشمک توجه · اسپن جاری · تشخیص تغییر.
+2. **موج ۶ زبانی ادامه:** Reading Aloud، Word Scramble (نرمال‌ساز فارسی)، Audio Recall، Word Blend (Web Audio — زیرساخت صدا با اولین بازی صوتی می‌آید؛ ان-بک دوگانهٔ شنیداری بعدش).
+3. بازسازی exe پس از هر موج (تا نسخهٔ دسکتاپ به‌روز بماند) — در دروازهٔ پایانی گنجانده شود.
+4. UX کوچک: نسخهٔ فشردهٔ تقویم روی صفحهٔ اول (پیشنهاد، با تصویب کاربر).
 
 ## ۶. پروتکل کاری (ثابت)
 
 - گام‌های کوچک قابل‌راستی‌آزمایی؛ هر تغییر معنادار → تست؛ بدون تغییر بی‌صدا در تصمیم‌های قفل‌شده
 - بدون ادعای بالینی/هوش؛ honest framing طبق `docs/SCIENTIFIC-VALIDATION.md`
 - گسترش محدوده فقط با تصمیم صریح کاربر
-- دروازهٔ پایانی هر نشست: `typecheck` + `npm test` + `npm run build` + `npm run e2e` کامل + push
+- دروازهٔ پایانی هر نشست: `typecheck` + `npm test` + `npm run build` + `npm run e2e` کامل + push (+ بازسازی exe در موج‌های بازی‌دار)
 
 ## ۷. چک‌لیست شروع نشست بعد
 
-1. `cd "E:\Mind Game" && git status` (باید تمیز باشد؛ انتظار ahead ≥ ۱ — کامیت(های) pushنشده) و `npm test` — انتظار **۳۲۲ سبز**
-2. `git pull --ff-only` (اگر کاربر از VS Code push کرده باشد، ابتدا `git pull --rebase` ممکن است لازم شود — هماهنگ کنید)
-3. تست چشمی exe: دوبارکلیک `release/Cognitive Training Lab 0.1.0.exe` — و بازخورد کاربر را جمع کنید
+1. `cd "E:\Mind Game" && git status` (تمیز) و `npm test` — انتظار **۳۴۶ سبز**
+2. `git pull --ff-only`
+3. سلامت دیپلوی: `https://alimobiny.github.io/Mind-Game/` — ریشه 200 و ۲۴ بازی در فهرست (حوزهٔ جدید «حافظه بلندمدت» پایین فهرست)
 4. سپس بخش ۵ با تصویب کاربر
 
 ## ۸. وضعیت دروازهٔ نهایی این نشست
 
-- typecheck ✓ · unit ۳۲۲/۳۲۲ ✓ · build ✓ · specs هدفدار (journey/exercises/program) ۱۰/۱۰ ✓ · smoke الکترون ✓ (اسکرین‌شات رندر کامل) · پرتابل واقعاً اجرا شد و بسته شد ✓
-- **اجرای کامل نهایی e2e: ۷۷/۷۷ سبز (۱۹.۴ دقیقه)** — بدون هیچ شکستی از همان اجرای اول.
+- unit ۳۴۶/۳۴۶ ✓ · typecheck ✓ · build ✓ · exe بازسازی (پرتابل ۱۱۲MB + Setup ۱۲۳MB با ۲۴ بازی) + smoke ✓
+- **اجرای کامل نهایی e2e: ۸۰/۸۰ سبز (۲۱٫۱ دقیقه)** — دو اجرای میانی هر کدام یک شکست از کلاس «پیشوند نام بازی» داشتند (تست‌های «ان-بک» قدیمی با کارت جدید «ان-بک دوگانه» strict mode می‌شکستند؛ در ۴ فایل تست با لنگر `^ان-بک(?! دوگانه)` رفع شد — درس: افزودن بازی با نام پیشوندِ نام موجود، همهٔ فراخوانی‌های startExercise آن نام را می‌شکند).

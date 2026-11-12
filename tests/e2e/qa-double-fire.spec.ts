@@ -83,7 +83,7 @@ test.describe('QA1: double-fire در بازی‌های زمان‌بندی‌ش�
 
   test('N-Back: دو ضربه پشت‌سرهم روی «تطبیق» فقط یک پاسخ ثبت می‌کند', async ({ page }) => {
     const getErrors = trackPageErrors(page)
-    await startExercise(page, 'ان-بک', 1)
+    await startExercise(page, '^ان-بک(?! دوگانه)', 1)  // لنگر ^: کارت «ان-بک دوگانه» هم پیشوند است
     // صبر برای اولین هدف واقعی (data-is-target=true و حرف نمایش‌داده‌شده).
     // مهلت مراحل قبل شمرده می‌شود؛ پیشرفت مطلق قابل ادعا نیست.
     await page.waitForFunction(

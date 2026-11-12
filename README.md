@@ -51,16 +51,17 @@ src/
 │   ├── program/     # منطق خالص برنامه تمرینی روزانه (تولید قطعی برنامه)
 │   └── registry/    # Game Registry
 ├── data/            # IndexedDB (استورها + migration) + repositoryها + in-memory
-├── modules/         # بیست‌ویک تمرین — منطق (engine خالص) جدا از UI
-│   ├── working-memory/games/{number-sequence, n-back}/
+├── modules/         # بیست‌وچهار تمرین — منطق (engine خالص) جدا از UI
+│   ├── working-memory/games/{number-sequence, n-back, dual-n-back}/
 │   ├── attention-control/games/{go-no-go, stroop, task-switching}/
-│   ├── processing-speed/games/{calculation-20, calculation-100, continuous-countdown, missing-operator, number-comparison}/
+│   ├── processing-speed/games/{calculation-20, calculation-100, continuous-countdown, missing-operator, number-comparison, pasat}/
 │   ├── visual-spatial/games/{memorise-grid, spatial-sequence, object-tracking, mental-rotation, mirror-clock, block-height}/
 │   ├── sensorimotor/games/reaction-time/
 │   ├── verbal-auditory/games/{word-memory, syllable-counting}/
-│   └── reasoning/games/{sequence-logic, pattern-completion}/
+│   ├── reasoning/games/{sequence-logic, pattern-completion}/
+│   └── long-term-memory/games/associative-pairs/
 ├── components/game/ # GameShell مشترک: دستورالعمل → شمارش معکوس → بازی → نتایج
-├── components/icons/ # نشان‌های SVG: لوگو، هفت حوزه، شش نوع تمرین، گلیف‌های UI
+├── components/icons/ # نشان‌های SVG: لوگو، هشت حوزه، شش نوع تمرین، گلیف‌های UI
 ├── pages/           # Home / Exercise / Program / Journey / Reports
 └── analytics/       # تجمیع داشبورد و سیر پیشرفت از داده خام
 ```
@@ -100,12 +101,13 @@ interface ExerciseDefinition<Config, State, Trial, Answer> {
 5. **گاردهای الزامی کامپوننت** (درس‌های باگ‌یابی نشست ۲): قفل `submittedRef` علیه double-fire · عدم `advance` پس از `result.sessionCompleted` · همه تایمرها در `timeoutsRef` با پاک‌سازی
 6. افزودن زمان تقریبی هر مرحله به `src/core/program/time-estimation.ts` (وگرنه پیش‌فرض ۱۰ث برای بودجهٔ برنامه روزانه بیش‌برآورد می‌شود)
 
-## تمرین‌های فعال (۲۱ بازی در هر ۷ حوزه شناختی)
+## تمرین‌های فعال (۲۴ بازی در ۸ حوزه شناختی)
 
 | بازی | حوزه | الگوی تعاملی |
 | --- | --- | --- |
 | توالی اعداد (Number Sequence) | حافظه کاری | نمایش متوالی → بازسازی ترتیب |
 | ان-بک (N-Back) | حافظه کاری | تشخیص تطابق با N مرحله قبل |
+| ان-بک دوگانه (Dual N-Back) | حافظه کاری | دو جریان هم‌زمان حرف+مکان با دکمهٔ تطبیق جداگانه |
 | برو/نرو (Go/No-Go) | توجه و مهار | واکنش/مهار در جریان پیوسته |
 | استرووپ (Stroop) | توجه و مهار | انتخاب رنگ جوهر با وجود تداخل کلمه |
 | جابه‌جایی تکلیف (Task Switching) | توجه و مهار | دسته‌بندی بر اساس نشانهٔ بُعد + سنجهٔ هزینهٔ جابه‌جایی |
@@ -114,6 +116,7 @@ interface ExerciseDefinition<Config, State, Trial, Answer> {
 | شمارش معکوس پیوسته (Continuous Countdown) | سرعت پردازش | تفریق زنجیره‌ای حفظی → ورود باقیمانده نهایی |
 | عملگر گم‌شده (Missing Operator) | سرعت پردازش | انتخاب عملگر برقرارکنندهٔ معادله (تک‌راه‌حلی) |
 | مقایسه اعداد (Number Comparison) | سرعت پردازش | انتخاب عدد بزرگ‌تر با فاصلهٔ عددی کنترل‌شده |
+| جمع زنجیره‌ای گام‌دار (PASAT) | سرعت پردازش | جمع هر رقم با رقم قبل در ریتم زمان‌بندی‌شده |
 | شبکه حافظه (Memorise Grid) | دیداری-فضایی | بازسازی مجموعه خانه‌ها |
 | توالی مکانی (Spatial Sequence) | دیداری-فضایی | بازسازی ترتیب خانه‌ها |
 | دنبال‌کردن اشیا (Object Tracking) | دیداری-فضایی | ردیابی اهداف متحرک روی Canvas (اولین بازی Canvas) |
@@ -125,6 +128,7 @@ interface ExerciseDefinition<Config, State, Trial, Answer> {
 | شمارش هجا (Syllable Counting) | زبانی | شمارش هجای جمله با بانک محتوای از پیش اعتبارسنجی‌شده |
 | منطق توالی (Sequence Logic) | استدلال | کشف قاعده توالی → انتخاب ادامه |
 | تکمیل الگو (Pattern Completion) | استدلال | ماتریس ۳×۳ با قاعده سطر/ستون |
+| حافظهٔ انجمنی (Associative Pairs) | حافظه بلندمدت | مطالعهٔ جفت واژه → آزمون بازیابی (+ یادآوری دوباره در سطح ۳+) |
 
 ## دشواری تطبیقی (Rule-Based)
 

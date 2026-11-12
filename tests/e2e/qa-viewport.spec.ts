@@ -17,7 +17,7 @@ interface GameCase {
 
 const GAMES: readonly GameCase[] = [
   { id: 'number-sequence', name: '^توالی اعداد', control: (p) => p.getByTestId('ns-digit') },
-  { id: 'n-back', name: 'ان-بک', control: (p) => p.getByTestId('nback-letter') },
+  { id: 'n-back', name: '^ان-بک(?! دوگانه)', control: (p) => p.getByTestId('nback-letter') },
   {
     id: 'go-no-go',
     name: 'برو / نرو',

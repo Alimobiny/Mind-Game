@@ -15,7 +15,7 @@
     "e2e": "playwright test",
     "icons": "node scripts/make-icons.mjs",
     "desktop": "electron electron/main.cjs",
-    "desktop:build": "npm run icons && tsc --noEmit && DEPLOY_BASE=./ vite build && electron-builder --win portable nsis"
+    "desktop:build": "npm run icons && tsc --noEmit && vite build --base ./ && electron-builder --win portable nsis"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.1.0",

@@ -94,6 +94,16 @@ function SensorimotorEmblem({ size = 24, className }: EmblemProps) {
   )
 }
 
+function LongTermMemoryEmblem({ size = 24, className }: EmblemProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
+      {/* زنجیرهٔ انجمن — دو حلقهٔ به‌هم‌پیوسته (یادآوری جفت‌ها در طول زمان) */}
+      <circle cx="8.5" cy="12" r="5" {...stroke} />
+      <circle cx="15.5" cy="12" r="5" {...stroke} />
+    </svg>
+  )
+}
+
 const EMBLEMS: Record<CognitiveDomain, (p: EmblemProps) => JSX.Element> = {
   'working-memory': WorkingMemoryEmblem,
   'attention-control': AttentionEmblem,
@@ -102,6 +112,7 @@ const EMBLEMS: Record<CognitiveDomain, (p: EmblemProps) => JSX.Element> = {
   'visual-spatial': VisualSpatialEmblem,
   reasoning: ReasoningEmblem,
   sensorimotor: SensorimotorEmblem,
+  'long-term-memory': LongTermMemoryEmblem,
 }
 
 /** نشان حوزهٔ شناختی — dispatcher بر اساس کلید حوزه */

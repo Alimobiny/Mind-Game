@@ -6,6 +6,7 @@ import {
   loadProgressForExercises,
 } from '../analytics/dashboard'
 import type { AdaptiveDifficultyResult, DashboardTotals, ExerciseProgress } from '../analytics/dashboard'
+import { COGNITIVE_DOMAINS } from '../core/types'
 import type { SessionRecord } from '../core/types'
 import { describeStreakFa } from '../core/difficulty/adaptive-difficulty'
 import {
@@ -18,6 +19,7 @@ import { getAppData } from '../data/app-data'
 import { createAppRegistry } from '../modules'
 import { DOMAIN_LABELS_FA } from '../i18n/fa'
 import { APP_TEXTS_FA } from '../i18n/fa'
+import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { formatDate, formatDateTime, formatDuration, toFaDigits } from '../utils/format'
 import styles from './reports.module.css'
 
@@ -172,7 +174,7 @@ export function ReportsPage() {
               </div>
               <div className={styles.card}>
                 <div className={styles.cardValue}>
-                  {toFaDigits(data.totals.activeDomains.length)} از {toFaDigits(7)}
+                  {toFaDigits(data.totals.activeDomains.length)} از {toFaDigits(COGNITIVE_DOMAINS.length)}
                 </div>
                 <div className={styles.cardLabel}>حوزه‌های فعال</div>
               </div>
@@ -188,7 +190,16 @@ export function ReportsPage() {
                 const meta = registry.get(progress.exerciseId)?.meta
                 const adaptive = data.progress[progress.exerciseId]
                 return (
-                  <div className={styles.exerciseRow} key={progress.exerciseId}>
+                  <div
+                    className={styles.exerciseRow}
+                    key={progress.exerciseId}
+                    data-domain={meta?.domain}
+                  >
+                    {meta ? (
+                      <span className={styles.exerciseTile} data-type={meta.exerciseType}>
+                        <TypeGlyph type={meta.exerciseType} size={20} />
+                      </span>
+                    ) : null}
                     <div className={styles.exerciseInfo}>
                       <span className={styles.exerciseName}>{meta?.nameFa ?? progress.exerciseId}</span>
                       <span className={styles.exerciseDomain}>
@@ -221,7 +232,7 @@ export function ReportsPage() {
                       <path
                         d={accuracySparklinePath(progress.accuracySeries)}
                         fill="none"
-                        stroke="var(--color-primary)"
+                        stroke="var(--accent, var(--color-primary))"
                         strokeWidth="2.5"
                         strokeLinecap="round"
                       />

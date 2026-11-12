@@ -1,0 +1,29 @@
+/* PASAT — استایل اختصاصی؛ موبایل-اول */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ناحیه رقم — ارتفاع ثابت تا محو شدن پرش چیدمان نسازد */
+.digitArea {
+  min-height: 22vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fixation {
+  font-size: 2.2rem;
+  color: var(--color-text-muted);
+}
+
+.placeholder {
+  color: var(--color-text-muted);
+}

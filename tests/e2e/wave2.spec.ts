@@ -59,7 +59,7 @@ test.describe('Reaction Time', () => {
 
 test.describe('N-Back', () => {
   test('۲۵ محرک: تطبیق فقط برای اهداف (خواندن data-is-target)', async ({ page }) => {
-    await startExercise(page, 'ان-بک', 1)
+    await startExercise(page, '^ان-بک(?! دوگانه)', 1)  // لنگر ^: کارت «ان-بک دوگانه» هم پیشوند است
     const matchButton = page.getByTestId('nback-match')
     const letter = page.getByTestId('nback-letter')
 

@@ -10,6 +10,7 @@ export const DOMAIN_LABELS_FA: Readonly<Record<CognitiveDomain, string>> = {
   'visual-spatial': 'حافظه دیداری و فضایی',
   reasoning: 'استدلال و حل مسئله',
   sensorimotor: 'هماهنگی حسی و حرکتی',
+  'long-term-memory': 'حافظه بلندمدت',
 }
 
 /** برچسب فارسی انواع تمرین — جنس تکلیف (طبقه‌بندی عرضی) */
@@ -72,7 +73,7 @@ export const JOURNEY_TEXTS_FA = {
   milestonesHonestNote: 'نشان‌ها فقط بازتاب نظم و حجم تمرین‌اند، نه سنجش توانایی ذهنی.',
   achievedOn: 'دستیابی',
   mFirstSession: 'اولین قدم',
-  mDomainCoverage: 'هفت‌گانهٔ کامل',
+  mDomainCoverage: 'پوشش همهٔ حوزه‌ها',
   mSessions: 'جلسهٔ تمرین',
   mStreakDays: 'روز پیاپی',
   mLevelUp: 'ارتقای سطح',

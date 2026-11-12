@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test'
  * هر نما هر ۲۱ تمرین را دقیقاً یک‌بار نشان می‌دهد و پیمایش به picker سالم است.
  */
 
-const TOTAL_EXERCISES = 21
+const TOTAL_EXERCISES = 24
 
 test.describe('طبقه‌بندی فهرست تمرین‌ها', () => {
   test('سه نمای گروه‌بندی: سرفصل‌ها عوض می‌شوند و هر نما همهٔ ۲۱ تمرین را یک‌بار دارد', async ({
@@ -38,8 +38,9 @@ test.describe('طبقه‌بندی فهرست تمرین‌ها', () => {
     await page.goto('/')
     await page.getByTestId('view-type').click()
 
-    // در گروه «کلامی» بازی «ان-بک» هست — از نمای نوع هم باید قابل شروع باشد
-    const nback = page.getByRole('link', { name: /^ان-بک/ })
+    // در گروه «کلامی» بازی «ان-بک دوگانه» هست — از نمای نوع هم باید قابل شروع باشد
+    // (لنگر کامل لازم است: «ان-بک» تنها، پیشوند «ان-بک دوگانه» هم هست و strict mode می‌شکند)
+    const nback = page.getByRole('link', { name: /^ان-بک دوگانه/ })
     await expect(nback).toBeVisible()
     await nback.click()
 

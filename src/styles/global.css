@@ -24,6 +24,7 @@
   --accent-visual: #34d399;
   --accent-reasoning: #818cf8;
   --accent-sensorimotor: #fb923c;
+  --accent-ltm: #2dd4bf;
 
   /* اکسنت انواع تمرین — جنس تکلیف */
   --type-numeric: #fbbf24;
@@ -147,6 +148,9 @@ a {
 }
 [data-domain='sensorimotor'] {
   --accent: var(--accent-sensorimotor);
+}
+[data-domain='long-term-memory'] {
+  --accent: var(--accent-ltm);
 }
 
 [data-type='numeric'] {

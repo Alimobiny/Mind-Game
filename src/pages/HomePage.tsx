@@ -198,7 +198,7 @@ export function HomePage() {
           اضافه می‌شوند؛ اولویت با تکمیل و اعتبارسنجی هر حوزه است.
         </p>
       ) : (
-        <p className={styles.comingSoon}>هر هفت حوزه شناختی فعال است.</p>
+        <p className={styles.comingSoon}>هر {toFaDigits(COGNITIVE_DOMAINS.length)} حوزهٔ شناختی فعال است.</p>
       )}
 
       <footer className={styles.footer}>

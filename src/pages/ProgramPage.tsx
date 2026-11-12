@@ -13,6 +13,7 @@ import type {
 import { getAppData } from '../data/app-data'
 import { APP_TEXTS_FA, DOMAIN_LABELS_FA, PROGRAM_TEXTS_FA } from '../i18n/fa'
 import { createAppRegistry } from '../modules'
+import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { formatDate, toFaDigits } from '../utils/format'
 import styles from './program.module.css'
 
@@ -129,8 +130,14 @@ export function ProgramPage() {
                   key={item.exerciseId}
                   className={done ? styles.itemDone : styles.item}
                   data-testid="program-item"
+                  data-domain={meta?.domain}
                 >
                   <div className={styles.itemHead}>
+                    {meta ? (
+                      <span className={styles.itemTile} data-type={meta.exerciseType}>
+                        <TypeGlyph type={meta.exerciseType} size={20} />
+                      </span>
+                    ) : null}
                     <span className={styles.itemName}>{meta?.nameFa ?? item.exerciseId}</span>
                     <span className={done ? styles.badgeDone : styles.badgePending}>
                       {done ? PROGRAM_TEXTS_FA.statusDone : PROGRAM_TEXTS_FA.statusPending}

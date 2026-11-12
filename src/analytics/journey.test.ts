@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { COGNITIVE_DOMAINS } from '../core/types'
 import type { CognitiveDomain, SessionRecord } from '../core/types'
 import { computeAdaptiveDifficulty } from '../core/difficulty/adaptive-difficulty'
 import {
@@ -142,7 +143,7 @@ describe('computeJourneyMilestones', () => {
     expect(milestones.find((m) => m.id === 'first-session')?.achievedIsoDate).toBeNull()
     expect(milestones.find((m) => m.id === 'domain-coverage')?.progress).toEqual({
       current: 0,
-      goal: 7,
+      goal: COGNITIVE_DOMAINS.length,
     })
   })
 
@@ -155,9 +156,10 @@ describe('computeJourneyMilestones', () => {
       'visual-spatial',
       'reasoning',
       'sensorimotor',
+      'long-term-memory',
     ]
     const sessions = domains.flatMap((domain, i) =>
-      Array.from({ length: i < 2 ? 2 : 1 }, () =>
+      Array.from({ length: i < 1 ? 2 : 1 }, () =>
         session({ day: `2026-11-0${(i % 9) + 1}`, domain, exerciseId: `ex-${i}` }),
       ),
     )

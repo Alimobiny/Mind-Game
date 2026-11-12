@@ -16,6 +16,30 @@ import {
   nBackDefinition,
 } from './working-memory/games/n-back/engine'
 import {
+  DUAL_NBACK_CONTENT_VERSION,
+  DUAL_NBACK_ID,
+  DUAL_NBACK_VERSION,
+  configForDifficulty as dualNbackConfigForDifficulty,
+  dualNBackDefinition,
+} from './working-memory/games/dual-n-back/engine'
+import { DUAL_NBACK_META_FA } from './working-memory/games/dual-n-back/meta'
+import {
+  PASAT_CONTENT_VERSION,
+  PASAT_ID,
+  PASAT_VERSION,
+  configForDifficulty as pasatConfigForDifficulty,
+  pasatDefinition,
+} from './processing-speed/games/pasat/engine'
+import { PASAT_META_FA } from './processing-speed/games/pasat/meta'
+import {
+  ASSOCIATIVE_PAIRS_CONTENT_VERSION,
+  ASSOCIATIVE_PAIRS_ID,
+  ASSOCIATIVE_PAIRS_VERSION,
+  configForDifficulty as apConfigForDifficulty,
+  associativePairsDefinition,
+} from './long-term-memory/games/associative-pairs/engine'
+import { ASSOCIATIVE_PAIRS_META_FA } from './long-term-memory/games/associative-pairs/meta'
+import {
   GO_NO_GO_CONTENT_VERSION,
   GO_NO_GO_ID,
   GO_NO_GO_VERSION,
@@ -294,6 +318,42 @@ const nBack: RegisteredExercise = {
       falseAlarms: 'تطبیق‌های نابجا (false alarm)',
       correctRejections: 'خودداری‌های درست',
     },
+  },
+}
+
+/** موج ۶ — ان-بک دوگانه (متادیتای فارسی از meta.ts همان بازی) */
+const dualNBack: RegisteredExercise = {
+  definition: dualNBackDefinition,
+  meta: {
+    id: DUAL_NBACK_ID,
+    domain: 'working-memory',
+    version: DUAL_NBACK_VERSION,
+    contentVersion: DUAL_NBACK_CONTENT_VERSION,
+    ...DUAL_NBACK_META_FA,
+  },
+}
+
+/** موج ۶ — جمع زنجیره‌ای گام‌دار (پاسات) */
+const pasat: RegisteredExercise = {
+  definition: pasatDefinition,
+  meta: {
+    id: PASAT_ID,
+    domain: 'processing-speed',
+    version: PASAT_VERSION,
+    contentVersion: PASAT_CONTENT_VERSION,
+    ...PASAT_META_FA,
+  },
+}
+
+/** موج ۶ — حافظهٔ انجمنی؛ نخستین بازی حوزهٔ هشتم (حافظه بلندمدت) */
+const associativePairs: RegisteredExercise = {
+  definition: associativePairsDefinition,
+  meta: {
+    id: ASSOCIATIVE_PAIRS_ID,
+    domain: 'long-term-memory',
+    version: ASSOCIATIVE_PAIRS_VERSION,
+    contentVersion: ASSOCIATIVE_PAIRS_CONTENT_VERSION,
+    ...ASSOCIATIVE_PAIRS_META_FA,
   },
 }
 
@@ -592,6 +652,9 @@ export function createAppRegistry(): GameRegistry {
   const registry = new GameRegistry()
   registry.register(numberSequence)
   registry.register(nBack)
+  registry.register(dualNBack)
+  registry.register(pasat)
+  registry.register(associativePairs)
   registry.register(goNoGo)
   registry.register(stroop)
   registry.register(calculation20)
@@ -624,6 +687,12 @@ export function createExerciseConfig(exerciseId: string, difficulty: number): Ex
       return nsConfigForDifficulty(difficulty)
     case NBACK_ID:
       return nbackConfigForDifficulty(difficulty)
+    case DUAL_NBACK_ID:
+      return dualNbackConfigForDifficulty(difficulty)
+    case PASAT_ID:
+      return pasatConfigForDifficulty(difficulty)
+    case ASSOCIATIVE_PAIRS_ID:
+      return apConfigForDifficulty(difficulty)
     case GO_NO_GO_ID:
       return gngConfigForDifficulty(difficulty)
     case STROOP_ID:

@@ -49,4 +49,9 @@ test('screenshots for visual review', async ({ page }) => {
   await page.goto('/reports')
   await page.waitForLoadState('networkidle')
   await page.screenshot({ path: 'test-results/shot-reports.png', fullPage: true })
+
+  // برنامهٔ روزانه
+  await page.goto('/program')
+  await page.waitForLoadState('networkidle')
+  await page.screenshot({ path: 'test-results/shot-program.png', fullPage: true })
 })

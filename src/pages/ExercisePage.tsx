@@ -21,6 +21,9 @@ import { MemoriseGridGame } from '../modules/visual-spatial/games/memorise-grid/
 import { SpatialSequenceGame } from '../modules/visual-spatial/games/spatial-sequence/SpatialSequenceGame'
 import { NumberSequenceGame } from '../modules/working-memory/games/number-sequence/NumberSequenceGame'
 import { NBackGame } from '../modules/working-memory/games/n-back/NBackGame'
+import { DualNBackGame } from '../modules/working-memory/games/dual-n-back/DualNBackGame'
+import { PasatGame } from '../modules/processing-speed/games/pasat/PasatGame'
+import { AssociativePairsGame } from '../modules/long-term-memory/games/associative-pairs/AssociativePairsGame'
 import { WordMemoryGame } from '../modules/verbal-auditory/games/word-memory/WordMemoryGame'
 import { SyllableCountingGame } from '../modules/verbal-auditory/games/syllable-counting/SyllableCountingGame'
 import { SequenceLogicGame } from '../modules/reasoning/games/sequence-logic/SequenceLogicGame'
@@ -44,6 +47,12 @@ function renderGame(exerciseId: string) {
       return (ctx: Parameters<typeof NumberSequenceGame>[0]['ctx']) => <NumberSequenceGame ctx={ctx} />
     case 'n-back':
       return (ctx: Parameters<typeof NBackGame>[0]['ctx']) => <NBackGame ctx={ctx} />
+    case 'dual-n-back':
+      return (ctx: Parameters<typeof DualNBackGame>[0]['ctx']) => <DualNBackGame ctx={ctx} />
+    case 'pasat':
+      return (ctx: Parameters<typeof PasatGame>[0]['ctx']) => <PasatGame ctx={ctx} />
+    case 'associative-pairs':
+      return (ctx: Parameters<typeof AssociativePairsGame>[0]['ctx']) => <AssociativePairsGame ctx={ctx} />
     case 'go-no-go':
       return (ctx: Parameters<typeof GoNoGoGame>[0]['ctx']) => <GoNoGoGame ctx={ctx} />
     case 'stroop':

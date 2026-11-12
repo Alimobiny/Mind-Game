@@ -57,7 +57,7 @@ test.describe('QA3: توقف خودکار با visibilitychange', () => {
     page,
   }) => {
     const getErrors = trackPageErrors(page)
-    await startExercise(page, 'ان-بک', 1)
+    await startExercise(page, '^ان-بک(?! دوگانه)', 1)  // لنگر ^: کارت «ان-بک دوگانه» هم پیشوند است
     await page.waitForFunction(
       () => {
         const el = document.querySelector('[data-testid="nback-letter"]')
