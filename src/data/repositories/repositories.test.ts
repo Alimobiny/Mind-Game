@@ -1,3 +1,4 @@
+// @vitest-environment node
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { SessionRecord, TrialEventRecord } from '../../core/types'

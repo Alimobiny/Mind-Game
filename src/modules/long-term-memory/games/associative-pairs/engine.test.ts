@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { AP_WORDS, associativePairsDefinition as def, configForDifficulty } from './engine'
 import type { AssociativePairsState, AssociativePairsTrial } from './engine'

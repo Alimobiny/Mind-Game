@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { SeededRandom } from '../../../../core/randomization/seeded-random'
 import { deriveTrialSeed } from '../../../../core/randomization/derive-seed'

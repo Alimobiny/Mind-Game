@@ -235,6 +235,30 @@ import {
   wordBlendDefinition,
 } from './verbal-auditory/games/word-blend/engine'
 import { WORD_BLEND_META_FA } from './verbal-auditory/games/word-blend/meta'
+import {
+  SIMON_CONTENT_VERSION,
+  SIMON_ID,
+  SIMON_VERSION,
+  configForDifficulty as simonConfigForDifficulty,
+  simonDefinition,
+} from './attention-control/games/simon/engine'
+import { SIMON_META_FA } from './attention-control/games/simon/meta'
+import {
+  ATTENTIONAL_BLINK_CONTENT_VERSION,
+  ATTENTIONAL_BLINK_ID,
+  ATTENTIONAL_BLINK_VERSION,
+  attentionalBlinkDefinition,
+  configForDifficulty as abConfigForDifficulty,
+} from './attention-control/games/attentional-blink/engine'
+import { ATTENTIONAL_BLINK_META_FA } from './attention-control/games/attentional-blink/meta'
+import {
+  RUNNING_SPAN_CONTENT_VERSION,
+  RUNNING_SPAN_ID,
+  RUNNING_SPAN_VERSION,
+  configForDifficulty as rsConfigForDifficulty,
+  runningSpanDefinition,
+} from './working-memory/games/running-span/engine'
+import { RUNNING_SPAN_META_FA } from './working-memory/games/running-span/meta'
 
 /**
  * ثبت صریح تمرین‌های MVP در Registry — هیچ ثبت خودکار/جادویی وجود ندارد؛
@@ -783,6 +807,41 @@ const wordBlend: RegisteredExercise = {
   },
 }
 
+// ---- موج نهم — سه بازی از سند پژوهش پیشرفته ----
+
+const simon: RegisteredExercise = {
+  definition: simonDefinition,
+  meta: {
+    id: SIMON_ID,
+    domain: 'attention-control',
+    version: SIMON_VERSION,
+    contentVersion: SIMON_CONTENT_VERSION,
+    ...SIMON_META_FA,
+  },
+}
+
+const attentionalBlink: RegisteredExercise = {
+  definition: attentionalBlinkDefinition,
+  meta: {
+    id: ATTENTIONAL_BLINK_ID,
+    domain: 'attention-control',
+    version: ATTENTIONAL_BLINK_VERSION,
+    contentVersion: ATTENTIONAL_BLINK_CONTENT_VERSION,
+    ...ATTENTIONAL_BLINK_META_FA,
+  },
+}
+
+const runningSpan: RegisteredExercise = {
+  definition: runningSpanDefinition,
+  meta: {
+    id: RUNNING_SPAN_ID,
+    domain: 'working-memory',
+    version: RUNNING_SPAN_VERSION,
+    contentVersion: RUNNING_SPAN_CONTENT_VERSION,
+    ...RUNNING_SPAN_META_FA,
+  },
+}
+
 export function createAppRegistry(): GameRegistry {
   const registry = new GameRegistry()
   registry.register(numberSequence)
@@ -816,6 +875,9 @@ export function createAppRegistry(): GameRegistry {
   registry.register(wordScramble)
   registry.register(audioRecall)
   registry.register(wordBlend)
+  registry.register(simon)
+  registry.register(attentionalBlink)
+  registry.register(runningSpan)
   return registry
 }
 
@@ -887,6 +949,12 @@ export function createExerciseConfig(exerciseId: string, difficulty: number): Ex
       return arConfigForDifficulty(difficulty)
     case WORD_BLEND_ID:
       return wbConfigForDifficulty(difficulty)
+    case SIMON_ID:
+      return simonConfigForDifficulty(difficulty)
+    case ATTENTIONAL_BLINK_ID:
+      return abConfigForDifficulty(difficulty)
+    case RUNNING_SPAN_ID:
+      return rsConfigForDifficulty(difficulty)
     default:
       throw new Error(`config برای تمرین ${exerciseId} تعریف نشده است`)
   }

@@ -52,6 +52,9 @@ import { ReadingAloudGame } from '../modules/verbal-auditory/games/reading-aloud
 import { WordScrambleGame } from '../modules/verbal-auditory/games/word-scramble/WordScrambleGame'
 import { AudioRecallGame } from '../modules/verbal-auditory/games/audio-recall/AudioRecallGame'
 import { WordBlendGame } from '../modules/verbal-auditory/games/word-blend/WordBlendGame'
+import { SimonGame } from '../modules/attention-control/games/simon/SimonGame'
+import { AttentionalBlinkGame } from '../modules/attention-control/games/attentional-blink/AttentionalBlinkGame'
+import { RunningSpanGame } from '../modules/working-memory/games/running-span/RunningSpanGame'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA } from '../i18n/fa'
 import { formatDuration, toFaDigits } from '../utils/format'
@@ -124,6 +127,12 @@ function renderGame(exerciseId: string) {
       return (ctx: Parameters<typeof AudioRecallGame>[0]['ctx']) => <AudioRecallGame ctx={ctx} />
     case 'word-blend':
       return (ctx: Parameters<typeof WordBlendGame>[0]['ctx']) => <WordBlendGame ctx={ctx} />
+    case 'simon-task':
+      return (ctx: Parameters<typeof SimonGame>[0]['ctx']) => <SimonGame ctx={ctx} />
+    case 'attentional-blink':
+      return (ctx: Parameters<typeof AttentionalBlinkGame>[0]['ctx']) => <AttentionalBlinkGame ctx={ctx} />
+    case 'running-span':
+      return (ctx: Parameters<typeof RunningSpanGame>[0]['ctx']) => <RunningSpanGame ctx={ctx} />
     default:
       return null
   }

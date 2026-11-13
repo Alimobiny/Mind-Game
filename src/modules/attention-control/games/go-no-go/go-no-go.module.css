@@ -20,6 +20,7 @@
   background: var(--color-success);
   box-shadow: 0 0 40px rgba(74, 222, 128, 0.35);
   display: block;
+  animation: ui-pop 200ms var(--ease-out, ease);
 }
 
 .nogoStimulus {
@@ -29,6 +30,7 @@
   background: var(--color-danger);
   box-shadow: 0 0 40px rgba(248, 113, 113, 0.35);
   display: block;
+  animation: ui-pop 200ms var(--ease-out, ease);
 }
 
 .plusSign {

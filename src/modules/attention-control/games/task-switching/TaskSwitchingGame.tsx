@@ -180,7 +180,12 @@ export function TaskSwitchingGame({ ctx }: { ctx: ActiveGameContext }) {
 
   return (
     <div className={styles.stage}>
-      <div className={styles.cue} data-testid="ts-cue" data-dimension={trial.dimension}>
+      <div
+        className={styles.cue}
+        data-testid="ts-cue"
+        data-dimension={trial.dimension}
+        key={trial.trialIndex}
+      >
         {DIMENSION_LABELS_FA[trial.dimension]}
       </div>
 
@@ -196,6 +201,7 @@ export function TaskSwitchingGame({ ctx }: { ctx: ActiveGameContext }) {
             data-color={trial.color}
             data-shape={trial.shape}
             data-size={trial.size}
+            key={trial.trialIndex}
           >
             {trial.shape === 'circle' ? (
               <circle cx="50" cy="50" r="44" fill={COLOR_CSS[trial.color]} />

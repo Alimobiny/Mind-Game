@@ -11,6 +11,7 @@
   font-variant-numeric: tabular-nums;
   line-height: 1;
   user-select: none;
+  animation: ui-pop 200ms var(--ease-out, ease);
 }
 
 /* ناحیه فلش بازخورد — ارتفاع ثابت تا با ظاهر/محو شدن فلش، صفحه نپرد */
@@ -24,6 +25,7 @@
 .flash {
   font-size: 1.2rem;
   font-weight: 700;
+  animation: ui-pop var(--dur-fast, 120ms) var(--ease-out, ease);
 }
 
 .flashCorrect {
@@ -32,4 +34,5 @@
 
 .flashIncorrect {
   color: var(--color-danger);
+  animation: ui-pop var(--dur-fast, 120ms) var(--ease-out, ease), ui-shake 320ms var(--ease-out, ease);
 }

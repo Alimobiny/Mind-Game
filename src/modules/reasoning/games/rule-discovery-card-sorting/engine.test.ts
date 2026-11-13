@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import {
   RULE_DISCOVERY_CARD_SORTING_ID,

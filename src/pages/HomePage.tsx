@@ -17,7 +17,7 @@ import { LogoMark } from '../components/icons/LogoMark'
 import { DomainEmblem } from '../components/icons/DomainEmblems'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { ActivityHeatmap } from '../components/journey/ActivityHeatmap'
-import { CalendarGlyph, ChartGlyph, FlagGlyph, FlameGlyph, ForwardGlyph } from '../components/icons/UiGlyphs'
+import { CalendarGlyph, ChartGlyph, CloseGlyph, FlagGlyph, FlameGlyph, ForwardGlyph } from '../components/icons/UiGlyphs'
 import styles from './home.module.css'
 
 const registry = createAppRegistry()
@@ -235,7 +235,7 @@ export function HomePage() {
             aria-label={APP_TEXTS_FA.searchClear}
             data-testid="game-search-clear"
           >
-            ✕
+            <CloseGlyph size={18} />
           </button>
         ) : null}
       </div>

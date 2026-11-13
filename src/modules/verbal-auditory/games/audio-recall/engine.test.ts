@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { AUDIO_WORDS_FA, audioRecallDefinition as def, configForDifficulty } from './engine'
 import type { AudioRecallState, AudioRecallTrial } from './engine'

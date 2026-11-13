@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { PASSAGE_BANK_FA, configForDifficulty, readingAloudDefinition as def } from './engine'
 import type { ReadingAloudState, ReadingAloudTrial } from './engine'

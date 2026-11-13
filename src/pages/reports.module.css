@@ -218,3 +218,32 @@
   font-size: 0.8rem;
   color: var(--color-success);
 }
+
+/* پنل تاریخچهٔ اجراها — چیپ وضعیت هر زنجیرهٔ برنامه */
+.runStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.runStatusDone {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 40%, transparent);
+}
+
+.runStatusAborted {
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 40%, transparent);
+}
+
+.runStatusLive {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+}

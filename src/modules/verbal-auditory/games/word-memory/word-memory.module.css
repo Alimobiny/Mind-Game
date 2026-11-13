@@ -61,11 +61,12 @@
   color: #082f49;
 }
 
-/* بازخورد: سبز = واژه هدف و انتخاب‌شده */
+/* بازخورد: سبز = واژه هدف و انتخاب‌شده — پاپ ورود به فاز بازخورد */
 .hit {
   background: var(--color-success);
   border-color: var(--color-success);
   color: #082f49;
+  animation: ui-pop 240ms var(--ease-out, ease) backwards;
 }
 
 /* بازخورد: زرد = واژه هدف که انتخاب نشد */
@@ -73,6 +74,7 @@
   background: var(--color-warning);
   border-color: var(--color-warning);
   color: #422006;
+  animation: ui-pop 240ms var(--ease-out, ease) 90ms backwards;
 }
 
 /* بازخورد: قرمز = واژه جدید (مزاحم) که انتخاب شد */
@@ -80,9 +82,19 @@
   background: var(--color-danger);
   border-color: var(--color-danger);
   color: #450a0a;
+  animation: ui-pop 240ms var(--ease-out, ease) 90ms backwards;
 }
 
 /* بازخورد: گزینه‌های بی‌ربط انتخاب‌نشده کم‌رنگ می‌شوند */
 .dim {
   opacity: 0.55;
+}
+
+/* بنر جمع‌بندی فاز بازخورد — پنجرهٔ ۱۳۰۰ms پیشروی دست‌نخورده */
+.feedbackBanner {
+  animation: ui-pop var(--dur-med, 200ms) var(--ease-out, ease);
+}
+
+.feedbackBannerWrong {
+  animation: ui-pop var(--dur-med, 200ms) var(--ease-out, ease), ui-shake 320ms var(--ease-out, ease);
 }

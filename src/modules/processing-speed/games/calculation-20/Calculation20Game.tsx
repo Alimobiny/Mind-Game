@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
+import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import type { Calculation20Trial } from './engine'
 import styles from './calculation-20.module.css'
@@ -106,7 +107,7 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
           {toFaDigits(0)}
         </button>
         <button type="button" className={gameStyles.key} onClick={() => press('back')} disabled={entry === ''}>
-          ⌫
+          <BackspaceGlyph size={22} />
         </button>
         <button
           type="button"

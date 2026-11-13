@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
+import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import type { NumberSequenceTrial } from './engine'
 import styles from './number-sequence.module.css'
@@ -116,7 +117,7 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
             {toFaDigits(0)}
           </button>
           <button type="button" className={gameStyles.key} onClick={undo} disabled={entered.length === 0}>
-            ⌫
+            <BackspaceGlyph size={22} />
           </button>
           <button
             type="button"

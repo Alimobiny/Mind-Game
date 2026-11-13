@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { canDispatch, dispatch, dispatchAll, initialMachineState, isTerminal } from './state-machine'
 import type { SessionEvent } from './state-machine'

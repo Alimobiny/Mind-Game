@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { SessionRecord } from '../types'
 import type { ProgramRunRecord, TrainingPlanItem } from './types'

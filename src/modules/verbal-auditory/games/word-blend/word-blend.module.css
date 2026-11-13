@@ -38,6 +38,7 @@
 
 .speakerIcon {
   font-size: 2.6rem;
+  color: var(--accent, var(--color-primary));
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--accent) 10%, transparent);

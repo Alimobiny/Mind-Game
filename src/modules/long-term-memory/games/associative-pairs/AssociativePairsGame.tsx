@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
+import { SwapGlyph } from '../../../../components/icons/UiGlyphs'
 import type { AssociativePairsTrial } from './engine'
 import styles from './associative-pairs.module.css'
 
@@ -9,10 +10,13 @@ import styles from './associative-pairs.module.css'
  *
  * فاز مطالعه: جفت واژه نمایش داده می‌شود و با انقضای پنجره، خودکار به
  * بعدی می‌رود (تماشا). فاز آزمون: نشانه + دکمه‌های گزینه؛ انتخاب، ثبت و
- * مرحلهٔ بعد. سه گارد الزامی رعایت شده است.
+ * مرحلهٔ بعد. سه گارد الزامی رعایت شده است. بازخورد انتخاب با نشان
+ * شناور — بدون تغییر زمانی پیشروی فوری.
  */
 export function AssociativePairsGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as AssociativePairsTrial
+  const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
+  const badgeTimerRef = useRef<number | null>(null)
   const timersRef = useRef<number[]>([])
   const submittedRef = useRef(false)
 
@@ -42,13 +46,28 @@ export function AssociativePairsGame({ ctx }: { ctx: ActiveGameContext }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
+  // نشان شناور نتیجهٔ انتخاب در فاز آزمون — پیشروی فوری بدون تغییر زمانی
+  const flashBadge = (correct: boolean) => {
+    setBadge(correct ? 'correct' : 'wrong')
+    if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    badgeTimerRef.current = window.setTimeout(() => setBadge(null), 900)
+  }
+
   const choose = (index: number) => {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit(index).then((result) => {
+      if (result.accepted) flashBadge(result.record.correct)
       if (result.accepted && !result.sessionCompleted) ctx.advance()
     })
   }
+
+  useEffect(
+    () => () => {
+      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    },
+    [],
+  )
 
   if (trial.item.phase === 'study') {
     return (
@@ -62,7 +81,7 @@ export function AssociativePairsGame({ ctx }: { ctx: ActiveGameContext }) {
           data-target={trial.item.target}
         >
           <span className={styles.pairWord}>{trial.item.cue}</span>
-          <span className={styles.pairLink}>⇄</span>
+          <SwapGlyph size={22} className={styles.pairLink} />
           <span className={styles.pairWord}>{trial.item.target}</span>
         </div>
       </div>
@@ -72,6 +91,17 @@ export function AssociativePairsGame({ ctx }: { ctx: ActiveGameContext }) {
   const isRetest = trial.item.block === 2
   return (
     <div className={styles.stage}>
+      {badge !== null ? (
+        <span className={gameStyles.floatingBadge} aria-live="polite">
+          <span
+            className={`${gameStyles.floatingBadgeInner} ${
+              badge === 'correct' ? gameStyles.floatingBadgeCorrect : gameStyles.floatingBadgeWrong
+            }`}
+          >
+            {badge === 'correct' ? 'درست ✓' : 'غلط ✗'}
+          </span>
+        </span>
+      ) : null}
       <p className={styles.phaseLabel}>
         {isRetest ? 'یادآوری دوباره — ' : ''}کدام واژه با این نشانه جفت بود؟
       </p>

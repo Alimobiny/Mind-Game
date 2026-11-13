@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { COGNITIVE_DOMAINS } from '../types'
 import type { CognitiveDomain } from '../types'

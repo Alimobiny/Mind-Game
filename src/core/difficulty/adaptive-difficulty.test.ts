@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { SessionRecord, SessionStatus } from '../types'
 import { computeAdaptiveDifficulty, toLocalIsoDate } from './adaptive-difficulty'

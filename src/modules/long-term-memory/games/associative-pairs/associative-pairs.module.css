@@ -1,6 +1,7 @@
 /* حافظهٔ انجمنی — استایل اختصاصی؛ موبایل-اول */
 
 .stage {
+  position: relative; /* لنگر نشان شناور بازخورد */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -58,6 +59,16 @@
   font-size: 1.1rem;
   font-weight: 500;
   transition: transform 80ms ease, border-color 120ms ease;
+  animation: ui-pop 240ms var(--ease-out, ease) backwards;
+}
+
+/* ورود پلکانی گزینه‌ها */
+.choiceButton:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.choiceButton:nth-child(3) {
+  animation-delay: 140ms;
 }
 
 .choiceButton:active {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
+import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import type { BlockHeightTrial } from './engine'
 import styles from './block-height.module.css'
@@ -353,7 +354,7 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
           onClick={() => press('back')}
           disabled={locked || entry === ''}
         >
-          ⌫
+          <BackspaceGlyph size={22} />
         </button>
         <button
           type="button"

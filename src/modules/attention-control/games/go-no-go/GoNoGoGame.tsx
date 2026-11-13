@@ -14,6 +14,8 @@ import styles from './go-no-go.module.css'
 export function GoNoGoGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as GoNoGoTrial
   const [stimulusVisible, setStimulusVisible] = useState(true)
+  const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
+  const badgeTimerRef = useRef<number | null>(null)
   const deadlineRef = useRef<number | null>(null)
   const timersRef = useRef<number[]>([])
   const submittedRef = useRef(false)
@@ -46,13 +48,28 @@ export function GoNoGoGame({ ctx }: { ctx: ActiveGameContext }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
+  // نشان شناور نتیجهٔ تپ — پیشروی فوری بدون تغییر زمانی (الگوی محاسبه ×۲۰)
+  const flashBadge = (correct: boolean) => {
+    setBadge(correct ? 'correct' : 'wrong')
+    if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    badgeTimerRef.current = window.setTimeout(() => setBadge(null), 900)
+  }
+
   const respond = () => {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit('tap').then((result) => {
+      if (result.accepted) flashBadge(result.record.correct)
       if (result.accepted && !result.sessionCompleted) ctx.advance()
     })
   }
+
+  useEffect(
+    () => () => {
+      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    },
+    [],
+  )
 
   return (
     <button
@@ -61,6 +78,17 @@ export function GoNoGoGame({ ctx }: { ctx: ActiveGameContext }) {
       onPointerDown={respond}
       aria-label="ناحیه پاسخ"
     >
+      {badge !== null ? (
+        <span className={gameStyles.floatingBadge} aria-live="polite">
+          <span
+            className={`${gameStyles.floatingBadgeInner} ${
+              badge === 'correct' ? gameStyles.floatingBadgeCorrect : gameStyles.floatingBadgeWrong
+            }`}
+          >
+            {badge === 'correct' ? 'درست ✓' : 'غلط ✗'}
+          </span>
+        </span>
+      ) : null}
       {stimulusVisible ? (
         trial.kind === 'go' ? (
           <span className={styles.goStimulus} aria-label="محرک برو" data-kind="go" />

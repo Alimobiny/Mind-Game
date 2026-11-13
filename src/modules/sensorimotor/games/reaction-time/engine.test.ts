@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { configForDifficulty, reactionTimeDefinition as def } from './engine'
 import type { ReactionTimeConfig, ReactionTimeTrial } from './engine'

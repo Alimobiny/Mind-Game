@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { configForDifficulty, SENTENCE_BANK_FA, syllableCountingDefinition as def } from './engine'
 import type { SyllableCountingState } from './engine'

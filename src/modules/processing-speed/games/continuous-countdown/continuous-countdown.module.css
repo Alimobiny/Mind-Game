@@ -34,4 +34,27 @@
   max-width: min(92vw, 34rem);
   text-align: center;
   margin: 0;
+  animation: ui-pop 240ms var(--ease-out, ease) 120ms backwards;
+}
+
+/* پیل نتیجهٔ فاز بازخورد — پنجرهٔ ۱۵۰۰ms بازخورد دست‌نخورده می‌ماند */
+.feedbackPill {
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding: var(--space-2) var(--space-5);
+  border-radius: 999px;
+  animation: ui-pop var(--dur-med, 200ms) var(--ease-out, ease);
+}
+
+.feedbackPillGood {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 40%, transparent);
+}
+
+.feedbackPillBad {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
+  animation: ui-pop var(--dur-med, 200ms) var(--ease-out, ease), ui-shake 320ms var(--ease-out, ease);
 }

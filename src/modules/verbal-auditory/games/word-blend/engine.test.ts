@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BLEND_BANK_FA, configForDifficulty, wordBlendDefinition as def } from './engine'
 import type { WordBlendState, WordBlendTrial } from './engine'

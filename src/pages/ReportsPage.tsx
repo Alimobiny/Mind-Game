@@ -8,6 +8,8 @@ import {
 import type { AdaptiveDifficultyResult, DashboardTotals, ExerciseProgress } from '../analytics/dashboard'
 import { COGNITIVE_DOMAINS } from '../core/types'
 import type { SessionRecord } from '../core/types'
+import type { ProgramRunRecord } from '../core/program/types'
+import { summarizeRun } from '../core/program/run-chain'
 import { describeStreakFa } from '../core/difficulty/adaptive-difficulty'
 import {
   createBackup,
@@ -15,7 +17,7 @@ import {
   restoreBackup,
   validateBackup,
 } from '../data/export-import'
-import { getAppData } from '../data/app-data'
+import { getAppData, subscribeToAppDataChanges } from '../data/app-data'
 import { createAppRegistry } from '../modules'
 import { DOMAIN_LABELS_FA } from '../i18n/fa'
 import { APP_TEXTS_FA } from '../i18n/fa'
@@ -30,6 +32,10 @@ interface ReportsData {
   recent: readonly SessionRecord[]
   byExercise: readonly ExerciseProgress[]
   progress: Record<string, AdaptiveDifficultyResult>
+  /** اجراهای زنجیرهٔ برنامه — قدیمی → جدید */
+  runs: readonly ProgramRunRecord[]
+  /** همهٔ جلسه‌ها (شامل قطع‌شده) برای خلاصهٔ هر اجرا */
+  allSessions: readonly SessionRecord[]
 }
 
 export function ReportsPage() {
@@ -48,7 +54,12 @@ export function ReportsPage() {
           appData.sessions,
           registry.list().map((e) => e.meta.id),
         )
-        return { ...dashboard, progress }
+        // پنل تاریخچهٔ اجراها: زنجیره‌های برنامه + همهٔ جلسه‌ها برای خلاصه
+        const [runs, allSessions] = await Promise.all([
+          appData.runs.listAll(),
+          appData.sessions.listRecent(Number.MAX_SAFE_INTEGER),
+        ])
+        return { ...dashboard, progress, runs, allSessions }
       })
       .then((result) => {
         if (!cancelled) setData(result)
@@ -60,6 +71,10 @@ export function ReportsPage() {
       cancelled = true
     }
   }, [reloadKey])
+
+  // تازه‌سازی خودکار با هر تغییر داده (پایان جلسه/اجرای برنامه) — پنل
+  // تاریخچهٔ اجراها بدون بازدید مجدد صفحه به‌روز می‌ماند
+  useEffect(() => subscribeToAppDataChanges(() => setReloadKey((k) => k + 1)), [])
 
   const handleExport = async () => {
     setBackupMessage(null)
@@ -266,6 +281,52 @@ export function ReportsPage() {
                 })}
               </ul>
             </section>
+
+            {data.runs.length > 0 ? (
+              <section aria-label="تاریخچهٔ اجراهای برنامه">
+                <h2 className={styles.sectionTitle}>اجراهای برنامه</h2>
+                <ul className={styles.sessionList} data-testid="run-history">
+                  {[...data.runs]
+                    .sort((a, b) => b.startedAt - a.startedAt)
+                    .slice(0, 20)
+                    .map((run) => {
+                      const summary = summarizeRun(run, data.allSessions)
+                      const statusLabel =
+                        run.status === 'completed'
+                          ? 'کامل'
+                          : run.status === 'aborted'
+                            ? 'نیمه‌کاره'
+                            : 'در حال اجرا'
+                      return (
+                        <li className={styles.sessionItem} key={run.id}>
+                          <span
+                            className={`${styles.runStatus} ${
+                              run.status === 'completed'
+                                ? styles.runStatusDone
+                                : run.status === 'aborted'
+                                  ? styles.runStatusAborted
+                                  : styles.runStatusLive
+                            }`}
+                          >
+                            {statusLabel}
+                          </span>
+                          <span className={styles.sessionMeta}>
+                            {formatDate(new Date(`${run.date}T12:00:00`).getTime())} ·{' '}
+                            {toFaDigits(summary.completedSessions)} جلسهٔ کامل
+                            {summary.abortedSessions > 0
+                              ? ` · ${toFaDigits(summary.abortedSessions)} قطع‌شده`
+                              : ''}
+                            {summary.activeMs > 0 ? ` · فعال ${formatDuration(summary.activeMs)}` : ''}
+                          </span>
+                          <span className={styles.sessionAccuracy}>
+                            {summary.meanAccuracy === null ? '—' : `${toFaDigits(summary.meanAccuracy)}٪`}
+                          </span>
+                        </li>
+                      )
+                    })}
+                </ul>
+              </section>
+            ) : null}
 
             <p className={styles.disclaimer}>{APP_TEXTS_FA.disclaimer}</p>
           </>

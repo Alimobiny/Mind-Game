@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { configForDifficulty, pasatDefinition as def } from './engine'
 import type { PasatState, PasatTrial } from './engine'

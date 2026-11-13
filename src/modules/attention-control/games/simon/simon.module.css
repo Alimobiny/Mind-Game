@@ -1,0 +1,123 @@
+/* Simon Task — صحنهٔ مکان‌محور؛ جهت LTR تا چپ/راست فیزیکی بماند */
+
+.wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  align-items: center;
+}
+
+.stage {
+  direction: ltr;
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fixation {
+  font-size: 2rem;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.invertCue {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 45%, transparent);
+  animation: ui-pop var(--dur-fast) var(--ease-out) both;
+}
+
+.stimulus {
+  position: absolute;
+  top: 50%;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  animation: ui-pop 220ms var(--ease-out) both;
+  box-shadow: 0 6px 22px rgb(0 0 0 / 0.35);
+}
+
+.onLeft {
+  left: 14%;
+  translate: 0 -50%;
+}
+
+.onRight {
+  right: 14%;
+  translate: 0 -50%;
+}
+
+.blue {
+  background: radial-gradient(circle at 32% 30%, #7dd3fc, var(--color-primary-strong));
+}
+
+.red {
+  background: radial-gradient(circle at 32% 30%, #fca5a5, #dc2626);
+}
+
+.buttons {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 420px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.button:active {
+  transform: scale(0.96);
+}
+
+.buttonBlue {
+  color: #7dd3fc;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-2));
+  border: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+.buttonRed {
+  color: #fca5a5;
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface-2));
+  border: 2px solid color-mix(in srgb, var(--color-danger) 55%, transparent);
+}
+
+.dotBlue,
+.dotRed {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dotBlue {
+  background: var(--color-primary);
+}
+
+.dotRed {
+  background: var(--color-danger);
+}

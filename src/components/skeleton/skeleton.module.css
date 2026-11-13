@@ -1,0 +1,74 @@
+/* اسکلتون بارگذاری — سطوح ساکن با درخشش آرام */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: min(92vw, 560px);
+  margin: 0 auto;
+  padding: var(--space-5) 0;
+}
+
+.bar,
+.block,
+.row {
+  display: block;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    100deg,
+    var(--color-surface) 30%,
+    var(--color-surface-2) 50%,
+    var(--color-surface) 70%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.bar {
+  height: 52px;
+  border-radius: var(--radius-lg);
+}
+
+.block {
+  height: 96px;
+}
+
+.blockWide {
+  height: 120px;
+}
+
+.blockTall {
+  height: 160px;
+}
+
+.rowGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  height: 20px;
+}
+
+.rowShort {
+  width: 62%;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .block,
+  .row {
+    animation: none;
+  }
+}

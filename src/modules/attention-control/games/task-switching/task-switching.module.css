@@ -27,6 +27,7 @@
   font-weight: 800;
   color: var(--color-text);
   user-select: none;
+  animation: ui-pop 200ms var(--ease-out, ease);
 }
 
 /* جایگاه محرک — ارتفاع ثابت برای جایگزینی نقطهٔ تمرکز و شکل بدون لرزش */
@@ -39,6 +40,7 @@
 
 .stimulus {
   display: block;
+  animation: ui-pop 200ms var(--ease-out, ease);
 }
 
 /* نقطهٔ تمرکز پیش از ظاهرشدن محرک (طی CSI) */
@@ -62,6 +64,7 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
+  animation: ui-pop var(--dur-fast, 120ms) var(--ease-out, ease);
 }
 
 .flashCorrect {
@@ -70,6 +73,7 @@
 
 .flashIncorrect {
   color: #ef4444;
+  animation: ui-pop var(--dur-fast, 120ms) var(--ease-out, ease), ui-shake 320ms var(--ease-out, ease);
 }
 
 /* ردیف دو دکمهٔ ثابت پاسخ — در dir=rtl عنصر اول سمت «راست» رندر می‌شود؛

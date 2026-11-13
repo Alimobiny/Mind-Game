@@ -1,0 +1,140 @@
+/* Attentional Blink — جریان RSVP و جدول بازیابی دو هدف */
+
+.streamStage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 180px;
+}
+
+.fixation {
+  font-size: 2rem;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  height: 96px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 2.6rem;
+  font-weight: 700;
+  animation: ui-pop 120ms var(--ease-out) both;
+}
+
+.itemDistractor {
+  color: var(--text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+}
+
+.itemT1 {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface-2));
+  border: 2px solid color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+
+.itemT2 {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 16%, var(--color-surface-2));
+  border: 2px solid color-mix(in srgb, var(--color-success) 60%, transparent);
+}
+
+.recallBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  align-items: center;
+}
+
+.pickRow,
+.targetRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.pickChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 700;
+  animation: ui-pop var(--dur-fast) var(--ease-out) both;
+}
+
+.pickT1 {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+.pickT2 {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 45%, transparent);
+}
+
+.letterGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 520px;
+}
+
+.letterCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  border-radius: var(--radius-sm);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+
+.letterCell:active {
+  transform: scale(0.94);
+}
+
+.letterPicked {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  cursor: default;
+}
+
+.feedbackBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+  animation: ui-pop var(--dur-fast) var(--ease-out) both;
+}
+
+@media (max-width: 480px) {
+  .letterGrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .item {
+    min-width: 84px;
+    height: 84px;
+    font-size: 2.2rem;
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
+import { SpeakerGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import { createSpeechController, resolvePresentationMode } from '../../audio/speech'
 import type { AudioRecallTrial } from './engine'
@@ -117,7 +118,9 @@ export function AudioRecallGame({ ctx }: { ctx: ActiveGameContext }) {
           {mode === 'visual' && currentWord !== undefined ? (
             <div className={styles.wordFlash}>{currentWord}</div>
           ) : (
-            <div className={styles.speakerIcon} aria-hidden="true">🔊</div>
+            <div className={styles.speakerIcon} aria-hidden="true">
+              <SpeakerGlyph size={30} />
+            </div>
           )}
           <p className={styles.progress}>
             {toFaDigits(Math.min(itemIndex + 1, trial.studyWords.length))} از{' '}

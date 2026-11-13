@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { configForDifficulty, numberComparisonDefinition as def } from './engine'
 import type { NumberComparisonConfig, NumberComparisonTrial } from './engine'

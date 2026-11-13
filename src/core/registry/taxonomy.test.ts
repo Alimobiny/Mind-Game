@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createAppRegistry } from '../../modules'
 import { EXERCISE_TYPES, isExerciseType } from '../types'

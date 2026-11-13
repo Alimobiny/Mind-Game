@@ -17,6 +17,7 @@ import {
 } from '../../core/session/session-manager'
 import { APP_TEXTS_FA, DOMAIN_LABELS_FA } from '../../i18n/fa'
 import { DomainEmblem } from '../icons/DomainEmblems'
+import { CloseGlyph } from '../icons/UiGlyphs'
 import { toFaDigits } from '../../utils/format'
 import styles from './game.module.css'
 
@@ -257,7 +258,7 @@ export function GameShell({
               onClick={requestExit}
               aria-label={confirmExit ? 'قطع جلسه — تأیید' : 'خروج از جلسه'}
             >
-              {confirmExit ? 'قطع جلسه؟' : '✕'}
+              {confirmExit ? 'قطع جلسه؟' : <CloseGlyph size={20} />}
             </button>
           </div>
         ) : null}

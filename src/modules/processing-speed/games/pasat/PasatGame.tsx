@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
+import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import type { PasatTrial } from './engine'
 import styles from './pasat.module.css'
@@ -132,7 +133,7 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
           {FA[0]}
         </button>
         <button type="button" className={gameStyles.key} onClick={() => press('back')}>
-          ⌫
+          <BackspaceGlyph size={22} />
         </button>
         <button
           type="button"

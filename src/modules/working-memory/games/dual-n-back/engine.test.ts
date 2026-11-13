@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { configForDifficulty, dualNBackDefinition as def } from './engine'
 import type { DualNBackState } from './engine'

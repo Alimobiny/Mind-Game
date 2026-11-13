@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { RecordedTrial } from '../types'
 import { accuracyPercent, countOutcome, median, summarizeOutcomes } from './scoring'

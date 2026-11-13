@@ -67,3 +67,42 @@ export function FlameGlyph({ size = 24, className }: EmblemProps) {
     </svg>
   )
 }
+
+/** ضربدر — دکمهٔ بستن/خروج و پاک‌کردن جستجو (با aria-label همراه) */
+export function CloseGlyph({ size = 24, className }: EmblemProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
+      <path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5" {...stroke} />
+    </svg>
+  )
+}
+
+/** کلید پاک‌کردن (بک‌اسپیس) — صفحه‌کلیدهای عددی بازی‌ها (با aria-label همراه) */
+export function BackspaceGlyph({ size = 24, className }: EmblemProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
+      <path d="M8.8 5.5H20a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H8.8a2 2 0 0 1-1.5-.7l-4-4.7a1.7 1.7 0 0 1 0-2.2l4-4.7a2 2 0 0 1 1.5-.7Z" {...stroke} />
+      <path d="m12 9.5 5 5m0-5-5 5" {...stroke} />
+    </svg>
+  )
+}
+
+/** بلندگو — نشان محرک شنیداری (تزئینی) */
+export function SpeakerGlyph({ size = 24, className }: EmblemProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
+      <path d="M4 9.5v5h3.2L12 18.8V5.2L7.2 9.5H4Z" {...stroke} />
+      <path d="M15.2 9.2a4 4 0 0 1 0 5.6M17.8 6.8a7.6 7.6 0 0 1 0 10.4" {...stroke} />
+    </svg>
+  )
+}
+
+/** جابه‌جایی دوطرفه — پیوند جفت واژه‌ها (تزئینی) */
+export function SwapGlyph({ size = 24, className }: EmblemProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
+      <path d="M4.5 8.5h13m0 0-3.2-3.2M17.5 8.5l-3.2 3.2" {...stroke} />
+      <path d="M19.5 15.5h-13m0 0 3.2-3.2M6.5 15.5l3.2 3.2" {...stroke} />
+    </svg>
+  )
+}

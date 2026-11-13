@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
+import { SpeakerGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import { createSpeechController, resolvePresentationMode } from '../../audio/speech'
 import type { WordBlendTrial } from './engine'
@@ -101,7 +102,9 @@ export function WordBlendGame({ ctx }: { ctx: ActiveGameContext }) {
           {mode === 'visual' && currentPart !== undefined ? (
             <div className={styles.partFlash}>{currentPart}</div>
           ) : (
-            <div className={styles.speakerIcon} aria-hidden="true">🔊</div>
+            <div className={styles.speakerIcon} aria-hidden="true">
+              <SpeakerGlyph size={30} />
+            </div>
           )}
           <p className={styles.progress}>
             قطعهٔ {toFaDigits(Math.min(partIndex + 1, trial.entry.parts.length))} از{' '}

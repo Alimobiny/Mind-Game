@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
+import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import { computeRemainder } from './engine'
 import type { ContinuousCountdownTrial } from './engine'
@@ -127,7 +128,7 @@ export function ContinuousCountdownGame({ ctx }: { ctx: ActiveGameContext }) {
             {toFaDigits(0)}
           </button>
           <button type="button" className={gameStyles.key} onClick={() => press('back')} disabled={entry === ''}>
-            ⌫
+            <BackspaceGlyph size={22} />
           </button>
           <button
             type="button"
@@ -152,7 +153,9 @@ export function ContinuousCountdownGame({ ctx }: { ctx: ActiveGameContext }) {
   ].join(' ')
   return (
     <div className={gameStyles.feedback} data-testid="ccount-feedback">
-      <div className={wasCorrect ? gameStyles.feedbackCorrect : gameStyles.feedbackIncorrect}>
+      <div
+        className={`${styles.feedbackPill} ${wasCorrect ? styles.feedbackPillGood : styles.feedbackPillBad}`}
+      >
         {wasCorrect ? 'درست!' : 'نادرست'}
       </div>
       <p className={styles.expression} aria-label="عبارت کامل مرحله">

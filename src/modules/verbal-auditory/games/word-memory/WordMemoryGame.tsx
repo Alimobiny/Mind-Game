@@ -157,7 +157,9 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
       ) : null}
       {phase === 'feedback' ? (
         <div
-          className={`${gameStyles.feedback} ${wasCorrect ? gameStyles.feedbackCorrect : gameStyles.feedbackIncorrect}`}
+          className={`${gameStyles.feedback} ${wasCorrect ? gameStyles.feedbackCorrect : gameStyles.feedbackIncorrect} ${
+            wasCorrect ? styles.feedbackBanner : `${styles.feedbackBanner} ${styles.feedbackBannerWrong}`
+          }`}
         >
           {wasCorrect ? 'کامل و درست!' : 'دقیق نبود'}
         </div>

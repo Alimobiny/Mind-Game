@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { countPersianWords, normalizePersian, persianEquals } from './persian'
 

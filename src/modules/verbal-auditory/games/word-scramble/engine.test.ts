@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { SCRAMBLE_BANK_FA, configForDifficulty, wordScrambleDefinition as def } from './engine'
 import type { WordScrambleState, WordScrambleTrial } from './engine'
