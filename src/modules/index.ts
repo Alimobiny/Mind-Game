@@ -19,10 +19,13 @@ import {
   DUAL_NBACK_CONTENT_VERSION,
   DUAL_NBACK_ID,
   DUAL_NBACK_VERSION,
+  DUAL_NBACK_AUDITORY_ID,
   configForDifficulty as dualNbackConfigForDifficulty,
   dualNBackDefinition,
+  dualNBackAuditoryDefinition,
 } from './working-memory/games/dual-n-back/engine'
 import { DUAL_NBACK_META_FA } from './working-memory/games/dual-n-back/meta'
+import { DUAL_NBACK_AUDITORY_META_FA } from './working-memory/games/dual-n-back/meta-auditory'
 import {
   PASAT_CONTENT_VERSION,
   PASAT_ID,
@@ -259,6 +262,22 @@ import {
   runningSpanDefinition,
 } from './working-memory/games/running-span/engine'
 import { RUNNING_SPAN_META_FA } from './working-memory/games/running-span/meta'
+import {
+  CHANGE_DETECTION_CONTENT_VERSION,
+  CHANGE_DETECTION_ID,
+  CHANGE_DETECTION_VERSION,
+  configForDifficulty as cdConfigForDifficulty,
+  changeDetectionDefinition,
+} from './visual-spatial/games/change-detection/engine'
+import { CHANGE_DETECTION_META_FA } from './visual-spatial/games/change-detection/meta'
+import {
+  PROGRESSIVE_MATRICES_CONTENT_VERSION,
+  PROGRESSIVE_MATRICES_ID,
+  PROGRESSIVE_MATRICES_VERSION,
+  configForDifficulty as pmConfigForDifficulty,
+  progressiveMatricesDefinition,
+} from './reasoning/games/progressive-matrices/engine'
+import { PROGRESSIVE_MATRICES_META_FA } from './reasoning/games/progressive-matrices/meta'
 
 /**
  * ثبت صریح تمرین‌های MVP در Registry — هیچ ثبت خودکار/جادویی وجود ندارد؛
@@ -842,6 +861,41 @@ const runningSpan: RegisteredExercise = {
   },
 }
 
+// ---- موج دهم — آخرین سه بازی سند پژوهش پیشرفته ----
+
+const changeDetection: RegisteredExercise = {
+  definition: changeDetectionDefinition,
+  meta: {
+    id: CHANGE_DETECTION_ID,
+    domain: 'visual-spatial',
+    version: CHANGE_DETECTION_VERSION,
+    contentVersion: CHANGE_DETECTION_CONTENT_VERSION,
+    ...CHANGE_DETECTION_META_FA,
+  },
+}
+
+const dualNBackAuditory: RegisteredExercise = {
+  definition: dualNBackAuditoryDefinition,
+  meta: {
+    id: DUAL_NBACK_AUDITORY_ID,
+    domain: 'working-memory',
+    version: DUAL_NBACK_VERSION,
+    contentVersion: DUAL_NBACK_CONTENT_VERSION,
+    ...DUAL_NBACK_AUDITORY_META_FA,
+  },
+}
+
+const progressiveMatrices: RegisteredExercise = {
+  definition: progressiveMatricesDefinition,
+  meta: {
+    id: PROGRESSIVE_MATRICES_ID,
+    domain: 'reasoning',
+    version: PROGRESSIVE_MATRICES_VERSION,
+    contentVersion: PROGRESSIVE_MATRICES_CONTENT_VERSION,
+    ...PROGRESSIVE_MATRICES_META_FA,
+  },
+}
+
 export function createAppRegistry(): GameRegistry {
   const registry = new GameRegistry()
   registry.register(numberSequence)
@@ -878,6 +932,9 @@ export function createAppRegistry(): GameRegistry {
   registry.register(simon)
   registry.register(attentionalBlink)
   registry.register(runningSpan)
+  registry.register(changeDetection)
+  registry.register(dualNBackAuditory)
+  registry.register(progressiveMatrices)
   return registry
 }
 
@@ -955,6 +1012,12 @@ export function createExerciseConfig(exerciseId: string, difficulty: number): Ex
       return abConfigForDifficulty(difficulty)
     case RUNNING_SPAN_ID:
       return rsConfigForDifficulty(difficulty)
+    case CHANGE_DETECTION_ID:
+      return cdConfigForDifficulty(difficulty)
+    case DUAL_NBACK_AUDITORY_ID:
+      return dualNbackConfigForDifficulty(difficulty)
+    case PROGRESSIVE_MATRICES_ID:
+      return pmConfigForDifficulty(difficulty)
     default:
       throw new Error(`config برای تمرین ${exerciseId} تعریف نشده است`)
   }

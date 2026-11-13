@@ -10,7 +10,9 @@ import { trackPageErrors } from './qa-helpers'
 test.describe('Dual N-Back', () => {
   test('۲۴ مرحله: تطبیق حرف و مکان بر اساس صفات هدف', async ({ page }) => {
     const getErrors = trackPageErrors(page)
-    await startExercise(page, 'ان-بک دوگانه', 1)
+    // لنگر lookahead: از موج دهم، «ان-بک دوگانهٔ شنیداری» هم این پیشوند را
+    // دارد و نام دسترس‌پذیر کارت شامل توضیح هم هست (^$ کار نمی‌کند)
+    await startExercise(page, '^ان-بک دوگانه(?!.*شنیداری)', 1)
 
     let progress = 0
     for (let i = 0; i < 24; i++) {

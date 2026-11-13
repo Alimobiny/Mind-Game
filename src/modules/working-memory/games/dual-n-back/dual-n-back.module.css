@@ -78,3 +78,15 @@
 .matchButton:active {
   transform: scale(0.97);
 }
+
+/* گونهٔ شنیداری — نشان بلندگو به‌جای متن حرف (حین نمایش محرک) */
+.speakerCue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  animation: ui-pop 180ms var(--ease-out, ease);
+}

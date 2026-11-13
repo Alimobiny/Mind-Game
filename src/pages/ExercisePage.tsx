@@ -55,6 +55,8 @@ import { WordBlendGame } from '../modules/verbal-auditory/games/word-blend/WordB
 import { SimonGame } from '../modules/attention-control/games/simon/SimonGame'
 import { AttentionalBlinkGame } from '../modules/attention-control/games/attentional-blink/AttentionalBlinkGame'
 import { RunningSpanGame } from '../modules/working-memory/games/running-span/RunningSpanGame'
+import { ChangeDetectionGame } from '../modules/visual-spatial/games/change-detection/ChangeDetectionGame'
+import { ProgressiveMatricesGame } from '../modules/reasoning/games/progressive-matrices/ProgressiveMatricesGame'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA } from '../i18n/fa'
 import { formatDuration, toFaDigits } from '../utils/format'
@@ -71,6 +73,8 @@ function renderGame(exerciseId: string) {
       return (ctx: Parameters<typeof NBackGame>[0]['ctx']) => <NBackGame ctx={ctx} />
     case 'dual-n-back':
       return (ctx: Parameters<typeof DualNBackGame>[0]['ctx']) => <DualNBackGame ctx={ctx} />
+    case 'dual-n-back-auditory':
+      return (ctx: Parameters<typeof DualNBackGame>[0]['ctx']) => <DualNBackGame ctx={ctx} auditory />
     case 'pasat':
       return (ctx: Parameters<typeof PasatGame>[0]['ctx']) => <PasatGame ctx={ctx} />
     case 'associative-pairs':
@@ -133,6 +137,10 @@ function renderGame(exerciseId: string) {
       return (ctx: Parameters<typeof AttentionalBlinkGame>[0]['ctx']) => <AttentionalBlinkGame ctx={ctx} />
     case 'running-span':
       return (ctx: Parameters<typeof RunningSpanGame>[0]['ctx']) => <RunningSpanGame ctx={ctx} />
+    case 'change-detection':
+      return (ctx: Parameters<typeof ChangeDetectionGame>[0]['ctx']) => <ChangeDetectionGame ctx={ctx} />
+    case 'progressive-matrices':
+      return (ctx: Parameters<typeof ProgressiveMatricesGame>[0]['ctx']) => <ProgressiveMatricesGame ctx={ctx} />
     default:
       return null
   }

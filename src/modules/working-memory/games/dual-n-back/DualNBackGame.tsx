@@ -1,25 +1,49 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
+import { SpeakerGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
+import { createSpeechController, resolvePresentationMode } from '../../../verbal-auditory/audio/speech'
 import type { DualNBackTrial } from './engine'
 import styles from './dual-n-back.module.css'
 
 /**
- * Dual N-Back — UI
+ * Dual N-Back — UI (گونهٔ دیداری و شنیداری)
  *
  * دو جریان هم‌زمان: حرف (بالای شبکه) + خانهٔ فعال شبکهٔ ۳×۳. در پنجرهٔ پاسخ،
  * «تطبیق حرف» و «تطبیق مکان» فقط ادعا ثبت می‌کنند (قفل یک‌بار هر جریان)؛
  * تایمر مهلت، یک submit با هر دو ادعا و زمان هر فشردن می‌فرستد — قرارداد
  * یک-submit-per-trial موتور. هر سه گارد الزامی رعایت شده است.
+ *
+ * گونهٔ شنیداری (prop auditory): جریان حرف با صدای محلی دستگاه گفته
+ * می‌شود و به‌جای متن، نشان بلندگو دیده می‌شود؛ ریتم کاملاً تایمری و
+ * مستقل از گفتار است. بدون صدای فارسی (مثل CI) به‌صورت خودکار به
+ * نمایش دیداری حرف برمی‌گردد — data-testidها در هر دو حالت یکی‌اند.
  */
-export function DualNBackGame({ ctx }: { ctx: ActiveGameContext }) {
+export function DualNBackGame({
+  ctx,
+  auditory = false,
+}: {
+  ctx: ActiveGameContext
+  auditory?: boolean
+}) {
   const trial = ctx.trial as DualNBackTrial
   const [stimulusVisible, setStimulusVisible] = useState(true)
   const timersRef = useRef<number[]>([])
   const submittedRef = useRef(false)
   const trialStartRef = useRef(0)
   const claimsRef = useRef({ letterClaimed: false, letterRtMs: null as number | null, cellClaimed: false, cellRtMs: null as number | null })
+
+  // زیرساخت گفتار محلی — فقط در گونهٔ شنیداری ساخته می‌شود
+  const speechRef = useRef<ReturnType<typeof createSpeechController> | null>(null)
+  if (auditory && speechRef.current === null) {
+    speechRef.current = createSpeechController()
+  }
+  const speech = speechRef.current
+  const mode = useMemo(
+    () => (speech !== null ? resolvePresentationMode(speech) : 'visual' as const),
+    [speech],
+  )
 
   useEffect(() => {
     submittedRef.current = false
@@ -28,6 +52,12 @@ export function DualNBackGame({ ctx }: { ctx: ActiveGameContext }) {
     trialStartRef.current = performance.now()
     for (const t of timersRef.current) window.clearTimeout(t)
     timersRef.current = []
+
+    // گونهٔ شنیداری: گفتن حرف در شروع محرک — fire-and-forget؛ ریتم تایمری
+    // خودش جلو می‌رود و به پایان گفتار وابسته نیست (الگوی یادآوری شنیداری)
+    if (auditory && mode === 'speech') {
+      speech?.speak(trial.letter, { rate: 0.9 })
+    }
 
     // پنهان‌شدن هر دو جریان بعد از stimulusMs (فاصله خالی تا محرک بعد)
     timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
@@ -59,9 +89,18 @@ export function DualNBackGame({ ctx }: { ctx: ActiveGameContext }) {
     }
     return () => {
       for (const t of timersRef.current) window.clearTimeout(t)
+      speech?.cancel()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
+
+  // پاک‌سازی گفتار در unmount (قطع جلسه/خروج)
+  useEffect(
+    () => () => {
+      speech?.cancel()
+    },
+    [speech],
+  )
 
   /** ادعای یک جریان — فقط یک‌بار؛ فشردنِ دوبارهٔ همان دکمه بی‌اثر است */
   const claim = (stream: 'letter' | 'cell') => {
@@ -78,12 +117,19 @@ export function DualNBackGame({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   const cells = Array.from({ length: 9 }, (_, i) => i)
+  const speakLetter = auditory && mode === 'speech'
 
   return (
     <div className={styles.stage}>
       <div className={styles.letterArea} data-testid="dnback-letter" data-is-letter-target={trial.isLetterTarget ? 'true' : 'false'}>
         {stimulusVisible ? (
-          <span className={gameStyles.bigNumber}>{trial.letter}</span>
+          speakLetter ? (
+            <span className={styles.speakerCue} aria-hidden="true">
+              <SpeakerGlyph size={44} />
+            </span>
+          ) : (
+            <span className={gameStyles.bigNumber}>{trial.letter}</span>
+          )
         ) : (
           <span className={styles.fixation}>+</span>
         )}
@@ -110,7 +156,8 @@ export function DualNBackGame({ ctx }: { ctx: ActiveGameContext }) {
       </div>
 
       <p className={gameStyles.hint}>
-        اگر حرف یا مکان با {toFaDigits(trial.n)} مرحله قبل یکی بود، دکمهٔ همان جریان را بزن
+        اگر {speakLetter ? 'صدای حرف' : 'حرف'} یا مکان با {toFaDigits(trial.n)} مرحله قبل یکی بود،
+        دکمهٔ همان جریان را بزن
       </p>
 
       <div className={styles.buttonRow}>

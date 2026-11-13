@@ -95,14 +95,17 @@ export function configForDifficulty(difficulty: number): DualNBackConfig {
 /** حروف مشترک با ان-بک ساده — استخر بازاستفاده */
 const LETTERS: readonly string[] = ['ب', 'ج', 'د', 'س', 'ف', 'ل', 'م', 'ت']
 
-export const dualNBackDefinition: ExerciseDefinition<
-  DualNBackConfig,
-  DualNBackState,
-  DualNBackTrial,
-  DualNBackAnswer | null
-> = {
-  id: DUAL_NBACK_ID,
-  version: DUAL_NBACK_VERSION,
+/**
+ * کارخانهٔ تعریف — منطق برای هر دو گونهٔ دیداری و شنیداری یکی است؛
+ * ارائهٔ حرف در کامپوننت تعیین می‌شود (شنیداری: گفتار محلی با fallback
+ * دیداری). id جدا = رکورد جلسهٔ جدا برای هر گونه.
+ */
+export function dualNBackDefinitionFor(
+  id: string,
+): ExerciseDefinition<DualNBackConfig, DualNBackState, DualNBackTrial, DualNBackAnswer | null> {
+  return {
+    id,
+    version: DUAL_NBACK_VERSION,
   contentVersion: DUAL_NBACK_CONTENT_VERSION,
   domain: 'working-memory',
 
@@ -262,7 +265,7 @@ export const dualNBackDefinition: ExerciseDefinition<
       state.results.filter((r) => streamOf(r, stream) === kind).length
 
     return {
-      exerciseId: DUAL_NBACK_ID,
+      exerciseId: id,
       sessionId: state.sessionId,
       exerciseVersion: DUAL_NBACK_VERSION,
       contentVersion: DUAL_NBACK_CONTENT_VERSION,
@@ -281,4 +284,11 @@ export const dualNBackDefinition: ExerciseDefinition<
       },
     }
   },
+  }
 }
+
+export const dualNBackDefinition = dualNBackDefinitionFor(DUAL_NBACK_ID)
+
+/** گونهٔ شنیداری — جریان حرف با صدای دستگاه (fallback دیداری خودکار) */
+export const DUAL_NBACK_AUDITORY_ID = 'dual-n-back-auditory'
+export const dualNBackAuditoryDefinition = dualNBackDefinitionFor(DUAL_NBACK_AUDITORY_ID)

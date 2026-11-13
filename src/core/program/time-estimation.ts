@@ -93,6 +93,12 @@ export const TRIAL_SECONDS_BY_EXERCISE: Readonly<Record<string, number>> = {
   'attentional-blink': 9,
   // موج نهم — نمایش ۷ تا ۱۲ رقم (~۶-۱۱ث) + ورود دنباله + بازخورد
   'running-span': 16,
+  // موج دهم — نمونه ~۰٫۵ث + فاصلهٔ خالی (~۱-۱٫۵ث) + دوداوری + بازخورد
+  'change-detection': 6,
+  // موج دهم — همان ریتم ان-بک دوگانهٔ دیداری (گفتار fire-and-forget)
+  'dual-n-back-auditory': 2.5,
+  // موج دهم — تحلیل ماتریس چندقاعده‌ای + انتخاب گزینه (مثل تکمیل الگو)
+  'progressive-matrices': 14,
 }
 
 /** تخمین مدت جلسه یک بازی به دقیقه — گرد به بالا */
