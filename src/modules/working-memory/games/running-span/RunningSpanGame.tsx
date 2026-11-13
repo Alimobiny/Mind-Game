@@ -23,6 +23,9 @@ export function RunningSpanGame({ ctx }: { ctx: ActiveGameContext }) {
   const trialKey = `${trial.trialIndex}`
   const timeoutsRef = useRef<number[]>([])
   const submittedRef = useRef(false)
+  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
+  const currentTrialRef = useRef(trial.trialIndex)
+  currentTrialRef.current = trial.trialIndex
 
   const clearTimers = useCallback(() => {
     for (const t of timeoutsRef.current) window.clearTimeout(t)
@@ -91,7 +94,18 @@ export function RunningSpanGame({ ctx }: { ctx: ActiveGameContext }) {
     }
     setWasCorrect(result.record.correct)
     setPhase('feedback')
-    timeoutsRef.current.push(window.setTimeout(() => ctx.advance(), 850))
+    // تایمر پیشروی با گارد کهنگی: اگر مکثِ وسط پنجرهٔ IDB ریمانت ساخته
+    // باشد، فیکس ریس pause خودش پیشروی کرده و این تایمر کهنه بی‌اثر می‌ماند
+    timeoutsRef.current.push(
+      window.setTimeout(() => {
+        if (currentTrialRef.current !== trial.trialIndex) return
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده
+        }
+      }, 850),
+    )
   }
 
   if (phase === 'showing') {
@@ -142,6 +156,7 @@ export function RunningSpanGame({ ctx }: { ctx: ActiveGameContext }) {
             type="button"
             className={gameStyles.key}
             onClick={undo}
+            aria-label="پاک‌کردن"
             disabled={entered.length === 0}
           >
             <BackspaceGlyph size={22} />

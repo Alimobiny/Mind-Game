@@ -57,7 +57,13 @@ export function PatternCompletionGame({ ctx }: { ctx: ActiveGameContext }) {
     submittedRef.current = true
     void ctx.submit(index).then((result) => {
       // advance روی جلسه تمام‌شده (آخرین گزینه) خطا می‌دهد
-      if (result.accepted && !result.sessionCompleted) ctx.advance()
+      if (result.accepted && !result.sessionCompleted) {
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+        }
+      }
     })
   }
 

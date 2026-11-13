@@ -32,15 +32,33 @@ export function SimonGame({ ctx }: { ctx: ActiveGameContext }) {
   // با هر محرک جدید ریست می‌شود (مونت/ریمانت پس از مکث هم همین‌جا می‌گذرد)
   useEffect(() => {
     submittedRef.current = false
-    setStimulusVisible(true)
     for (const t of timersRef.current) window.clearTimeout(t)
     timersRef.current = []
 
-    // پنهان‌شدن محرک پس از stimulusMs — پنجره پاسخ تا انتهای فاصله باز است
-    timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+    // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰)
+    const outcome = ctx.lastOutcome
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
+      submittedRef.current = true
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان قطع/تکمیل شده؛ پوسته مسیر خودش را می‌رود
+      }
+      return
+    }
+
+    // پنهان‌شدن محرک پس از stimulusMs — پنجره پاسخ تا انتهای فاصله باز است.
+    // در بازنصبِ پس از مکث: اگر نقطهٔ پنهان‌شدن گذشته باشد (remaining از
+    // طول فاصله کمتر است) محرک از اول پنهان شروع می‌شود — نه نمایش کاملِ
+    // دوباره همراه با انقضای مهلت
+    const remaining = ctx.timeRemainingMs()
+    const pastHide = remaining !== null && remaining < trial.interStimulusMs
+    setStimulusVisible(!pastHide)
+    if (!pastHide) {
+      timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+    }
 
     // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به محرک بعد
-    const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
       timersRef.current.push(
         window.setTimeout(() => {
@@ -57,16 +75,6 @@ export function SimonGame({ ctx }: { ctx: ActiveGameContext }) {
           })
         }, remaining),
       )
-    }
-    // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰)
-    const outcome = ctx.lastOutcome
-    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
-      try {
-        ctx.advance()
-      } catch {
-        // جلسه هم‌زمان قطع/تکمیل شده
-      }
     }
     return () => {
       for (const t of timersRef.current) window.clearTimeout(t)

@@ -34,7 +34,11 @@ export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
       window.setTimeout(() => setBadge(null), 900)
     }
     if (result.accepted && !result.sessionCompleted) {
-      ctx.advance()
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+      }
     } else {
       setLocked(false)
     }

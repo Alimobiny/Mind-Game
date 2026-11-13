@@ -72,7 +72,13 @@ export function OperationSpanGame({ ctx }: { ctx: ActiveGameContext }) {
                 }
               : null,
           ).then((result) => {
-            if (result.accepted && !result.sessionCompleted) ctx.advance()
+            if (result.accepted && !result.sessionCompleted) {
+              try {
+                ctx.advance()
+              } catch {
+                // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+              }
+            }
           })
         }, remaining),
       )

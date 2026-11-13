@@ -28,6 +28,9 @@ export function ContinuousCountdownGame({ ctx }: { ctx: ActiveGameContext }) {
   // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
   // (advance روی مرحله پاسخ‌داده‌شده استثنای مهارنشده می‌دهد)
   const submittedRef = useRef(false)
+  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
+  const currentTrialRef = useRef(trial.trialIndex)
+  currentTrialRef.current = trial.trialIndex
   // باقیمانده هرگز از عدد شروع بزرگ‌تر نیست → سقف ارقام ورودی
   const maxEntryDigits = String(trial.startNumber).length
 
@@ -46,6 +49,18 @@ export function ContinuousCountdownGame({ ctx }: { ctx: ActiveGameContext }) {
     setEntry('')
     setWasCorrect(null)
     clearTimers()
+    // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰): پاسخِ
+    // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
+    const outcome = ctx.lastOutcome
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
+      submittedRef.current = true
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان قطع/تکمیل شده
+      }
+      return
+    }
     const { startDisplayMs, stepDisplayMs, gapMs } = trial
     const timers: number[] = []
     timers.push(window.setTimeout(() => setDisplay(null), startDisplayMs))
@@ -87,8 +102,18 @@ export function ContinuousCountdownGame({ ctx }: { ctx: ActiveGameContext }) {
     setWasCorrect(result.record.correct)
     setPhase('feedback')
     // تایمر رفتن به مرحلهٔ بعد هم داخل timeoutsRef ثبت می‌شود تا با
-    // unmount یا شروع مرحلهٔ جدید پاک شود
-    timeoutsRef.current.push(window.setTimeout(() => ctx.advance(), 1500))
+    // unmount یا شروع مرحلهٔ جدید پاک شود — به‌علاوهٔ گارد کهنگی (ریمانتِ
+    // پس از مکث خودش پیشروی کرده) و مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
+    timeoutsRef.current.push(
+      window.setTimeout(() => {
+        if (currentTrialRef.current !== trial.trialIndex) return
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده
+        }
+      }, 1500),
+    )
   }
 
   if (phase === 'showing') {
@@ -127,7 +152,13 @@ export function ContinuousCountdownGame({ ctx }: { ctx: ActiveGameContext }) {
           <button type="button" className={gameStyles.key} onClick={() => press('0')}>
             {toFaDigits(0)}
           </button>
-          <button type="button" className={gameStyles.key} onClick={() => press('back')} disabled={entry === ''}>
+          <button
+            type="button"
+            className={gameStyles.key}
+            aria-label="پاک‌کردن"
+            onClick={() => press('back')}
+            disabled={entry === ''}
+          >
             <BackspaceGlyph size={22} />
           </button>
           <button

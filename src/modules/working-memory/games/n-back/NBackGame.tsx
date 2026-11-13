@@ -39,7 +39,13 @@ export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
         if (submittedRef.current) return
         submittedRef.current = true
         void ctx.submit(null).then((result) => {
-          if (result.accepted && !result.sessionCompleted) ctx.advance()
+          if (result.accepted && !result.sessionCompleted) {
+            try {
+              ctx.advance()
+            } catch {
+              // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+            }
+          }
         })
       }, remaining)
     }
@@ -54,7 +60,13 @@ export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit('match').then((result) => {
-      if (result.accepted && !result.sessionCompleted) ctx.advance()
+      if (result.accepted && !result.sessionCompleted) {
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+        }
+      }
     })
   }
 

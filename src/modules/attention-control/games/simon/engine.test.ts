@@ -108,4 +108,22 @@ describe('Simon Task — engine', () => {
     expect(summary.metrics['omissionErrors']).toBe(0)
     expect(() => def.nextTrial(state)).toThrow()
   })
+
+  it('جلسهٔ بی‌پاسخ: متریک‌های زمانی بدون داده منتشر نمی‌شوند (نه مقدار ۰ جعلی)', () => {
+    const config = configForDifficulty(1)
+    let state = def.createSession('a', config, SEED)
+    for (let i = 0; i < config.totalTrials; i += 1) {
+      const step = def.nextTrial(state)
+      state = def.submitAnswer(step.state, null, 0)
+    }
+    const summary = def.getSummary(state)
+    expect(summary.metrics['rtCongruentMs']).toBeUndefined()
+    expect(summary.metrics['rtIncongruentMs']).toBeUndefined()
+    expect(summary.metrics['simonEffectMs']).toBeUndefined()
+    expect(summary.metrics['congruencySequenceEffectMs']).toBeUndefined()
+    // شمارنده‌ها و دقت‌ها همیشه حاضرد — ۴۰ بی‌پاسخی
+    expect(summary.metrics['omissionErrors']).toBe(40)
+    expect(summary.metrics['congruentTrials'] + summary.metrics['incongruentTrials']).toBe(40)
+    expect(summary.metrics['accuracyCongruent']).toBe(0)
+  })
 })

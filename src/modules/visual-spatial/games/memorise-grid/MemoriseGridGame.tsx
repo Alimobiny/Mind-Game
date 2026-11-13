@@ -17,17 +17,36 @@ export function MemoriseGridGame({ ctx }: { ctx: ActiveGameContext }) {
   const [selected, setSelected] = useState<number[]>([])
   const [wasCorrect, setWasCorrect] = useState(false)
   const timerRef = useRef<number | null>(null)
+  // تایمر پیشرویِ پس از بازخورد — جدا از تایمر فاز حفظ تا هر دو پاک شوند
+  const advanceTimerRef = useRef<number | null>(null)
   // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
   const submittedRef = useRef(false)
+  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشروی
+  const currentTrialRef = useRef(trial.trialIndex)
+  currentTrialRef.current = trial.trialIndex
 
   useEffect(() => {
     submittedRef.current = false
     setPhase('memorise')
     setSelected([])
     if (timerRef.current !== null) window.clearTimeout(timerRef.current)
+    if (advanceTimerRef.current !== null) window.clearTimeout(advanceTimerRef.current)
+    // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰): پاسخِ
+    // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
+    const outcome = ctx.lastOutcome
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
+      submittedRef.current = true
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان قطع/تکمیل شده
+      }
+      return
+    }
     timerRef.current = window.setTimeout(() => setPhase('recall'), trial.memoriseMs)
     return () => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current)
+      if (advanceTimerRef.current !== null) window.clearTimeout(advanceTimerRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
@@ -55,7 +74,15 @@ export function MemoriseGridGame({ ctx }: { ctx: ActiveGameContext }) {
     if (result.sessionCompleted) return
     setWasCorrect(result.record.correct)
     setPhase('feedback')
-    window.setTimeout(() => ctx.advance(), 1400)
+    // تایمر پیشروی: ردیابی‌شده + گارد کهنگی + مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
+    advanceTimerRef.current = window.setTimeout(() => {
+      if (currentTrialRef.current !== trial.trialIndex) return
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان قطع/تکمیل شده
+      }
+    }, 1400)
   }
 
   const total = trial.gridSize * trial.gridSize

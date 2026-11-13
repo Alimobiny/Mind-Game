@@ -164,8 +164,8 @@ export const simonDefinition: ExerciseDefinition<SimonConfig, SimonState, SimonT
       state.results
         .filter((r) => r.correct && r.reactionTimeMs !== null && stimulusOf(r).congruent === congruent)
         .map((r) => r.reactionTimeMs as number)
-    const rtCongruentMs = Math.round(median(rtsOf(true)) ?? 0)
-    const rtIncongruentMs = Math.round(median(rtsOf(false)) ?? 0)
+    const rtCongruent = median(rtsOf(true))
+    const rtIncongruent = median(rtsOf(false))
 
     // اثر توالی تجانس: ناسازگارِ درستِ پس از سازگار منهای پس از ناسازگار
     const afterCongruent: number[] = []
@@ -177,12 +177,34 @@ export const simonDefinition: ExerciseDefinition<SimonConfig, SimonState, SimonT
       const bucket = stimulusOf(prev).congruent ? afterCongruent : afterIncongruent
       bucket.push(cur.reactionTimeMs)
     }
-    const congruencySequenceEffectMs = Math.round(
-      (median(afterCongruent) ?? 0) - (median(afterIncongruent) ?? 0),
-    )
+    const seqAfterCongruent = median(afterCongruent)
+    const seqAfterIncongruent = median(afterIncongruent)
 
     const congruentResults = state.results.filter((r) => stimulusOf(r).congruent)
     const incongruentResults = state.results.filter((r) => !stimulusOf(r).congruent)
+    // متریک‌های زمانی فقط با دادهٔ واقعی منتشر می‌شوند — باکت خالی یعنی کلید
+    // حذف می‌شود (کارتش در صفحهٔ نتایج رندر نمی‌شود)، نه میانهٔ ۰ جعلی
+    const metrics: Record<string, number> = {
+      congruentTrials: congruentResults.length,
+      incongruentTrials: incongruentResults.length,
+      accuracyCongruent: accuracyPercent(
+        congruentResults.filter((r) => r.correct).length,
+        congruentResults.length,
+      ),
+      accuracyIncongruent: accuracyPercent(
+        incongruentResults.filter((r) => r.correct).length,
+        incongruentResults.length,
+      ),
+      omissionErrors: countOutcome(state.results, 'omission'),
+    }
+    if (rtCongruent !== null) metrics['rtCongruentMs'] = Math.round(rtCongruent)
+    if (rtIncongruent !== null) metrics['rtIncongruentMs'] = Math.round(rtIncongruent)
+    if (rtCongruent !== null && rtIncongruent !== null) {
+      metrics['simonEffectMs'] = Math.round(rtIncongruent - rtCongruent)
+    }
+    if (seqAfterCongruent !== null && seqAfterIncongruent !== null) {
+      metrics['congruencySequenceEffectMs'] = Math.round(seqAfterCongruent - seqAfterIncongruent)
+    }
     return {
       exerciseId: SIMON_ID,
       sessionId: state.sessionId,
@@ -191,23 +213,7 @@ export const simonDefinition: ExerciseDefinition<SimonConfig, SimonState, SimonT
       domain: 'attention-control',
       difficulty: state.config.difficulty,
       ...totals,
-      metrics: {
-        rtCongruentMs,
-        rtIncongruentMs,
-        simonEffectMs: rtIncongruentMs - rtCongruentMs,
-        congruencySequenceEffectMs,
-        congruentTrials: congruentResults.length,
-        incongruentTrials: incongruentResults.length,
-        accuracyCongruent: accuracyPercent(
-          congruentResults.filter((r) => r.correct).length,
-          congruentResults.length,
-        ),
-        accuracyIncongruent: accuracyPercent(
-          incongruentResults.filter((r) => r.correct).length,
-          incongruentResults.length,
-        ),
-        omissionErrors: countOutcome(state.results, 'omission'),
-      },
+      metrics,
     }
   },
 }

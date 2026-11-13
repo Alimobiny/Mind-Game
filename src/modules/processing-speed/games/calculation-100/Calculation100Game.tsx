@@ -217,6 +217,7 @@ export function Calculation100Game({ ctx }: { ctx: ActiveGameContext }) {
           type="button"
           className={gameStyles.key}
           data-testid="calc100-key-back"
+          aria-label="پاک‌کردن"
           onClick={() => press('back')}
           disabled={locked || entry === ''}
         >

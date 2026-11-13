@@ -36,7 +36,13 @@ export function ReactionTimeGame({ ctx }: { ctx: ActiveGameContext }) {
         if (submittedRef.current) return
         submittedRef.current = true
         void ctx.submit(null).then((result) => {
-          if (result.accepted && !result.sessionCompleted) ctx.advance()
+          if (result.accepted && !result.sessionCompleted) {
+            try {
+              ctx.advance()
+            } catch {
+              // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+            }
+          }
         })
       }, remaining)
     }
@@ -53,7 +59,13 @@ export function ReactionTimeGame({ ctx }: { ctx: ActiveGameContext }) {
     // در بازه انتظار هم 'tap' ثبت می‌شود؛ موتور با rtFromStimulus منفی آن را
     // پیش‌دستی تشخیص می‌دهد
     void ctx.submit('tap').then((result) => {
-      if (result.accepted && !result.sessionCompleted) ctx.advance()
+      if (result.accepted && !result.sessionCompleted) {
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+        }
+      }
     })
   }
 

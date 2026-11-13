@@ -26,6 +26,9 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
   const timeoutsRef = useRef<number[]>([])
   // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
   const submittedRef = useRef(false)
+  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
+  const currentTrialRef = useRef(trial.trialIndex)
+  currentTrialRef.current = trial.trialIndex
 
   const clearTimers = useCallback(() => {
     for (const t of timeoutsRef.current) window.clearTimeout(t)
@@ -42,6 +45,18 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
     setSelected([])
     setWasCorrect(false)
     clearTimers()
+    // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰): پاسخِ
+    // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
+    const outcome = ctx.lastOutcome
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
+      submittedRef.current = true
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان قطع/تکمیل شده
+      }
+      return
+    }
     const { displayMsPerWord: display, gapMs: gap } = trial
     const timers: number[] = []
     trial.studyWords.forEach((word, i) => {
@@ -87,8 +102,18 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
     if (result.sessionCompleted) return
     setWasCorrect(result.record.correct)
     setPhase('feedback')
-    // بازخورد کوتاه رنگی، سپس مرحله بعد
-    timeoutsRef.current.push(window.setTimeout(() => ctx.advance(), 1300))
+    // بازخورد کوتاه رنگی، سپس مرحله بعد — با گارد کهنگی (ریمانتِ پس از
+    // مکث خودش پیشروی کرده) و مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
+    timeoutsRef.current.push(
+      window.setTimeout(() => {
+        if (currentTrialRef.current !== trial.trialIndex) return
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده
+        }
+      }, 1300),
+    )
   }
 
   if (phase === 'study') {
@@ -157,8 +182,8 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
       ) : null}
       {phase === 'feedback' ? (
         <div
-          className={`${gameStyles.feedback} ${wasCorrect ? gameStyles.feedbackCorrect : gameStyles.feedbackIncorrect} ${
-            wasCorrect ? styles.feedbackBanner : `${styles.feedbackBanner} ${styles.feedbackBannerWrong}`
+          className={`${gameStyles.feedback} ${wasCorrect ? gameStyles.feedbackCorrect : gameStyles.feedbackIncorrect} ${styles.feedbackBanner} ${
+            wasCorrect ? '' : styles.feedbackBannerWrong
           }`}
         >
           {wasCorrect ? 'کامل و درست!' : 'دقیق نبود'}

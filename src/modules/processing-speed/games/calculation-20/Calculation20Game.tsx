@@ -106,7 +106,13 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
         <button type="button" className={gameStyles.key} onClick={() => press('0')}>
           {toFaDigits(0)}
         </button>
-        <button type="button" className={gameStyles.key} onClick={() => press('back')} disabled={entry === ''}>
+        <button
+          type="button"
+          className={gameStyles.key}
+          aria-label="پاک‌کردن"
+          onClick={() => press('back')}
+          disabled={entry === ''}
+        >
           <BackspaceGlyph size={22} />
         </button>
         <button

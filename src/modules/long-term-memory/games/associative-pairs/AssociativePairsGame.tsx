@@ -34,7 +34,13 @@ export function AssociativePairsGame({ ctx }: { ctx: ActiveGameContext }) {
             if (submittedRef.current) return
             submittedRef.current = true
             void ctx.submit(null).then((result) => {
-              if (result.accepted && !result.sessionCompleted) ctx.advance()
+              if (result.accepted && !result.sessionCompleted) {
+                try {
+                  ctx.advance()
+                } catch {
+                  // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+                }
+              }
             })
           }, remaining),
         )
@@ -58,7 +64,13 @@ export function AssociativePairsGame({ ctx }: { ctx: ActiveGameContext }) {
     submittedRef.current = true
     void ctx.submit(index).then((result) => {
       if (result.accepted) flashBadge(result.record.correct)
-      if (result.accepted && !result.sessionCompleted) ctx.advance()
+      if (result.accepted && !result.sessionCompleted) {
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+        }
+      }
     })
   }
 

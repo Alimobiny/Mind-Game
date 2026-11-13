@@ -6,11 +6,12 @@ import { createAppRouter } from './router'
 const router = createAppRouter()
 
 export function App() {
-  // صفحات غیر از خانه lazy هستند؛ تا رسیدن chunk، اسکلتون دیده می‌شود —
-  // نه صفحهٔ خالی (route.lazy خودش Suspense می‌خواهد).
+  // صفحات غیر از خانه با route.lazy بار می‌شوند؛ تا آماده‌شدن اولیهٔ روتر
+  // (!initialized — مثل بازکردن مستقیم /reports در بار اول) fallbackElement
+  // رندر می‌شود. Suspense بیرونی هم تور ایمنی برای هر ساسپشن آینده است.
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <RouterProvider router={router} />
+      <RouterProvider router={router} fallbackElement={<PageSkeleton />} />
     </Suspense>
   )
 }

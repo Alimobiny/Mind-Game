@@ -47,7 +47,11 @@ export function MissingOperatorGame({ ctx }: { ctx: ActiveGameContext }) {
         submittedRef.current = true
         void ctx.submit(null).then((result) => {
           if (result.accepted && !result.sessionCompleted) {
-            ctx.advance()
+            try {
+              ctx.advance()
+            } catch {
+              // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+            }
           } else if (!result.accepted) {
             submittedRef.current = false
           }

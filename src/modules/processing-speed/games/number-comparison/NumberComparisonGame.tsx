@@ -45,7 +45,13 @@ export function NumberComparisonGame({ ctx }: { ctx: ActiveGameContext }) {
         submittedRef.current = true
         void ctx.submit(null).then((result) => {
           if (result.accepted) {
-            if (!result.sessionCompleted) ctx.advance()
+            if (!result.sessionCompleted) {
+              try {
+                ctx.advance()
+              } catch {
+                // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+              }
+            }
           } else {
             submittedRef.current = false
           }
@@ -64,7 +70,13 @@ export function NumberComparisonGame({ ctx }: { ctx: ActiveGameContext }) {
     void ctx.submit(side).then((result) => {
       if (result.accepted) {
         // جلسهٔ کامل‌شده: فقط رها کن؛ advance روی جلسهٔ بسته خطا می‌دهد
-        if (!result.sessionCompleted) ctx.advance()
+        if (!result.sessionCompleted) {
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+          }
+        }
       } else {
         // پاسخ رد شد (مثلاً wrong_phase) — قفل باز شود تا مسیر مجدد ممکن بماند
         submittedRef.current = false

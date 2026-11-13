@@ -26,6 +26,9 @@ export function AttentionalBlinkGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(null)
   const timeoutsRef = useRef<number[]>([])
   const submittedRef = useRef(false)
+  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
+  const currentTrialRef = useRef(trial.trialIndex)
+  currentTrialRef.current = trial.trialIndex
 
   // ریست با شروع هر جریان جدید + زمان‌بندی RSVP: آیتم i در [i×itemMs)
   useEffect(() => {
@@ -100,7 +103,18 @@ export function AttentionalBlinkGame({ ctx }: { ctx: ActiveGameContext }) {
     }
     setWasCorrect(result.record.correct)
     setPhase('feedback')
-    timeoutsRef.current.push(window.setTimeout(() => ctx.advance(), FEEDBACK_MS))
+    // تایمر پیشروی با گارد کهنگی: اگر مکثِ وسط پنجرهٔ IDB ریمانت ساخته
+    // باشد، فیکس ریس pause خودش پیشروی کرده و این تایمر کهنه بی‌اثر می‌ماند
+    timeoutsRef.current.push(
+      window.setTimeout(() => {
+        if (currentTrialRef.current !== trial.trialIndex) return
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده
+        }
+      }, FEEDBACK_MS),
+    )
   }
 
   if (phase === 'stream') {

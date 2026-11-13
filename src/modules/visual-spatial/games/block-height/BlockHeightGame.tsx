@@ -351,6 +351,7 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
           type="button"
           className={gameStyles.key}
           data-testid="bh-key-back"
+          aria-label="پاک‌کردن"
           onClick={() => press('back')}
           disabled={locked || entry === ''}
         >

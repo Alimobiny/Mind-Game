@@ -44,7 +44,13 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
           if (submittedRef.current) return
           submittedRef.current = true
           void ctx.submit(null).then((result) => {
-            if (result.accepted && !result.sessionCompleted) ctx.advance()
+            if (result.accepted && !result.sessionCompleted) {
+              try {
+                ctx.advance()
+              } catch {
+                // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+              }
+            }
           })
         }, remaining),
       )
@@ -132,7 +138,7 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
         <button type="button" className={gameStyles.key} onClick={() => press('0')}>
           {FA[0]}
         </button>
-        <button type="button" className={gameStyles.key} onClick={() => press('back')}>
+        <button type="button" className={gameStyles.key} aria-label="پاک‌کردن" onClick={() => press('back')}>
           <BackspaceGlyph size={22} />
         </button>
         <button

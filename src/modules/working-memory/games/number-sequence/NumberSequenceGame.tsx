@@ -24,6 +24,9 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
   // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
   // (advance روی مرحله پاسخ‌داده‌نشده استثنای مهارنشده می‌دهد)
   const submittedRef = useRef(false)
+  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
+  const currentTrialRef = useRef(trial.trialIndex)
+  currentTrialRef.current = trial.trialIndex
 
   const clearTimers = useCallback(() => {
     for (const t of timeoutsRef.current) window.clearTimeout(t)
@@ -39,6 +42,18 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
     setEntered([])
     setWasCorrect(null)
     clearTimers()
+    // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰): پاسخِ
+    // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
+    const outcome = ctx.lastOutcome
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
+      submittedRef.current = true
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان قطع/تکمیل شده
+      }
+      return
+    }
     const { displayMsPerDigit: display, gapMs: gap } = trial
     const timers: number[] = []
     trial.digits.forEach((digit, i) => {
@@ -79,9 +94,18 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
     if (result.sessionCompleted) return
     setWasCorrect(result.record.correct)
     setPhase('feedback')
-    window.setTimeout(() => {
-      ctx.advance()
-    }, 850)
+    // تایمر پیشروی: ردیابی‌شده (پاک‌شدن با unmount/مرحلهٔ جدید) + گارد کهنگی
+    // (ریمانتِ پس از مکث خودش پیشروی کرده) + مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
+    timeoutsRef.current.push(
+      window.setTimeout(() => {
+        if (currentTrialRef.current !== trial.trialIndex) return
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده
+        }
+      }, 850),
+    )
   }
 
   if (phase === 'showing') {
@@ -116,7 +140,13 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
           <button type="button" className={gameStyles.key} onClick={() => pressDigit(0)}>
             {toFaDigits(0)}
           </button>
-          <button type="button" className={gameStyles.key} onClick={undo} disabled={entered.length === 0}>
+          <button
+            type="button"
+            className={gameStyles.key}
+            aria-label="پاک‌کردن"
+            onClick={undo}
+            disabled={entered.length === 0}
+          >
             <BackspaceGlyph size={22} />
           </button>
           <button
