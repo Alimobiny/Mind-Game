@@ -3,16 +3,21 @@ import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { Calculation20Trial } from './engine'
+import styles from './calculation-20.module.css'
 
 /**
  * Calculation × 20 — UI
  *
  * نمایش سؤال با ارقام فارسی، پاسخ با صفحه‌کلید عددی، بدون مهلت
- * زمانی برای سؤال منفرد؛ پس از هر پاسخ بلافاصله سؤال بعدی.
+ * زمانی برای سؤال منفرد؛ پس از هر پاسخ بلافاصله سؤال بعدی می‌آید و
+ * نتیجهٔ پاسخ پیشین به‌صورت نشان شناور (درست ✓ / غلط ✗) دیده می‌شود —
+ * بدون تأخیر در پیشروی تا رفتار زمانی دست‌نخورده بماند.
  */
 export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as Calculation20Trial
   const [entry, setEntry] = useState('')
+  const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
+  const badgeTimerRef = useRef<number | null>(null)
   // قفل پاسخِ ثبت‌شده — تپ دومی روی «تأیید» نباید همان پاسخ را
   // به سؤال بعدی هم بفرستد (پنجره race بین advance و پاک‌شدن entry)
   const submittedRef = useRef(false)
@@ -20,9 +25,7 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
   useEffect(() => {
     submittedRef.current = false
     setEntry('')
-    // رفع ریس pause بین پذیرش پاسخ و advance: اگر این مرحله از پیش پاسخ
-    // داده شده ولی پیشروی رخ نداده (تعبیهٔ تب در همان پنجرهٔ چندمیلی‌ثانیه‌ای)،
-    // پس از بازگشت همین‌جا پیشروی کن تا جلسه قفل نشود (الگوی محاسبه ×۱۰۰)
+    // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۱۰۰)
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
       submittedRef.current = true
@@ -32,6 +35,10 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
         // جلسه هم‌زمان قطع/تکمیل شده؛ پوسته مسیر خودش را می‌رود
       }
     }
+    return () => {
+      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
   const press = (key: string) => {
@@ -42,15 +49,21 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
     setEntry((current) => (current.length >= 3 ? current : current + key))
   }
 
+  const flashBadge = (correct: boolean) => {
+    setBadge(correct ? 'correct' : 'wrong')
+    if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    badgeTimerRef.current = window.setTimeout(() => setBadge(null), 900)
+  }
+
   const submit = async () => {
     if (submittedRef.current || entry.length === 0) return
     submittedRef.current = true
     const value = Number.parseInt(entry, 10)
     const result = await ctx.submit(value)
+    if (result.accepted) {
+      flashBadge(result.record.correct)
+    }
     if (result.accepted && !result.sessionCompleted) {
-      // اگر pause/خروج دقیقاً بین پذیرش پاسخ و این لحظه فرود آید، advance
-      // روی فاز غیرِACTIVE خطا می‌دهد — بی‌اثر رها می‌شود و مسیر بازیابیِ
-      // افکتِ remount ادامه می‌دهد
       try {
         ctx.advance()
       } catch {
@@ -64,10 +77,16 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
   const q = trial.question
 
   return (
-    <>
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', width: '100%', alignItems: 'center' }}>
+      {badge !== null ? (
+        <span className={gameStyles.floatingBadge} aria-live="polite">
+          <span className={`${gameStyles.floatingBadgeInner} ${badge === 'correct' ? gameStyles.floatingBadgeCorrect : gameStyles.floatingBadgeWrong}`}>
+            {badge === 'correct' ? 'درست ✓' : 'غلط ✗'}
+          </span>
+        </span>
+      ) : null}
       <div
-        className={gameStyles.bigNumber}
-        style={{ direction: 'ltr' }}
+        className={styles.questionCard}
         aria-label="سؤال حساب"
         data-testid="calc-question"
         key={trial.trialIndex}
@@ -98,6 +117,6 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
           تأیید
         </button>
       </div>
-    </>
+    </div>
   )
 }

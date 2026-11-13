@@ -1,6 +1,7 @@
 /* PASAT — استایل اختصاصی؛ موبایل-اول */
 
 .stage {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -26,4 +27,19 @@
 
 .placeholder {
   color: var(--color-text-muted);
+}
+
+/* ─── ارتقای بصری: پاپ رقم و پالس تیک‌تاک ─── */
+
+.digitPop {
+  animation: ui-pop var(--dur-med, 200ms) var(--ease-out, ease);
+}
+
+.fixation {
+  animation: fixation-pulse 1.8s var(--ease-out, ease) infinite;
+}
+
+@keyframes fixation-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }

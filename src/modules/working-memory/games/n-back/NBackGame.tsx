@@ -3,6 +3,7 @@ import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { NBackTrial } from './engine'
+import { NBACK_TOTAL_TRIALS } from './engine'
 import styles from './n-back.module.css'
 
 /**
@@ -14,6 +15,7 @@ import styles from './n-back.module.css'
  * می‌آید. منطق در engine است.
  */
 export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
+  const plannedTrials = NBACK_TOTAL_TRIALS
   const trial = ctx.trial as NBackTrial
   const [stimulusVisible, setStimulusVisible] = useState(true)
   const deadlineRef = useRef<number | null>(null)
@@ -64,7 +66,9 @@ export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
         data-is-target={trial.isTarget ? 'true' : 'false'}
       >
         {stimulusVisible ? (
-          <span className={gameStyles.bigNumber}>{trial.letter}</span>
+          <span key={trial.trialIndex} className={`${gameStyles.bigNumber} ${styles.letterPop}`}>
+            {trial.letter}
+          </span>
         ) : (
           <span className={styles.fixation}>+</span>
         )}
@@ -74,12 +78,18 @@ export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
       </p>
       <button
         type="button"
-        className={styles.matchButton}
+        className={`${styles.matchButton} ${submittedRef.current ? styles.matchClaimed : ''}`}
         onClick={respond}
         data-testid="nback-match"
       >
         تطبیق
       </button>
+      {/* نقطه‌های پیشروی جلسه — یک نگاه سریع به جایگاه */}
+      <div className={styles.progressDots} aria-hidden="true">
+        {Array.from({ length: plannedTrials }, (_, i) => (
+          <span key={i} className={`${styles.dot} ${i < ctx.answeredTrials ? styles.dotDone : ''}`} />
+        ))}
+      </div>
     </div>
   )
 }

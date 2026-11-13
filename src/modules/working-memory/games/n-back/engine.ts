@@ -65,7 +65,8 @@ export type NBackAnswer = 'match' | null
 export const NBACK_ID = 'n-back'
 export const NBACK_VERSION = '1.0.0'
 export const NBACK_CONTENT_VERSION = '1'
-const TOTAL_TRIALS = 25
+export const NBACK_TOTAL_TRIALS = 25
+const TOTAL_TRIALS = NBACK_TOTAL_TRIALS
 const TARGET_RATE = 0.3
 
 /** n بر حسب دشواری ۱..۵ */

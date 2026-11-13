@@ -16,16 +16,23 @@ export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as SequenceLogicTrial
   // قفل موقت تا اتمام ثبت پاسخ — جلوگیری از دوبار‌کلیک روی گزینه‌ها
   const [locked, setLocked] = useState(false)
+  const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
 
   // با شروع هر مرحله جدید قفل برداشته می‌شود
   useEffect(() => {
     setLocked(false)
+    setBadge(null)
   }, [trial.trialIndex])
 
   const choose = async (value: number) => {
     if (locked) return
     setLocked(true)
     const result = await ctx.submit(value)
+    if (result.accepted) {
+      // نشان شناور نتیجه — پیشروی همان لحظه است (رفتار زمانی دست‌نخورده)
+      setBadge(result.record.correct ? 'correct' : 'wrong')
+      window.setTimeout(() => setBadge(null), 900)
+    }
     if (result.accepted && !result.sessionCompleted) {
       ctx.advance()
     } else {
@@ -34,7 +41,14 @@ export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   return (
-    <>
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', width: '100%', alignItems: 'center' }}>
+      {badge !== null ? (
+        <span className={gameStyles.floatingBadge} aria-live="polite">
+          <span className={`${gameStyles.floatingBadgeInner} ${badge === 'correct' ? gameStyles.floatingBadgeCorrect : gameStyles.floatingBadgeWrong}`}>
+            {badge === 'correct' ? 'درست ✓' : 'غلط ✗'}
+          </span>
+        </span>
+      ) : null}
       <div
         className={styles.sequenceRow}
         data-testid="seq-shown"
@@ -48,7 +62,9 @@ export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
                 ،
               </span>
             ) : null}
-            <span className={styles.chip}>{toFaDigits(value)}</span>
+            <span className={styles.chip} style={{ animationDelay: `${index * 70}ms` }}>
+              {toFaDigits(value)}
+            </span>
           </Fragment>
         ))}
         <span className={styles.separator} aria-hidden="true">
@@ -72,6 +88,6 @@ export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
           </button>
         ))}
       </div>
-    </>
+    </div>
   )
 }

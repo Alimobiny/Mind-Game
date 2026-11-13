@@ -1,0 +1,12 @@
+/* Calculation × 20 — کارت سؤال با ورود متحرک + نشان بازخورد شناور */
+
+.questionCard {
+  direction: ltr;
+  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  font-weight: 700;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  animation: ui-pop var(--dur-med, 200ms) var(--ease-out, ease);
+}

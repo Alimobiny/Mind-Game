@@ -21,6 +21,7 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as PasatTrial
   const [digitVisible, setDigitVisible] = useState(true)
   const [entry, setEntry] = useState('')
+  const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
   const timersRef = useRef<number[]>([])
   const submittedRef = useRef(false)
 
@@ -67,6 +68,12 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
     submittedRef.current = true
     const value = Number.parseInt(entry, 10)
     void ctx.submit(value).then((result) => {
+      if (result.accepted) {
+        // نشان کوتاه نتیجه حین باقی پنجرهٔ ریتم — پیشروی همان‌طور با انقضای
+        // interval خودکار است (رفتار زمانی دست‌نخورده)
+        setBadge(result.record.correct ? 'correct' : 'wrong')
+        timersRef.current.push(window.setTimeout(() => setBadge(null), 900))
+      }
       if (result.accepted && !result.sessionCompleted) {
         try {
           ctx.advance()
@@ -83,6 +90,13 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
 
   return (
     <div className={styles.stage}>
+      {badge !== null ? (
+        <span className={gameStyles.floatingBadge} aria-live="polite">
+          <span className={`${gameStyles.floatingBadgeInner} ${badge === 'correct' ? gameStyles.floatingBadgeCorrect : gameStyles.floatingBadgeWrong}`}>
+            {badge === 'correct' ? 'درست ✓' : 'غلط ✗'}
+          </span>
+        </span>
+      ) : null}
       <div
         className={styles.digitArea}
         data-testid="pasat-display"
@@ -90,7 +104,9 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
         data-expected={trial.expected ?? ''}
       >
         {digitVisible ? (
-          <span className={gameStyles.bigNumber}>{toFaDigits(trial.digit)}</span>
+          <span key={trial.trialIndex} className={`${gameStyles.bigNumber} ${styles.digitPop}`}>
+            {toFaDigits(trial.digit)}
+          </span>
         ) : (
           <span className={styles.fixation}>+</span>
         )}

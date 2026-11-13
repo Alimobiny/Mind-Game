@@ -442,3 +442,40 @@
     opacity: 0;
   }
 }
+
+/* ─── نشان بازخورد شناور (بازی‌هایی که پیشروی فوری دارند) ───
+   روی چیدمان اثر نمی‌گذارد (absolute + pointer-events: none) و متن
+   سؤال/دکمه‌ها را برای تست‌ها دست‌نخورده می‌گذارد. */
+.floatingBadge {
+  position: absolute;
+  top: var(--space-2);
+  inset-inline: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.floatingBadgeInner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 1rem;
+  animation: ui-pop var(--dur-fast, 120ms) var(--ease-out, ease);
+}
+
+.floatingBadgeCorrect {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 40%, transparent);
+}
+
+.floatingBadgeWrong {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
+  animation: ui-pop var(--dur-fast, 120ms) var(--ease-out, ease), ui-shake 320ms var(--ease-out, ease);
+}

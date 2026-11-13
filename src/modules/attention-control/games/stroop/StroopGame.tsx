@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
 import {
@@ -17,21 +17,32 @@ const INK_CSS_COLORS: Readonly<Record<StroopColorKey, string>> = {
   yellow: '#eab308',
 }
 
+/** نمایش نتیجهٔ پاسخ برای فلش کوتاه پیش از مرحلهٔ بعد */
+interface FlashState {
+  readonly correct: boolean
+  readonly ink: StroopColorKey
+}
+
 /**
  * Stroop — UI
  *
- * جریان پیوسته: کلمه رنگ با جوهرِ (احتمالاً متفاوت) نمایش داده می‌شود؛
- * کاربر رنگ جوهر را از چهار دکمه انتخاب می‌کند. با انقضای مهلت، مرحله
- * بدون پاسخ ثبت و بعدی می‌آید. منطق در engine است.
+ * کلمهٔ رنگ با جوهرِ (احتمالاً متفاوت) روی یک قطرهٔ مرکب SVG هم‌رنگِ جوهر
+ * نمایش داده می‌شود؛ کاربر رنگ جوهر را از چهار دکمه انتخاب می‌کند. پس از
+ * پاسخ، فلش کوتاه تمام-صحنه (سبز/قرمز) نتیجه را نشان می‌دهد و سپس مرحلهٔ
+ * بعد می‌آید (e2e با waitProgressAdvance همگام است). با انقضای مهلت، مرحله
+ * بدون پاسخ ثبت و بعدی می‌آید.
  */
 export function StroopGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as StroopTrial
   const deadlineRef = useRef<number | null>(null)
+  const flashTimerRef = useRef<number | null>(null)
   const submittedRef = useRef(false)
+  const [flash, setFlash] = useState<FlashState | null>(null)
 
   // با هر مرحله جدید ریست می‌شود
   useEffect(() => {
     submittedRef.current = false
+    setFlash(null)
 
     // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به مرحله بعد
     const remaining = ctx.timeRemainingMs()
@@ -46,28 +57,65 @@ export function StroopGame({ ctx }: { ctx: ActiveGameContext }) {
     }
     return () => {
       if (deadlineRef.current !== null) window.clearTimeout(deadlineRef.current)
+      if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
+
+  /** فلش نتیجه و سپس پیشروی — e2e با waitProgressAdvance صبر می‌کند */
+  const flashThenAdvance = (correct: boolean, ink: StroopColorKey, onAdvance: () => void) => {
+    setFlash({ correct, ink })
+    flashTimerRef.current = window.setTimeout(() => {
+      setFlash(null)
+      onAdvance()
+    }, 650)
+  }
 
   const answer = (color: StroopColorKey) => {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit(color).then((result) => {
-      if (result.accepted && !result.sessionCompleted) ctx.advance()
+      if (!result.accepted || result.sessionCompleted) return
+      flashThenAdvance(result.record.correct, trial.ink, () => {
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده
+        }
+      })
     })
   }
 
   return (
-    <div className={styles.stage}>
+    <div
+      className={`${styles.stage} ${flash !== null ? (flash.correct ? styles.stageCorrect : styles.stageWrong) : ''}`}
+    >
+      {/* قطرهٔ مرکب پس‌زمینه — هم‌رنگِ جوهر، حس «چاپ» کلمه */}
+      <svg className={styles.inkBlob} viewBox="0 0 200 160" aria-hidden="true">
+        <path
+          className={styles.inkBlobPath}
+          style={{ fill: INK_CSS_COLORS[trial.ink], fillOpacity: 0.14 }}
+          d="M100 8 C 138 8, 168 34, 172 72 C 176 112, 148 150, 100 152 C 52 150, 24 112, 28 72 C 32 34, 62 8, 100 8 Z M 60 30 C 44 44, 36 60, 38 80 C 40 96, 52 108, 66 112 C 56 96, 52 78, 58 58 C 62 46, 68 38, 78 32 C 70 28, 64 27, 60 30 Z"
+        />
+      </svg>
+
       <div
         className={`${gameStyles.bigNumber} ${styles.word}`}
         style={{ color: INK_CSS_COLORS[trial.ink] }}
         data-testid="stroop-word"
         data-ink={trial.ink}
+        key={trial.trialIndex}
       >
         {STROOP_COLOR_LABELS_FA[trial.word]}
       </div>
+
+      {flash !== null ? (
+        <div className={styles.flashPill} role="status">
+          {flash.correct
+            ? 'درست ✓'
+            : `رنگ جوهر: ${STROOP_COLOR_LABELS_FA[flash.ink]}`}
+        </div>
+      ) : null}
 
       <div className={styles.answerRow} role="group" aria-label="انتخاب رنگ جوهر">
         {STROOP_COLORS.map((key) => (
@@ -77,7 +125,7 @@ export function StroopGame({ ctx }: { ctx: ActiveGameContext }) {
             className={styles.colorButton}
             data-color={key}
             onClick={() => answer(key)}
-            disabled={ctx.paused}
+            disabled={ctx.paused || flash !== null}
             aria-label={STROOP_COLOR_LABELS_FA[key]}
           >
             <span className={styles.chip} style={{ background: INK_CSS_COLORS[key] }} aria-hidden="true" />

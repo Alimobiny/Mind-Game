@@ -3,6 +3,7 @@ import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { NumberSequenceTrial } from './engine'
+import styles from './number-sequence.module.css'
 
 /**
  * Number Sequence — UI
@@ -85,7 +86,7 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
   if (phase === 'showing') {
     return (
       <>
-        <div className={gameStyles.bigNumber} aria-live="polite" data-testid="ns-digit">
+        <div className={styles.digitCard} aria-live="polite" data-testid="ns-digit" key={shownDigit ?? 'blank'}>
           {shownDigit !== null ? toFaDigits(shownDigit) : ''}
         </div>
         <p className={gameStyles.hint}>
@@ -130,15 +131,19 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
     )
   }
 
-  // feedback
+  // feedback — پیل رنگی + ریل چیپ‌های پلکانیِ توالی درست
   return (
-    <div className={gameStyles.feedback}>
-      <div className={wasCorrect ? gameStyles.feedbackCorrect : gameStyles.feedbackIncorrect}>
+    <div className={styles.feedbackBox}>
+      <div className={`${styles.feedbackPill} ${wasCorrect ? styles.feedbackGood : styles.feedbackBad}`}>
         {wasCorrect ? 'درست!' : 'نادرست'}
       </div>
-      <p className={gameStyles.hint} style={{ marginTop: 'var(--space-3)' }}>
-        توالی درست: {trial.digits.map((d) => toFaDigits(d)).join('، ')}
-      </p>
+      <div className={styles.correctRail} aria-label="توالی درست">
+        {trial.digits.map((d, i) => (
+          <span key={i} className={styles.correctChip} style={{ animationDelay: `${120 + i * 90}ms` }}>
+            {toFaDigits(d)}
+          </span>
+        ))}
+      </div>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 /* استایل اختصاصی Stroop — موبایل-اول؛ کلاس‌های مشترک (hint و bigNumber) از game.module.css */
 
 .stage {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -68,4 +69,53 @@
   border: 2px solid var(--color-border);
   flex-shrink: 0;
   display: inline-block;
+}
+
+/* ─── ارتقای بصری: قطرهٔ مرکب و فلش نتیجه ─── */
+
+.inkBlob {
+  position: absolute;
+  top: 8%;
+  width: clamp(220px, 62vw, 320px);
+  pointer-events: none;
+  animation: ui-pop 380ms var(--ease-out, ease);
+}
+
+.inkBlobPath {
+  stroke: none;
+}
+
+.word {
+  position: relative;
+  animation: ui-pop 220ms var(--ease-out, ease);
+}
+
+/* فلش تمام-صحنه — قاب سبز/قرمز دور کل مرحله */
+.stageCorrect {
+  animation: flash-border-correct 650ms var(--ease-out, ease);
+}
+
+.stageWrong {
+  animation: flash-border-wrong 650ms var(--ease-out, ease);
+}
+
+@keyframes flash-border-correct {
+  0%, 100% { box-shadow: none; }
+  35% { box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--color-success) 55%, transparent); }
+}
+
+@keyframes flash-border-wrong {
+  0%, 100% { box-shadow: none; }
+  35% { box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--color-danger) 55%, transparent); }
+}
+
+/* پیل کوتاه نتیجه میان کلمه و دکمه‌ها */
+.flashPill {
+  padding: 0.4rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  animation: ui-pop var(--dur-fast, 120ms) var(--ease-out, ease);
 }

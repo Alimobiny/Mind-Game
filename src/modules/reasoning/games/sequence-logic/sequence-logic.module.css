@@ -76,3 +76,29 @@
 .optionButton:disabled {
   opacity: 0.6;
 }
+
+/* ─── ارتقای بصری: ورود تدریجی چیپ‌ها و تپش ؟ ─── */
+
+.chip {
+  animation: chip-in 260ms var(--ease-out, ease) backwards;
+}
+
+.chipUnknown {
+  animation: chip-in 260ms var(--ease-out, ease) backwards, unknown-pulse 1.6s var(--ease-out, ease) infinite 300ms;
+}
+
+@keyframes chip-in {
+  from {
+    transform: translateY(10px) scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes unknown-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}

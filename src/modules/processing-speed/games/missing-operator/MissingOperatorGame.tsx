@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
@@ -9,12 +9,21 @@ import {
 } from './engine'
 import styles from './missing-operator.module.css'
 
+/** نمایش نتیجه برای فلش کوتاه پیش از مرحلهٔ بعد */
+interface FlashState {
+  readonly correct: boolean
+  readonly solution: MissingOperator
+}
+
 /**
  * عملگر گم‌شده — UI
  *
  * نمایش معادله «a ؟ b = result» با ارقام فارسی (LTR تا ترتیب عملوندها
- * ثابت بماند) و انتخاب عملگر از دکمه‌های گزینه. در سطح‌های دارای مهلت،
- * با انقضای پنجره پاسخ مرحله «بی‌پاسخ» ثبت و بعدی می‌آید. منطق در engine است.
+ * ثابت بماند) و انتخاب عملگر از دکمه‌های گزینه. جای «؟» تپنده است؛ پس از
+ * پاسخ، عملگر درست با فرود پرشی در جای خود می‌نشیند و فلش کوتاه نتیجه
+ * دیده می‌شود و سپس مرحلهٔ بعد می‌آید (e2e با waitProgressAdvance همگام
+ * است). در سطح‌های دارای مهلت، با انقضای پنجره پاسخ مرحله «بی‌پاسخ» ثبت
+ * و بعدی می‌آید. منطق در engine است.
  */
 export function MissingOperatorGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as MissingOperatorTrial
@@ -22,10 +31,13 @@ export function MissingOperatorGame({ ctx }: { ctx: ActiveGameContext }) {
   // بعد بفرستد؛ قفل فقط وقتی نتیجه رد شد (مثلاً حین pause) باز می‌گردد
   const submittedRef = useRef(false)
   const deadlineRef = useRef<number | null>(null)
+  const flashTimerRef = useRef<number | null>(null)
+  const [flash, setFlash] = useState<FlashState | null>(null)
 
   // با هر مرحله جدید ریست می‌شود
   useEffect(() => {
     submittedRef.current = false
+    setFlash(null)
 
     // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به مرحله بعد
     const remaining = ctx.timeRemainingMs()
@@ -44,6 +56,7 @@ export function MissingOperatorGame({ ctx }: { ctx: ActiveGameContext }) {
     }
     return () => {
       if (deadlineRef.current !== null) window.clearTimeout(deadlineRef.current)
+      if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
@@ -52,19 +65,29 @@ export function MissingOperatorGame({ ctx }: { ctx: ActiveGameContext }) {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit(op).then((result) => {
-      // اگر جلسه با همین پاسخ کامل شد، advance نزن (روی جلسه کامل خطا می‌دهد)
-      if (result.accepted && !result.sessionCompleted) {
-        ctx.advance()
-      } else if (!result.accepted) {
-        submittedRef.current = false
+      if (!result.accepted || result.sessionCompleted) {
+        if (!result.accepted) submittedRef.current = false
+        return
       }
+      const solution = trial.puzzle.solution
+      setFlash({ correct: result.record.correct, solution })
+      flashTimerRef.current = window.setTimeout(() => {
+        setFlash(null)
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان قطع/تکمیل شده
+        }
+      }, 700)
     })
   }
 
   const puzzle = trial.puzzle
 
   return (
-    <div className={styles.stage}>
+    <div
+      className={`${styles.stage} ${flash !== null ? (flash.correct ? styles.stageCorrect : styles.stageWrong) : ''}`}
+    >
       <div
         className={styles.equation}
         style={{ direction: 'ltr' }}
@@ -72,9 +95,24 @@ export function MissingOperatorGame({ ctx }: { ctx: ActiveGameContext }) {
         data-testid="missop-equation"
         key={trial.trialIndex}
       >
-        {toFaDigits(puzzle.a)} <bdi className={styles.missing}>؟</bdi> {toFaDigits(puzzle.b)} ={' '}
-        {toFaDigits(puzzle.result)}
+        {toFaDigits(puzzle.a)}{' '}
+        <bdi className={styles.missing}>
+          {flash !== null ? (
+            <span key="solved" className={styles.solvedOp} data-correct={flash.correct ? 'true' : 'false'}>
+              {flash.solution === '-' ? '−' : flash.solution}
+            </span>
+          ) : (
+            '؟'
+          )}
+        </bdi>{' '}
+        {toFaDigits(puzzle.b)} = {toFaDigits(puzzle.result)}
       </div>
+
+      {flash !== null ? (
+        <div className={styles.flashPill} role="status">
+          {flash.correct ? 'درست ✓' : `عملگر درست: ${flash.solution === '-' ? '−' : flash.solution}`}
+        </div>
+      ) : null}
 
       <div className={styles.answerRow} role="group" aria-label="انتخاب عملگر درست">
         {puzzle.choices.map((op) => (
@@ -85,7 +123,7 @@ export function MissingOperatorGame({ ctx }: { ctx: ActiveGameContext }) {
             data-testid="missop-choice"
             data-op={op}
             onClick={() => choose(op)}
-            disabled={ctx.paused}
+            disabled={ctx.paused || flash !== null}
             aria-label={MISSING_OPERATOR_LABELS_FA[op]}
           >
             {op === '-' ? '−' : op}

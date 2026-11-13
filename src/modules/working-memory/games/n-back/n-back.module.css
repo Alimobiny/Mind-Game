@@ -43,3 +43,43 @@
 .matchButton:active {
   transform: scale(0.97);
 }
+
+/* ─── ارتقای بصری: پاپ حرف، درخشش ادعا، نقطه‌های پیشروی ─── */
+
+.letterPop {
+  animation: ui-pop 180ms var(--ease-out, ease);
+}
+
+.fixation {
+  animation: fixation-breathe 1.8s var(--ease-out, ease) infinite;
+}
+
+@keyframes fixation-breathe {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* دکمه پس از ادعا تا پایان پنجره می‌درخشد — «ثبت شد» */
+.matchClaimed {
+  background: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.progressDots {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: min(90vw, 320px);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-surface-2);
+}
+
+.dotDone {
+  background: var(--accent, var(--color-primary));
+}
