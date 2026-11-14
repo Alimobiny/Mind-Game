@@ -47,23 +47,32 @@ export function DualNBackGame({
 
   useEffect(() => {
     submittedRef.current = false
-    setStimulusVisible(true)
     claimsRef.current = { letterClaimed: false, letterRtMs: null, cellClaimed: false, cellRtMs: null }
     trialStartRef.current = performance.now()
     for (const t of timersRef.current) window.clearTimeout(t)
     timersRef.current = []
 
+    const remaining = ctx.timeRemainingMs()
+    // در بازنصبِ پس از مکث: اگر نقطهٔ پنهان‌شدن گذشته باشد، جریان‌ها از
+    // اول پنهان می‌مانند و حرف دوباره گفته نمی‌شود (مهلت واقعی ادامه دارد)
+    const pastHide =
+      remaining !== null && trial.responseWindowMs !== null
+        ? remaining < trial.responseWindowMs - trial.stimulusMs
+        : false
+    setStimulusVisible(!pastHide)
+
     // گونهٔ شنیداری: گفتن حرف در شروع محرک — fire-and-forget؛ ریتم تایمری
     // خودش جلو می‌رود و به پایان گفتار وابسته نیست (الگوی یادآوری شنیداری)
-    if (auditory && mode === 'speech') {
+    if (auditory && mode === 'speech' && !pastHide) {
       speech?.speak(trial.letter, { rate: 0.9 })
     }
 
-    // پنهان‌شدن هر دو جریان بعد از stimulusMs (فاصله خالی تا محرک بعد)
-    timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+    if (!pastHide) {
+      // پنهان‌شدن هر دو جریان بعد از stimulusMs (فاصله خالی تا محرک بعد)
+      timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+    }
 
     // انقضای مهلت → یک submit با ادعاهای جمع‌شدهٔ هر دو جریان
-    const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
       timersRef.current.push(
         window.setTimeout(() => {

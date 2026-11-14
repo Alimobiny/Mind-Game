@@ -25,7 +25,12 @@ import {
  * (useSyncExternalStore) به آن وصل می‌شود.
  */
 
-export type SubmitRejectionReason = 'wrong_phase' | 'no_active_trial' | 'already_answered'
+export type SubmitRejectionReason =
+  | 'wrong_phase'
+  | 'no_active_trial'
+  | 'already_answered'
+  /** ذخیرهٔ رویداد خام در IndexedDB شکست خورد — تلاش مجدد ممکن است */
+  | 'persist_failed'
 
 export type SubmitResult =
   | { accepted: true; record: RecordedTrial; sessionCompleted: boolean }
@@ -205,22 +210,35 @@ export class ExerciseSessionManager {
     if (this.currentTrialAnswered) return { accepted: false, reason: 'already_answered' }
 
     const reactionTimeMs = Math.max(0, Math.round(this.timer.now() - this.trialShownAtMs))
+    // برای rollback در صورت خطای ذخیره‌سازی — وضعیت قبلی حفظ می‌شود
+    const prevState = this.exerciseState
+    const prevOutcome = this.lastOutcome
     const newState = this.definition.submitAnswer(this.exerciseState, answer, reactionTimeMs)
     this.exerciseState = newState
     this.currentTrialAnswered = true
     const record = newState.results[newState.results.length - 1] as RecordedTrial
     this.lastOutcome = record
 
-    // ذخیره رویداد خام — id یکتا idempotency را در DB تضمین می‌کند
-    await this.trialEvents.append(
-      toTrialEventRecord(
-        this.sessionId as string,
-        this.deps.config.difficulty,
-        this.definition.version,
-        record,
-        this.wallClock(),
-      ),
-    )
+    // ذخیره رویداد خام — id یکتا idempotency را در DB تضمین می‌کند.
+    // خطای ذخیره‌سازی (مثلاً سهمیهٔ پر): rollback تا همان پاسخ دوباره
+    // قابل ثبت باشد و جلسه قفل نشود
+    try {
+      await this.trialEvents.append(
+        toTrialEventRecord(
+          this.sessionId as string,
+          this.deps.config.difficulty,
+          this.definition.version,
+          record,
+          this.wallClock(),
+        ),
+      )
+    } catch (err) {
+      this.exerciseState = prevState
+      this.currentTrialAnswered = false
+      this.lastOutcome = prevOutcome
+      console.error('ثبت رویداد مرحله در ذخیره‌سازی محلی ناموفق بود', err)
+      return { accepted: false, reason: 'persist_failed' }
+    }
 
     if (this.definition.isComplete(newState)) {
       await this.completeInternal()
@@ -246,6 +264,20 @@ export class ExerciseSessionManager {
   resume(): void {
     this.machine = smDispatch(this.machine, 'RESUME')
     if (this.timer.currentStatus === 'paused') this.timer.resume()
+    // ریشه‌یابی بن‌بست مکث: اگر پاسخ مرحله ثبت شده ولی (به‌دلیل مکث میان
+    // submit و advance) پیشروی رخ نداده، همین‌جا جلو برو — کامپوننت با
+    // ریمانت، مرحلهٔ بعدی را می‌بیند نه مرحلهٔ پاسخ‌داده‌شدهٔ قفل‌شده را.
+    // این کار کلاس whole بن‌بست را در همهٔ بازی‌ها می‌بندد (حتی بازی‌های
+    // فاقد بلوک بازیابی محلی).
+    if (
+      this.machine.phase === 'ACTIVE' &&
+      this.currentTrial !== null &&
+      this.currentTrialAnswered &&
+      this.exerciseState !== null &&
+      !this.definition.isComplete(this.exerciseState)
+    ) {
+      this.advanceTrialInternal()
+    }
     this.emit()
   }
 
@@ -255,8 +287,11 @@ export class ExerciseSessionManager {
     // ابتدا ثبت قطع در DB، بعد تغییر فاز — وگرنه re-renderِ همان کلیک
     // صفحهٔ ABORTED را پیش از commit دیتابیس می‌کشد (و رفرشِ همان لحظه
     // جلسه را هنوز in_progress می‌بیند). اگر هم‌زمان جلسه COMPLETE شده
-    // باشد، ABORT دیگر مجاز نیست و فقط emit می‌کنیم.
-    await this.persistFinal('aborted', durationMs)
+    // باشد، ABORT دیگر مجاز نیست و فقط emit می‌کنیم. خطای ذخیره‌سازی
+    // مسیر خروج را قفل نمی‌کند (جلسهٔ یتیم در بوت بعدی سالم می‌شود).
+    await this.persistFinal('aborted', durationMs).catch((err) => {
+      console.error('ذخیرهٔ وضعیت قطع جلسه ناموفق بود', err)
+    })
     if (smCanDispatch(this.machine, 'ABORT')) {
       this.machine = smDispatch(this.machine, 'ABORT')
     }
@@ -269,7 +304,11 @@ export class ExerciseSessionManager {
     if (this.exerciseState) {
       this.summary = this.definition.getSummary(this.exerciseState)
     }
-    await this.persistFinal('completed', durationMs, this.summary)
+    // خطای ذخیره‌سازی صفحهٔ نتایج را قفل نمی‌کند؛ رکورد in_progress در
+    // بوت بعدی aborted می‌شود (تخریب محتاطانه، بهتر از جلسهٔ زندهٔ قفل‌شده)
+    await this.persistFinal('completed', durationMs, this.summary).catch((err) => {
+      console.error('ذخیرهٔ نتیجهٔ جلسه ناموفق بود', err)
+    })
     this.emit()
   }
 

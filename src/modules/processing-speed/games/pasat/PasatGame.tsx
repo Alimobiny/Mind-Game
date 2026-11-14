@@ -24,6 +24,9 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
   const [entry, setEntry] = useState('')
   const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
   const timersRef = useRef<number[]>([])
+  // تایمر نشان شناور جدا از timersRef — پاک‌سازی per-trial آن را می‌کشت
+  // و نشان تا کل رقم بعدی چسبیده می‌ماند
+  const badgeTimerRef = useRef<number | null>(null)
   const submittedRef = useRef(false)
 
   useEffect(() => {
@@ -61,6 +64,14 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
+  // پاک‌سازی تایمر نشان شناور فقط در unmount
+  useEffect(
+    () => () => {
+      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    },
+    [],
+  )
+
   const press = (key: string) => {
     if (submittedRef.current || ctx.paused) return
     if (key === 'back') {
@@ -76,10 +87,12 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
     const value = Number.parseInt(entry, 10)
     void ctx.submit(value).then((result) => {
       if (result.accepted) {
-        // نشان کوتاه نتیجه حین باقی پنجرهٔ ریتم — پیشروی همان‌طور با انقضای
-        // interval خودکار است (رفتار زمانی دست‌نخورده)
+        // نشان کوتاهٔ نتیجه روی رقم/فاصلهٔ بعدی می‌ماند (۹۰۰ms تایمر خودش)؛
+        // پیشروی بلافاصله پس از پذیرش پاسخ است (پاسخ سریع ریتم را جلو
+        // می‌اندازد — طراحی فعلی، برخلاف پاسات استاندارد با فاصلهٔ ثابت)
         setBadge(result.record.correct ? 'correct' : 'wrong')
-        timersRef.current.push(window.setTimeout(() => setBadge(null), 900))
+        if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+        badgeTimerRef.current = window.setTimeout(() => setBadge(null), 900)
       }
       if (result.accepted && !result.sessionCompleted) {
         try {

@@ -114,10 +114,23 @@ export function TaskSwitchingGame({ ctx }: { ctx: ActiveGameContext }) {
       scheduleAdvance(outcome.correct)
     } else {
       setFlash(null)
-      // نشانه فوراً هست؛ محرک پس از CSI ظاهر می‌شود
-      addTimer(() => setStimulusVisible(true), trial.cueStimulusIntervalMs)
-      // انقضای مهلت کل مرحله (CSI + پنجرهٔ محرک) → ثبت بی‌پاسخی و مرحله بعد
+      // نشانه فوراً هست؛ محرک پس از CSI ظاهر می‌شود — در بازنصبِ پس از
+      // مکث، CSIِ گذشته‌شده از مهلت باقیمانده کسر می‌شود تا پنجرهٔ پاسخِ
+      // مؤثر کوچک‌تر از طراحی نشود (و اگر گذشته، محرک بی‌درنگ بیاید)
       const remaining = ctx.timeRemainingMs()
+      const elapsed =
+        remaining !== null && trial.responseWindowMs !== null
+          ? trial.responseWindowMs - remaining
+          : 0
+      if (elapsed >= trial.cueStimulusIntervalMs) {
+        setStimulusVisible(true)
+      } else {
+        addTimer(
+          () => setStimulusVisible(true),
+          trial.cueStimulusIntervalMs - elapsed,
+        )
+      }
+      // انقضای مهلت کل مرحله (CSI + پنجرهٔ محرک) → ثبت بی‌پاسخی و مرحله بعد
       if (remaining !== null) {
         addTimer(() => {
           if (submittedRef.current) return

@@ -89,11 +89,20 @@ export function ObjectTrackingGame({ ctx }: { ctx: ActiveGameContext }) {
     }
   }
 
-  /** رسم یک صحنهٔ کامل از فریم پیش‌محاسبه‌شده — خالصِ DOM-canvas */
+  /** رسم یک صحنهٔ کامل از فریم پیش‌محاسبه‌شده — خالصِ DOM-canvas.
+   *  بوم با devicePixelRatio مقیاس می‌شود (بستر شارپ روی نمایشگرهای متراکم)
+   *  ولی مختصات منطقی همان CANVAS_SIZE می‌ماند — setTransform همه را هندل می‌کند */
   const drawScene = (frameIndex: number, mode: Phase, selectedNow: readonly number[]) => {
     const canvas = canvasRef.current
     const context = canvas?.getContext('2d')
     if (!canvas || !context) return
+    const dpr = window.devicePixelRatio || 1
+    const wanted = Math.round(CANVAS_SIZE * dpr)
+    if (canvas.width !== wanted) {
+      canvas.width = wanted
+      canvas.height = wanted
+    }
+    context.setTransform(dpr, 0, 0, dpr, 0, 0)
     const frame = trial.frames[Math.max(0, Math.min(lastFrameIndex, frameIndex))]
     context.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
     const selectedSet = new Set(selectedNow)
@@ -264,7 +273,7 @@ export function ObjectTrackingGame({ ctx }: { ctx: ActiveGameContext }) {
         {phase === 'feedback'
           ? wasCorrect
             ? 'همهٔ اهداف را درست پیدا کردی ✓'
-            : 'دقیق نبود — اهداف سبز показ داده شدند'
+            : 'دقیق نبود — اهداف سبز نمایش داده شدند'
           : PHASE_TEXT_FA[phase]}
       </p>
 

@@ -332,3 +332,72 @@ describe('abortStaleSessions', () => {
     expect(await abortStaleSessions(sessions)).toBe(0)
   })
 })
+
+describe('ExerciseSessionManager — تاب‌آوری مکث و خطای ذخیره‌سازی', () => {
+  it('resume پس از مکثِ بین submit و advance، خودش پیشروی می‌کند (بن‌بست جهانی)', async () => {
+    const { manager } = await createManager()
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    const r0 = await manager.submitAnswer(0)
+    expect(r0.accepted).toBe(true)
+    // مکث دقیقاً بین پذیرش پاسخ و advance — پنجره‌ای که قبلاً جلسه را
+    // قفل می‌کرد (submitهای بعدی already_answered می‌شدند)
+    manager.pause()
+    expect(manager.getSnapshot().machine.phase).toBe('PAUSED')
+    manager.resume()
+
+    // بازیابی ریشه‌ای: مرحلهٔ بعدی بدون submit اضافه تولید شده است
+    const after = manager.getSnapshot()
+    expect(after.machine.phase).toBe('ACTIVE')
+    expect(after.currentTrial?.trialIndex).toBe(1)
+
+    // و پاسخِ مرحلهٔ جدید پذیرفته می‌شود — نه already_answered
+    const r1 = await manager.submitAnswer(1)
+    expect(r1.accepted).toBe(true)
+  })
+
+  it('خطای ذخیره‌سازی رویداد خام: rollback و پاسخ دوباره پذیرفته می‌شود (persist_failed)', async () => {
+    const sessions = new InMemorySessionRepository()
+    const inner = new InMemoryTrialEventRepository()
+    let failuresLeft = 1
+    const flakyTrials = {
+      append: async (record: unknown) => {
+        if (failuresLeft > 0) {
+          failuresLeft -= 1
+          throw new Error('QuotaExceededError')
+        }
+        return inner.append(record as never)
+      },
+    }
+    const c = fakeClock()
+    const manager = new ExerciseSessionManager({
+      definition: fakeDefinition(),
+      config: { difficulty: 2 },
+      sessions,
+      trialEvents: flakyTrials as never,
+      settings: new InMemoryExerciseSettingsRepository(),
+      timer: new SessionTimer(c.clock),
+      clock: c.clock,
+      seed: 123,
+      wallClock: () => 1_700_000_000_000,
+    })
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    // نوشتن اول می‌شکند — پاسخ پذیرفته نمی‌شود و وضعیت rollback می‌شود
+    const failed = await manager.submitAnswer(0)
+    expect(failed).toEqual({ accepted: false, reason: 'persist_failed' })
+
+    // تلاش مجدد همان پاسخ باید پذیرفته شود (قفل already_answered نه)
+    const retry = await manager.submitAnswer(0)
+    expect(retry.accepted).toBe(true)
+    manager.advanceTrial()
+    await manager.submitAnswer(1)
+    manager.advanceTrial()
+    const r2 = await manager.submitAnswer(2)
+    expect(r2.accepted && r2.sessionCompleted).toBe(true)
+  })
+})

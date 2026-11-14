@@ -51,13 +51,19 @@ export function ProgressiveMatricesGame({ ctx }: { ctx: ActiveGameContext }) {
   const submittedRef = useRef(false)
   const badgeTimerRef = useRef<number | null>(null)
 
-  // با هر مرحله جدید ریست می‌شود
+  // با هر مرحله جدید ریست می‌شود (بدون دست بردن به نشان — پاک‌سازی تایمر
+  // نشان در تغییر مرحله، محوشدنش را می‌کشت و می‌چسبید)
   useEffect(() => {
     submittedRef.current = false
-    return () => {
-      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
-    }
   }, [trial.trialIndex])
+
+  // پاک‌سازی تایمر نشان شناور فقط در unmount
+  useEffect(
+    () => () => {
+      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    },
+    [],
+  )
 
   const flashBadge = (correct: boolean) => {
     setBadge(correct ? 'correct' : 'wrong')

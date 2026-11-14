@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
@@ -17,12 +17,21 @@ export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
   // قفل موقت تا اتمام ثبت پاسخ — جلوگیری از دوبار‌کلیک روی گزینه‌ها
   const [locked, setLocked] = useState(false)
   const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
+  const badgeTimerRef = useRef<number | null>(null)
 
-  // با شروع هر مرحله جدید قفل برداشته می‌شود
+  // با شروع هر مرحله جدید قفل برداشته می‌شود — نشان دست نمی‌خورد: پاک‌شدن
+  // نشان در همین افکت آن را ~۱ فریم می‌کشت و کاربر هیچ بازخوردی نمی‌دید
   useEffect(() => {
     setLocked(false)
-    setBadge(null)
   }, [trial.trialIndex])
+
+  // پاک‌سازی تایمر نشان شناور فقط در unmount
+  useEffect(
+    () => () => {
+      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    },
+    [],
+  )
 
   const choose = async (value: number) => {
     if (locked) return
@@ -31,13 +40,14 @@ export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
     if (result.accepted) {
       // نشان شناور نتیجه — پیشروی همان لحظه است (رفتار زمانی دست‌نخورده)
       setBadge(result.record.correct ? 'correct' : 'wrong')
-      window.setTimeout(() => setBadge(null), 900)
+      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+      badgeTimerRef.current = window.setTimeout(() => setBadge(null), 900)
     }
     if (result.accepted && !result.sessionCompleted) {
       try {
         ctx.advance()
       } catch {
-        // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+        // جلسه هم‌زمان قطع/تکمیل شده
       }
     } else {
       setLocked(false)

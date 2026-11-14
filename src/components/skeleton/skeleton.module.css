@@ -13,14 +13,26 @@
 .block,
 .row {
   display: block;
+  position: relative;
   border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+/* درخشش با translate شبه‌المان — فقط composite، بدون paint در هر فریم */
+.bar::after,
+.block::after,
+.row::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
   background: linear-gradient(
     100deg,
-    var(--color-surface) 30%,
+    transparent 30%,
     var(--color-surface-2) 50%,
-    var(--color-surface) 70%
+    transparent 70%
   );
-  background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
 }
 
@@ -57,18 +69,18 @@
 
 @keyframes skeleton-shimmer {
   from {
-    background-position: 200% 0;
+    transform: translateX(-100%);
   }
 
   to {
-    background-position: -200% 0;
+    transform: translateX(100%);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bar,
-  .block,
-  .row {
+  .bar::after,
+  .block::after,
+  .row::after {
     animation: none;
   }
 }

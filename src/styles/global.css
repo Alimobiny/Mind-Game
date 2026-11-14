@@ -248,12 +248,15 @@ a {
   }
 }
 
-/* احترام به کاهش حرکت: همهٔ انیمیشن‌ها عملاً لحظه‌ای می‌شوند */
+/* احترام به کاهش حرکت: همهٔ انیمیشن‌ها عملاً لحظه‌ای می‌شوند. تاخیر هم
+   صفر می‌شود — وگرنه ورودهای پلکانیِ backwards-fill تا پایان تاخیرشان
+   (تا ۳۶۰ms) نامرئی (opacity 0) می‌مانند */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }

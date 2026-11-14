@@ -52,7 +52,8 @@ export function HomePage() {
   const [heatmapWeeks, setHeatmapWeeks] = useState<ReadonlyArray<ReadonlyArray<HeatCell>>>([])
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // وضعیت پیشرفت هر بازی (سطح پیشنهادی، رکورد، آخرین تمرین) از داده خام
+  // وضعیت پیشرفت هر بازی (سطح پیشنهادی، رکورد، آخرین تمرین) از داده خام —
+  // یک خواندن کامل جدول که به هر دو تجمیع (تقویم + پیشرفت) می‌رسد
   useEffect(() => {
     let cancelled = false
     void getAppData().then((appData) => {
@@ -60,12 +61,9 @@ export function HomePage() {
         if (cancelled) return
         const days = groupSessionsByDay(recent)
         setHeatmapWeeks(buildHeatmapWeeks(days, toLocalIsoDate(Date.now()), 8))
-      })
-      void loadProgressForExercises(
-        appData.sessions,
-        exercises.map((e) => e.meta.id),
-      ).then((result) => {
-        if (!cancelled) setProgress(result)
+        void loadProgressForExercises(recent, exercises.map((e) => e.meta.id)).then((result) => {
+          if (!cancelled) setProgress(result)
+        })
       })
     })
     return () => {

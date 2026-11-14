@@ -19,18 +19,28 @@ export function ReactionTimeGame({ ctx }: { ctx: ActiveGameContext }) {
   const timersRef = useRef<number[]>([])
   const submittedRef = useRef(false)
 
-  // با هر مرحله جدید ریست می‌شود
+  // با هر مرحله جدید ریست می‌شود — و در بازنصبِ پس از مکث، elapsed واقعی
+  // از مهلت باقیمانده بازسازی می‌شود: شمارش تأخیر از صفر دوباره باعث
+  // می‌شد مهلت «قبل از نمایش محرک» به آتش برسد و کندیِ بی‌محرک ثبت شود
   useEffect(() => {
     submittedRef.current = false
-    setPhase('waiting')
     for (const t of timersRef.current) window.clearTimeout(t)
     timersRef.current = []
 
-    // ظاهرشدن ناگهانی محرک پس از تأخیر تصادفی
-    timersRef.current.push(window.setTimeout(() => setPhase('stimulus'), trial.stimulusDelayMs))
+    const remaining = ctx.timeRemainingMs()
+    const elapsed =
+      remaining !== null && trial.responseWindowMs !== null ? trial.responseWindowMs - remaining : 0
+    if (elapsed < trial.stimulusDelayMs) {
+      setPhase('waiting')
+      timersRef.current.push(
+        window.setTimeout(() => setPhase('stimulus'), trial.stimulusDelayMs - elapsed),
+      )
+    } else {
+      // تأخیر گذشته — محرک همین حالا باید دیده شود
+      setPhase('stimulus')
+    }
 
     // انقضای مهلت کل مرحله → ثبت بی‌پاسخی (کندی) و رفتن به مرحله بعد
-    const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
       deadlineRef.current = window.setTimeout(() => {
         if (submittedRef.current) return

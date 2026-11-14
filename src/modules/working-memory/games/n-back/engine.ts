@@ -6,6 +6,9 @@ import type {
   ExerciseTrial,
   RecordedTrial,
 } from '../../../../core/types'
+import { NBACK_SHARED_LETTERS as NBACK_LETTERS } from '../../shared-letters'
+// سازگاری با تست‌ها/مصرف‌کنندگان قبلی
+export { NBACK_LETTERS }
 import { SeededRandom } from '../../../../core/randomization/seeded-random'
 import { deriveTrialSeed } from '../../../../core/randomization/derive-seed'
 import { countOutcome, summarizeOutcomes } from '../../../../core/scoring/scoring'
@@ -26,7 +29,7 @@ import { countOutcome, summarizeOutcomes } from '../../../../core/scoring/scorin
  */
 
 /** استخر حروف — ۸ همخوان فارسی متمایز از نظر بصری */
-export const NBACK_LETTERS: readonly string[] = ['ب', 'ج', 'د', 'س', 'ف', 'ل', 'م', 'ت']
+/** استخر حروف مشترک — منبع واحد با ان-بک دوگانه (shared-letters.ts) */
 
 export interface NBackConfig extends ExerciseConfig {
   /** فاصله تطبیق (N) — حرف چند مرحله قبل ملاک است */

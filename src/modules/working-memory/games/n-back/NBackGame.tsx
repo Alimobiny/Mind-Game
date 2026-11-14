@@ -22,18 +22,26 @@ export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
   const timersRef = useRef<number[]>([])
   const submittedRef = useRef(false)
 
-  // با هر حرف جدید ریست می‌شود
+  // با هر حرف جدید ریست می‌شود — در بازنصبِ پس از مکث اگر نقطهٔ پنهان‌شدن
+  // گذشته باشد (remaining از ISI کمتر) حرف از اول پنهان می‌ماند، نه نمایش
+  // دوبارهٔ کامل همراه با مهلتِ در حال انقضا
   useEffect(() => {
     submittedRef.current = false
-    setStimulusVisible(true)
     for (const t of timersRef.current) window.clearTimeout(t)
     timersRef.current = []
 
-    // پنهان‌شدن حرف بعد از stimulusMs (فاصله خالی تا حرف بعد)
-    timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+    const remaining = ctx.timeRemainingMs()
+    const pastHide =
+      remaining !== null && trial.responseWindowMs !== null
+        ? remaining < trial.responseWindowMs - trial.stimulusMs
+        : false
+    setStimulusVisible(!pastHide)
+    if (!pastHide) {
+      // پنهان‌شدن حرف بعد از stimulusMs (فاصله خالی تا حرف بعد)
+      timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+    }
 
     // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به حرف بعد
-    const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
       deadlineRef.current = window.setTimeout(() => {
         if (submittedRef.current) return

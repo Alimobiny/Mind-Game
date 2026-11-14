@@ -6,6 +6,7 @@ import type {
   ExerciseTrial,
   RecordedTrial,
 } from '../../../../core/types'
+import { NBACK_SHARED_LETTERS as LETTERS } from '../../shared-letters'
 import { SeededRandom } from '../../../../core/randomization/seeded-random'
 import { deriveTrialSeed } from '../../../../core/randomization/derive-seed'
 import { summarizeOutcomes } from '../../../../core/scoring/scoring'
@@ -92,8 +93,7 @@ export function configForDifficulty(difficulty: number): DualNBackConfig {
   }
 }
 
-/** حروف مشترک با ان-بک ساده — استخر بازاستفاده */
-const LETTERS: readonly string[] = ['ب', 'ج', 'د', 'س', 'ف', 'ل', 'م', 'ت']
+/** استخر حروف مشترک با ان-بک ساده — منبع واحد (shared-letters.ts) */
 
 /**
  * کارخانهٔ تعریف — منطق برای هر دو گونهٔ دیداری و شنیداری یکی است؛

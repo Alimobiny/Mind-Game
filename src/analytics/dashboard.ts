@@ -1,7 +1,6 @@
 import type { CognitiveDomain, SessionRecord } from '../core/types'
 import { computeAdaptiveDifficulty, toLocalIsoDate } from '../core/difficulty/adaptive-difficulty'
 import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-difficulty'
-import type { SessionRepository } from '../data/repositories/types'
 
 export type { AdaptiveDifficultyResult }
 
@@ -28,12 +27,16 @@ export interface ExerciseProgress {
   readonly accuracySeries: readonly number[]
 }
 
+/**
+ * تجمیع داشبورد روی آرایهٔ جلساتِ از قبل خوانده‌شده — صفحه یک‌بار
+ * listRecent می‌خواند و همین آرایه به اینجا و بقیهٔ تجمیع‌کننده‌ها
+ * می‌رسد (قبلاً هر تابع خودش کل جدول را دوباره می‌خواند).
+ */
 export async function loadDashboard(
-  sessions: SessionRepository,
+  allSessions: readonly SessionRecord[],
   recentLimit = 20,
 ): Promise<{ totals: DashboardTotals; recent: readonly SessionRecord[]; byExercise: readonly ExerciseProgress[] }> {
-  const all = await sessions.listRecent(Number.MAX_SAFE_INTEGER)
-  const completed = all.filter((s) => s.status === 'completed')
+  const completed = allSessions.filter((s) => s.status === 'completed')
 
   const totalTrials = completed.reduce((sum, s) => sum + s.trialCount, 0)
   const correctTrials = completed.reduce((sum, s) => sum + (s.summary?.correctTrials ?? 0), 0)
@@ -93,12 +96,11 @@ export function accuracySparklinePath(series: readonly number[], width = 220, he
  * (با ۳۱ بازی و صدها جلسه، تفاوت O(N) و O(N×۳۱) محسوس است).
  */
 export async function loadProgressForExercises(
-  sessions: SessionRepository,
+  allSessions: readonly SessionRecord[],
   exerciseIds: readonly string[],
 ): Promise<Record<string, AdaptiveDifficultyResult>> {
   const todayIso = toLocalIsoDate(Date.now())
-  const all = await sessions.listRecent(Number.MAX_SAFE_INTEGER)
-  const byExercise = groupSessionsByExercise(all)
+  const byExercise = groupSessionsByExercise(allSessions)
   return Object.fromEntries(
     exerciseIds.map((exerciseId) => {
       const history = byExercise.get(exerciseId) ?? []

@@ -36,11 +36,17 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
         // جلسه هم‌زمان قطع/تکمیل شده؛ پوسته مسیر خودش را می‌رود
       }
     }
-    return () => {
-      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
+
+  // پاک‌سازی تایمر نشان شناور فقط در unmount — پاک‌سازی در تغییر مرحله،
+  // تایمر محوشدن نشان را می‌کشت و نشان تا کل سؤال بعد چسبیده می‌ماند
+  useEffect(
+    () => () => {
+      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+    },
+    [],
+  )
 
   const press = (key: string) => {
     if (key === 'back') {

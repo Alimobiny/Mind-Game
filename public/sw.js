@@ -5,7 +5,7 @@
 // نسخهٔ کش: با هر تغییر معنادار، عدد VERSION را بالا ببرید تا activate
 // کش قدیمی را پاک کند.
 
-const CACHE_VERSION = 'mind-game-v1'
+const CACHE_VERSION = 'mind-game-v2'
 const CACHE_NAME = CACHE_VERSION
 
 self.addEventListener('install', (event) => {

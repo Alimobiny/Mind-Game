@@ -49,16 +49,17 @@ export function ReportsPage() {
     let cancelled = false
     void getAppData()
       .then(async (appData) => {
-        const dashboard = await loadDashboard(appData.sessions)
-        const progress = await loadProgressForExercises(
-          appData.sessions,
-          registry.list().map((e) => e.meta.id),
-        )
-        // پنل تاریخچهٔ اجراها: زنجیره‌های برنامه + همهٔ جلسه‌ها برای خلاصه
+        // یک خواندن کامل جلسات که به هر سه تجمیع می‌رسد (قبلاً ۳ خواندن
+        // موازیِ تکراری بود — با صدها جلسه محسوس)
         const [runs, allSessions] = await Promise.all([
           appData.runs.listAll(),
           appData.sessions.listRecent(Number.MAX_SAFE_INTEGER),
         ])
+        const dashboard = await loadDashboard(allSessions)
+        const progress = await loadProgressForExercises(
+          allSessions,
+          registry.list().map((e) => e.meta.id),
+        )
         return { ...dashboard, progress, runs, allSessions }
       })
       .then((result) => {

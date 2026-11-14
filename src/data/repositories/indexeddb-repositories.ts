@@ -18,6 +18,14 @@ import type {
  *  با پیاده‌سازی in-memory یکسان است و تست قرارداد هر دو را می‌سنجد.
  */
 
+/**
+ * تراکنش‌های نوشتنی با دوامِ آسوده — commit بدون flush دیسک. داده در
+ * خرابیِ تب سالم می‌ماند (مهم برای بازی‌ها)؛ فقط در خرابیِ خودِ سیستم‌عامل
+ * از دست می‌رود. این ۲ تا ۵۰ میلی‌ثانیه fsync را از مسیر داغِ «پاسخ →
+ * مرحلهٔ بعد» در همهٔ بازی‌ها حذف می‌کند.
+ */
+const RELAXED_TX: IDBTransactionOptions = { durability: 'relaxed' }
+
 export class IdbSessionRepository implements SessionRepository {
   constructor(private readonly db: IDBDatabase) {}
 
@@ -81,7 +89,7 @@ export class IdbSessionRepository implements SessionRepository {
   }
 
   private async write(record: SessionRecord): Promise<void> {
-    const tx = this.db.transaction(STORES.exerciseSessions, 'readwrite')
+    const tx = this.db.transaction(STORES.exerciseSessions, 'readwrite', RELAXED_TX)
     tx.objectStore(STORES.exerciseSessions).put(record)
     await transactionDone(tx)
   }
@@ -96,7 +104,7 @@ export class IdbTrialEventRepository implements TrialEventRepository {
 
   async appendMany(events: readonly TrialEventRecord[]): Promise<void> {
     if (events.length === 0) return
-    const tx = this.db.transaction(STORES.trialEvents, 'readwrite')
+    const tx = this.db.transaction(STORES.trialEvents, 'readwrite', RELAXED_TX)
     const store = tx.objectStore(STORES.trialEvents)
     for (const event of events) {
       store.put(event)
@@ -143,7 +151,7 @@ export class IdbExerciseSettingsRepository implements ExerciseSettingsRepository
   }
 
   async put(record: ExerciseSettingsRecord): Promise<void> {
-    const tx = this.db.transaction(STORES.exerciseSettings, 'readwrite')
+    const tx = this.db.transaction(STORES.exerciseSettings, 'readwrite', RELAXED_TX)
     tx.objectStore(STORES.exerciseSettings).put(record)
     await transactionDone(tx)
   }
@@ -161,7 +169,7 @@ export class IdbTrainingPlanRepository implements TrainingPlanRepository {
   }
 
   async put(record: TrainingPlanRecord): Promise<void> {
-    const tx = this.db.transaction(STORES.trainingPlans, 'readwrite')
+    const tx = this.db.transaction(STORES.trainingPlans, 'readwrite', RELAXED_TX)
     tx.objectStore(STORES.trainingPlans).put(record)
     await transactionDone(tx)
   }
@@ -185,7 +193,7 @@ export class IdbProgramRunRepository implements ProgramRunRepository {
     if (existing) {
       throw new Error(`اجرای ${record.id} از قبل وجود دارد`)
     }
-    const tx = this.db.transaction(STORES.programRuns, 'readwrite')
+    const tx = this.db.transaction(STORES.programRuns, 'readwrite', RELAXED_TX)
     tx.objectStore(STORES.programRuns).put(record)
     await transactionDone(tx)
   }
@@ -195,7 +203,7 @@ export class IdbProgramRunRepository implements ProgramRunRepository {
     if (!existing) {
       throw new Error(`اجرای ${record.id} برای به‌روزرسانی وجود ندارد`)
     }
-    const tx = this.db.transaction(STORES.programRuns, 'readwrite')
+    const tx = this.db.transaction(STORES.programRuns, 'readwrite', RELAXED_TX)
     tx.objectStore(STORES.programRuns).put(record)
     await transactionDone(tx)
   }

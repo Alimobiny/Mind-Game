@@ -64,10 +64,14 @@ export function ProgramPage() {
       // بازکردن دوباره صفحه همان روز همان برنامه را نشان می‌دهد (idempotent)
       let plan = await appData.plans.getByDate(todayIso)
       if (!plan) {
-        const [recentPlans, progress] = await Promise.all([
+        const [recentPlans, allSessions] = await Promise.all([
           appData.plans.listRecent(7),
-          loadProgressForExercises(appData.sessions, catalog.map((entry) => entry.exerciseId)),
+          appData.sessions.listRecent(Number.MAX_SAFE_INTEGER),
         ])
+        const progress = await loadProgressForExercises(
+          allSessions,
+          catalog.map((entry) => entry.exerciseId),
+        )
         // سطح هر آیتم = سطح پیشنهادی دشواری تطبیقی همان بازی (بدون تاریخچه = کف)
         const difficultyByExercise = Object.fromEntries(
           Object.entries(progress).map(([id, result]) => [id, result.recommendedLevel]),

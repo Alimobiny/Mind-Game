@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ComponentType, LazyExoticComponent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameShell } from '../components/game/GameShell'
+import type { ActiveGameContext } from '../components/game/GameShell'
 import {
   computeAdaptiveDifficulty,
   describeStreakFa,
@@ -21,42 +23,6 @@ import type { ProgramRunRecord, TrainingPlanItem, TrainingPlanRecord } from '../
 import { getAppData } from '../data/app-data'
 import { PROGRAM_TEXTS_FA } from '../i18n/fa'
 import { createAppRegistry, createExerciseConfig } from '../modules'
-import { Calculation20Game } from '../modules/processing-speed/games/calculation-20/Calculation20Game'
-import { Calculation100Game } from '../modules/processing-speed/games/calculation-100/Calculation100Game'
-import { ContinuousCountdownGame } from '../modules/processing-speed/games/continuous-countdown/ContinuousCountdownGame'
-import { MissingOperatorGame } from '../modules/processing-speed/games/missing-operator/MissingOperatorGame'
-import { NumberComparisonGame } from '../modules/processing-speed/games/number-comparison/NumberComparisonGame'
-import { GoNoGoGame } from '../modules/attention-control/games/go-no-go/GoNoGoGame'
-import { StroopGame } from '../modules/attention-control/games/stroop/StroopGame'
-import { ReactionTimeGame } from '../modules/sensorimotor/games/reaction-time/ReactionTimeGame'
-import { MemoriseGridGame } from '../modules/visual-spatial/games/memorise-grid/MemoriseGridGame'
-import { SpatialSequenceGame } from '../modules/visual-spatial/games/spatial-sequence/SpatialSequenceGame'
-import { NumberSequenceGame } from '../modules/working-memory/games/number-sequence/NumberSequenceGame'
-import { NBackGame } from '../modules/working-memory/games/n-back/NBackGame'
-import { DualNBackGame } from '../modules/working-memory/games/dual-n-back/DualNBackGame'
-import { PasatGame } from '../modules/processing-speed/games/pasat/PasatGame'
-import { AssociativePairsGame } from '../modules/long-term-memory/games/associative-pairs/AssociativePairsGame'
-import { WordMemoryGame } from '../modules/verbal-auditory/games/word-memory/WordMemoryGame'
-import { SyllableCountingGame } from '../modules/verbal-auditory/games/syllable-counting/SyllableCountingGame'
-import { SequenceLogicGame } from '../modules/reasoning/games/sequence-logic/SequenceLogicGame'
-import { PatternCompletionGame } from '../modules/reasoning/games/pattern-completion/PatternCompletionGame'
-import { ObjectTrackingGame } from '../modules/visual-spatial/games/object-tracking/ObjectTrackingGame'
-import { MentalRotationGame } from '../modules/visual-spatial/games/mental-rotation/MentalRotationGame'
-import { MirrorClockGame } from '../modules/visual-spatial/games/mirror-clock/MirrorClockGame'
-import { BlockHeightGame } from '../modules/visual-spatial/games/block-height/BlockHeightGame'
-import { TaskSwitchingGame } from '../modules/attention-control/games/task-switching/TaskSwitchingGame'
-import { OperationSpanGame } from '../modules/working-memory/games/operation-span/OperationSpanGame'
-import { SymmetrySpanGame } from '../modules/visual-spatial/games/symmetry-span/SymmetrySpanGame'
-import { RuleDiscoveryCardSortingGame } from '../modules/reasoning/games/rule-discovery-card-sorting/RuleDiscoveryCardSortingGame'
-import { ReadingAloudGame } from '../modules/verbal-auditory/games/reading-aloud/ReadingAloudGame'
-import { WordScrambleGame } from '../modules/verbal-auditory/games/word-scramble/WordScrambleGame'
-import { AudioRecallGame } from '../modules/verbal-auditory/games/audio-recall/AudioRecallGame'
-import { WordBlendGame } from '../modules/verbal-auditory/games/word-blend/WordBlendGame'
-import { SimonGame } from '../modules/attention-control/games/simon/SimonGame'
-import { AttentionalBlinkGame } from '../modules/attention-control/games/attentional-blink/AttentionalBlinkGame'
-import { RunningSpanGame } from '../modules/working-memory/games/running-span/RunningSpanGame'
-import { ChangeDetectionGame } from '../modules/visual-spatial/games/change-detection/ChangeDetectionGame'
-import { ProgressiveMatricesGame } from '../modules/reasoning/games/progressive-matrices/ProgressiveMatricesGame'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA } from '../i18n/fa'
 import { formatDuration, toFaDigits } from '../utils/format'
@@ -64,86 +30,73 @@ import styles from './exercise.module.css'
 
 const registry = createAppRegistry()
 
-/** انتخاب render اختصاصی هر بازی — منطق بازی در engine خودش است */
+/** پراپ کامپوننت بازی — ctx پوستهٔ مشترک؛ auditory فقط ان-بک شنیداری */
+type GameComponent = ComponentType<{ ctx: ActiveGameContext; auditory?: boolean }>
+
+/**
+ * بارگذاری تنبل هر بازی — به‌جای این‌که هر ۳۷ کامپوننت در یک chunk تمرینِ
+ * ۱۳۵KB بسته شوند، فقط بازیِ در حال اجرا دانلود و parse می‌شود (~۳-۶KB).
+ * پیش‌واکشی در مونت صفحه (زیر) حین انتخاب سطح/دستورالعمل، سوسپنس را
+ * عملاً نامرئی می‌کند.
+ */
+const GAME_LOADERS: Readonly<Record<string, () => Promise<{ default: GameComponent }>>> = {
+  'number-sequence': () => import('../modules/working-memory/games/number-sequence/NumberSequenceGame').then((m) => ({ default: m.NumberSequenceGame })),
+  'n-back': () => import('../modules/working-memory/games/n-back/NBackGame').then((m) => ({ default: m.NBackGame })),
+  'dual-n-back': () => import('../modules/working-memory/games/dual-n-back/DualNBackGame').then((m) => ({ default: m.DualNBackGame })),
+  'dual-n-back-auditory': () => import('../modules/working-memory/games/dual-n-back/DualNBackGame').then((m) => ({ default: m.DualNBackGame })),
+  'pasat': () => import('../modules/processing-speed/games/pasat/PasatGame').then((m) => ({ default: m.PasatGame })),
+  'associative-pairs': () => import('../modules/long-term-memory/games/associative-pairs/AssociativePairsGame').then((m) => ({ default: m.AssociativePairsGame })),
+  'go-no-go': () => import('../modules/attention-control/games/go-no-go/GoNoGoGame').then((m) => ({ default: m.GoNoGoGame })),
+  'stroop': () => import('../modules/attention-control/games/stroop/StroopGame').then((m) => ({ default: m.StroopGame })),
+  'calculation-20': () => import('../modules/processing-speed/games/calculation-20/Calculation20Game').then((m) => ({ default: m.Calculation20Game })),
+  'calculation-100': () => import('../modules/processing-speed/games/calculation-100/Calculation100Game').then((m) => ({ default: m.Calculation100Game })),
+  'continuous-countdown': () => import('../modules/processing-speed/games/continuous-countdown/ContinuousCountdownGame').then((m) => ({ default: m.ContinuousCountdownGame })),
+  'missing-operator': () => import('../modules/processing-speed/games/missing-operator/MissingOperatorGame').then((m) => ({ default: m.MissingOperatorGame })),
+  'number-comparison': () => import('../modules/processing-speed/games/number-comparison/NumberComparisonGame').then((m) => ({ default: m.NumberComparisonGame })),
+  'memorise-grid': () => import('../modules/visual-spatial/games/memorise-grid/MemoriseGridGame').then((m) => ({ default: m.MemoriseGridGame })),
+  'spatial-sequence': () => import('../modules/visual-spatial/games/spatial-sequence/SpatialSequenceGame').then((m) => ({ default: m.SpatialSequenceGame })),
+  'reaction-time': () => import('../modules/sensorimotor/games/reaction-time/ReactionTimeGame').then((m) => ({ default: m.ReactionTimeGame })),
+  'word-memory': () => import('../modules/verbal-auditory/games/word-memory/WordMemoryGame').then((m) => ({ default: m.WordMemoryGame })),
+  'syllable-counting': () => import('../modules/verbal-auditory/games/syllable-counting/SyllableCountingGame').then((m) => ({ default: m.SyllableCountingGame })),
+  'sequence-logic': () => import('../modules/reasoning/games/sequence-logic/SequenceLogicGame').then((m) => ({ default: m.SequenceLogicGame })),
+  'pattern-completion': () => import('../modules/reasoning/games/pattern-completion/PatternCompletionGame').then((m) => ({ default: m.PatternCompletionGame })),
+  'object-tracking': () => import('../modules/visual-spatial/games/object-tracking/ObjectTrackingGame').then((m) => ({ default: m.ObjectTrackingGame })),
+  'mental-rotation': () => import('../modules/visual-spatial/games/mental-rotation/MentalRotationGame').then((m) => ({ default: m.MentalRotationGame })),
+  'mirror-clock': () => import('../modules/visual-spatial/games/mirror-clock/MirrorClockGame').then((m) => ({ default: m.MirrorClockGame })),
+  'block-height': () => import('../modules/visual-spatial/games/block-height/BlockHeightGame').then((m) => ({ default: m.BlockHeightGame })),
+  'task-switching': () => import('../modules/attention-control/games/task-switching/TaskSwitchingGame').then((m) => ({ default: m.TaskSwitchingGame })),
+  'operation-span': () => import('../modules/working-memory/games/operation-span/OperationSpanGame').then((m) => ({ default: m.OperationSpanGame })),
+  'symmetry-span': () => import('../modules/visual-spatial/games/symmetry-span/SymmetrySpanGame').then((m) => ({ default: m.SymmetrySpanGame })),
+  'rule-discovery-card-sorting': () => import('../modules/reasoning/games/rule-discovery-card-sorting/RuleDiscoveryCardSortingGame').then((m) => ({ default: m.RuleDiscoveryCardSortingGame })),
+  'reading-aloud': () => import('../modules/verbal-auditory/games/reading-aloud/ReadingAloudGame').then((m) => ({ default: m.ReadingAloudGame })),
+  'word-scramble': () => import('../modules/verbal-auditory/games/word-scramble/WordScrambleGame').then((m) => ({ default: m.WordScrambleGame })),
+  'audio-recall': () => import('../modules/verbal-auditory/games/audio-recall/AudioRecallGame').then((m) => ({ default: m.AudioRecallGame })),
+  'word-blend': () => import('../modules/verbal-auditory/games/word-blend/WordBlendGame').then((m) => ({ default: m.WordBlendGame })),
+  'simon-task': () => import('../modules/attention-control/games/simon/SimonGame').then((m) => ({ default: m.SimonGame })),
+  'attentional-blink': () => import('../modules/attention-control/games/attentional-blink/AttentionalBlinkGame').then((m) => ({ default: m.AttentionalBlinkGame })),
+  'running-span': () => import('../modules/working-memory/games/running-span/RunningSpanGame').then((m) => ({ default: m.RunningSpanGame })),
+  'change-detection': () => import('../modules/visual-spatial/games/change-detection/ChangeDetectionGame').then((m) => ({ default: m.ChangeDetectionGame })),
+  'progressive-matrices': () => import('../modules/reasoning/games/progressive-matrices/ProgressiveMatricesGame').then((m) => ({ default: m.ProgressiveMatricesGame })),
+}
+
+const GAME_COMPONENTS: Readonly<Record<string, LazyExoticComponent<GameComponent>>> =
+  Object.fromEntries(Object.entries(GAME_LOADERS).map(([id, load]) => [id, lazy(load)])) as Record<
+    string,
+    LazyExoticComponent<GameComponent>
+  >
+
+/** انتخاب کامپوننت بازی — منطق هر بازی در engine خودش است */
 function renderGame(exerciseId: string) {
-  switch (exerciseId) {
-    case 'number-sequence':
-      return (ctx: Parameters<typeof NumberSequenceGame>[0]['ctx']) => <NumberSequenceGame ctx={ctx} />
-    case 'n-back':
-      return (ctx: Parameters<typeof NBackGame>[0]['ctx']) => <NBackGame ctx={ctx} />
-    case 'dual-n-back':
-      return (ctx: Parameters<typeof DualNBackGame>[0]['ctx']) => <DualNBackGame ctx={ctx} />
-    case 'dual-n-back-auditory':
-      return (ctx: Parameters<typeof DualNBackGame>[0]['ctx']) => <DualNBackGame ctx={ctx} auditory />
-    case 'pasat':
-      return (ctx: Parameters<typeof PasatGame>[0]['ctx']) => <PasatGame ctx={ctx} />
-    case 'associative-pairs':
-      return (ctx: Parameters<typeof AssociativePairsGame>[0]['ctx']) => <AssociativePairsGame ctx={ctx} />
-    case 'go-no-go':
-      return (ctx: Parameters<typeof GoNoGoGame>[0]['ctx']) => <GoNoGoGame ctx={ctx} />
-    case 'stroop':
-      return (ctx: Parameters<typeof StroopGame>[0]['ctx']) => <StroopGame ctx={ctx} />
-    case 'calculation-20':
-      return (ctx: Parameters<typeof Calculation20Game>[0]['ctx']) => <Calculation20Game ctx={ctx} />
-    case 'calculation-100':
-      return (ctx: Parameters<typeof Calculation100Game>[0]['ctx']) => <Calculation100Game ctx={ctx} />
-    case 'continuous-countdown':
-      return (ctx: Parameters<typeof ContinuousCountdownGame>[0]['ctx']) => <ContinuousCountdownGame ctx={ctx} />
-    case 'missing-operator':
-      return (ctx: Parameters<typeof MissingOperatorGame>[0]['ctx']) => <MissingOperatorGame ctx={ctx} />
-    case 'number-comparison':
-      return (ctx: Parameters<typeof NumberComparisonGame>[0]['ctx']) => <NumberComparisonGame ctx={ctx} />
-    case 'memorise-grid':
-      return (ctx: Parameters<typeof MemoriseGridGame>[0]['ctx']) => <MemoriseGridGame ctx={ctx} />
-    case 'spatial-sequence':
-      return (ctx: Parameters<typeof SpatialSequenceGame>[0]['ctx']) => <SpatialSequenceGame ctx={ctx} />
-    case 'reaction-time':
-      return (ctx: Parameters<typeof ReactionTimeGame>[0]['ctx']) => <ReactionTimeGame ctx={ctx} />
-    case 'word-memory':
-      return (ctx: Parameters<typeof WordMemoryGame>[0]['ctx']) => <WordMemoryGame ctx={ctx} />
-    case 'syllable-counting':
-      return (ctx: Parameters<typeof SyllableCountingGame>[0]['ctx']) => <SyllableCountingGame ctx={ctx} />
-    case 'sequence-logic':
-      return (ctx: Parameters<typeof SequenceLogicGame>[0]['ctx']) => <SequenceLogicGame ctx={ctx} />
-    case 'pattern-completion':
-      return (ctx: Parameters<typeof PatternCompletionGame>[0]['ctx']) => <PatternCompletionGame ctx={ctx} />
-    case 'object-tracking':
-      return (ctx: Parameters<typeof ObjectTrackingGame>[0]['ctx']) => <ObjectTrackingGame ctx={ctx} />
-    case 'mental-rotation':
-      return (ctx: Parameters<typeof MentalRotationGame>[0]['ctx']) => <MentalRotationGame ctx={ctx} />
-    case 'mirror-clock':
-      return (ctx: Parameters<typeof MirrorClockGame>[0]['ctx']) => <MirrorClockGame ctx={ctx} />
-    case 'block-height':
-      return (ctx: Parameters<typeof BlockHeightGame>[0]['ctx']) => <BlockHeightGame ctx={ctx} />
-    case 'task-switching':
-      return (ctx: Parameters<typeof TaskSwitchingGame>[0]['ctx']) => <TaskSwitchingGame ctx={ctx} />
-    case 'operation-span':
-      return (ctx: Parameters<typeof OperationSpanGame>[0]['ctx']) => <OperationSpanGame ctx={ctx} />
-    case 'symmetry-span':
-      return (ctx: Parameters<typeof SymmetrySpanGame>[0]['ctx']) => <SymmetrySpanGame ctx={ctx} />
-    case 'rule-discovery-card-sorting':
-      return (ctx: Parameters<typeof RuleDiscoveryCardSortingGame>[0]['ctx']) => <RuleDiscoveryCardSortingGame ctx={ctx} />
-    case 'reading-aloud':
-      return (ctx: Parameters<typeof ReadingAloudGame>[0]['ctx']) => <ReadingAloudGame ctx={ctx} />
-    case 'word-scramble':
-      return (ctx: Parameters<typeof WordScrambleGame>[0]['ctx']) => <WordScrambleGame ctx={ctx} />
-    case 'audio-recall':
-      return (ctx: Parameters<typeof AudioRecallGame>[0]['ctx']) => <AudioRecallGame ctx={ctx} />
-    case 'word-blend':
-      return (ctx: Parameters<typeof WordBlendGame>[0]['ctx']) => <WordBlendGame ctx={ctx} />
-    case 'simon-task':
-      return (ctx: Parameters<typeof SimonGame>[0]['ctx']) => <SimonGame ctx={ctx} />
-    case 'attentional-blink':
-      return (ctx: Parameters<typeof AttentionalBlinkGame>[0]['ctx']) => <AttentionalBlinkGame ctx={ctx} />
-    case 'running-span':
-      return (ctx: Parameters<typeof RunningSpanGame>[0]['ctx']) => <RunningSpanGame ctx={ctx} />
-    case 'change-detection':
-      return (ctx: Parameters<typeof ChangeDetectionGame>[0]['ctx']) => <ChangeDetectionGame ctx={ctx} />
-    case 'progressive-matrices':
-      return (ctx: Parameters<typeof ProgressiveMatricesGame>[0]['ctx']) => <ProgressiveMatricesGame ctx={ctx} />
-    default:
-      return null
-  }
+  const Game = GAME_COMPONENTS[exerciseId]
+  if (Game === undefined) return null
+  const auditory = exerciseId === 'dual-n-back-auditory'
+  return (ctx: ActiveGameContext) => (
+    <Suspense
+      fallback={<p className={styles.runLoading}>در حال آماده‌سازی بازی…</p>}
+    >
+      <Game ctx={ctx} auditory={auditory} />
+    </Suspense>
+  )
 }
 
 /**
@@ -178,6 +131,12 @@ interface RunNextState {
 
 function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
   const navigate = useNavigate()
+
+  // پیش‌واکشی کامپوننت بازی حین انتخاب سطح/دستورالعمل — سوسپنس تقریباً
+  // هرگز دیده نمی‌شود و فقط یک میکرو-chunk (~۳-۶KB) اضافه بار می‌شود
+  useEffect(() => {
+    void GAME_LOADERS[exerciseId]?.()
+  }, [exerciseId])
   const [, setSearchParams] = useSearchParams()
   const registered = registry.get(exerciseId)
 
@@ -310,14 +269,20 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
     [appData, runDate],
   )
 
-  /** ترک زنجیره (خروج/توقف) — اجرای باز را قطع‌شده نهایی می‌کند و به برنامه برمی‌گردد */
+  /** ترک زنجیره (خروج/توقف) — اجرای باز را قطع‌شده نهایی می‌کند و به برنامه برمی‌گردد.
+   * بازخوانی تازه از DB: مسیر async پایان جلسه ممکن است همین لحظه وضعیت را
+   * completed کرده باشد و runRef هنوز کهنه باشد (نرخ نوشتن رقابتی) */
   const leaveRun = useCallback(() => {
-    const current = runRef.current
-    if (current && current.status === 'in_progress' && appData) {
-      void appData.runs.update(finalizeRun(current, 'aborted', Date.now()))
+    if (runDate && appData) {
+      void appData.runs.listByDate(runDate).then((runs) => {
+        const fresh = findInProgressRun(runs)
+        if (fresh !== null) {
+          void appData.runs.update(finalizeRun(fresh, 'aborted', Date.now()))
+        }
+      })
     }
     void navigate('/program')
-  }, [appData, navigate])
+  }, [appData, navigate, runDate])
 
   const goNextExercise = useCallback(
     (item: TrainingPlanItem) => {
@@ -376,7 +341,28 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
             سطح پیشنهادی سیستم به‌صورت خودکار انتخاب شده است.
             {adaptive ? ` ${describeStreakFa(adaptive)}${adaptive.todayQualified ? ' · امروز انجام شد ✓' : ''}` : ''}
           </p>
-          <div className={styles.levelGrid} role="radiogroup" aria-label="سطح دشواری">
+          <div
+            className={styles.levelGrid}
+            role="radiogroup"
+            aria-label="سطح دشواری"
+            onKeyDown={(e) => {
+              // قرارداد کیبورد رادیو: کلیدهای جهت بین گزینه‌ها می‌چرخند
+              // (در RTL، چپ/راست هم‌معنای بصری خودشان)
+              const levels = registered?.meta.difficultyLevels ?? []
+              if (levels.length === 0) return
+              const currentIndex = Math.max(0, levels.indexOf(difficulty))
+              let next: number | null = null
+              if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                next = levels[(currentIndex + 1) % levels.length] as number
+              } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                next = levels[(currentIndex - 1 + levels.length) % levels.length] as number
+              }
+              if (next !== null) {
+                e.preventDefault()
+                setDifficulty(next)
+              }
+            }}
+          >
             {registered.meta.difficultyLevels.map((level) => (
               <button
                 type="button"

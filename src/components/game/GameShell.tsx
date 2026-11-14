@@ -94,27 +94,65 @@ export function GameShell({
   }, [manager, rerender])
 
   // شروع خودکار جلسه (IDLE → READY)
+  const [fatalError, setFatalError] = useState<string | null>(null)
   useEffect(() => {
     // در React StrictMode دولوپمنت این افکت دوبار اجرا می‌شود؛
-    // شروع دومِ همان manager باید بی‌اثر بماند نه unhandled rejection بسازد
+    // شروع دومِ همان manager باید بی‌اثر بماند نه unhandled rejection بسازد.
+    // خطای ذخیره‌سازی (مثلاً سهمیهٔ پر) → پیام فارسی به‌جای صفحهٔ خالی IDLE
     if (manager.getSnapshot().machine.phase === 'IDLE') {
-      void manager.start()
+      manager.start().catch(() => {
+        setFatalError('شروع جلسه ناموفق بود — ذخیره‌سازی محلی در دسترس نیست.')
+      })
     }
   }, [manager])
 
   const snapshot = manager.getSnapshot()
   const phase = snapshot.machine.phase
 
-  // توقف خودکار وقتی صفحه مخفی می‌شود — پاسخ‌های پس‌زمینه نامعتبرند
+  // توقف خودکار وقتی صفحه مخفی می‌شود — پاسخ‌های پس‌زمینه نامعتبرند.
+  // شمارش معکوس هم باید بایستد وگرنه جلسه در پس‌زمینه ACTIVE می‌شود و
+  // تایمرهای مهارشدهٔ مرورگر مراحل را بی‌نمایش ازقلم‌انداخته ثبت می‌کنند
   useEffect(() => {
     const onVisibilityChange = () => {
-      if (document.hidden && manager.getSnapshot().machine.phase === 'ACTIVE') {
+      const currentPhase = manager.getSnapshot().machine.phase
+      if (document.hidden && (currentPhase === 'ACTIVE' || currentPhase === 'COUNTDOWN')) {
         manager.pause()
       }
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => document.removeEventListener('visibilitychange', onVisibilityChange)
   }, [manager])
+
+  // خروج مسیر/Back وسط جلسه نباید رکورد in_progress یتیم بسازد — در
+  // unmount اگر جلسه هنوز باز است قطعش کن (idempotent: فازهای بسته
+  // dispatch ندارند). نکتهٔ StrictMode: در dev افکت‌ها setup→cleanup→setup
+  // دوباره اجرا می‌شوند و cleanup مصنوعی می‌تواند فازِ READY را ببیند؛ پس
+  // abort به تعویق می‌افتد و setup بعدی (بازinvoke مصنوعی) آن را لغو می‌کند —
+  // فقط unmount واقعی (که setup بعدی ندارد) قطع می‌زند
+  const pendingOrphanAbortRef = useRef(false)
+  useEffect(
+    () => {
+      // بازinvoke مصنوعی StrictMode — abort معلقِ cleanup قبلی لغو می‌شود
+      pendingOrphanAbortRef.current = false
+      return () => {
+        pendingOrphanAbortRef.current = true
+        window.setTimeout(() => {
+          if (!pendingOrphanAbortRef.current) return
+          pendingOrphanAbortRef.current = false
+          const currentPhase = manager.getSnapshot().machine.phase
+          if (
+            currentPhase === 'READY' ||
+            currentPhase === 'COUNTDOWN' ||
+            currentPhase === 'ACTIVE' ||
+            currentPhase === 'PAUSED'
+          ) {
+            void manager.abort().catch(() => undefined)
+          }
+        }, 0)
+      }
+    },
+    [manager],
+  )
 
   const [countdown, setCountdown] = useState<number | null>(null)
   // خروج دوتایی-تأیید: اولین ضربه حالت تأیید می‌سازد، دومی جلسه را قطع می‌کند
@@ -135,8 +173,22 @@ export function GameShell({
       return
     }
     setConfirmExit(false)
-    void manager.abort()
+    void manager.abort().catch(() => undefined)
   }, [confirmExit, manager])
+
+  // ریست حالت تأیید خروج با بازگشت به اجرا — دکمهٔ خروج نباید تا ۲٫۵ث
+  // حالت «قطع جلسه؟» چسبیده بماند
+  useEffect(() => {
+    if (phase === 'ACTIVE') setConfirmExit(false)
+  }, [phase])
+
+  // پاک‌سازی تایمر حالت تأیید خروج در unmount
+  useEffect(
+    () => () => {
+      if (confirmExitTimer.current !== null) window.clearTimeout(confirmExitTimer.current)
+    },
+    [],
+  )
 
   // پس از تکمیل جلسه، وضعیت ارتقای سطح را از تاریخچه محاسبه کن
   useEffect(() => {
@@ -228,28 +280,31 @@ export function GameShell({
         <h1 className={styles.headerTitle}>{registered.meta.nameFa}</h1>
         {phase === 'ACTIVE' || phase === 'PAUSED' || phase === 'COUNTDOWN' ? (
           <div className={styles.headerActions}>
-            {/* نوار پیشرفت جلسه — نمود پیشروی به رنگ اکسنت حوزه */}
+            {/* نوار پیشرفت جلسه — نمود پیشروی به رنگ اکسنت حوزه؛ مقدارهای
+                aria برای صفحه‌خوان‌ها (قبلاً نوار نامعین اعلام می‌شد) */}
             <span
               className={styles.progressBar}
               data-testid="session-progress-bar"
               role="progressbar"
               aria-label={`مرحلهٔ ${toFaDigits(snapshot.answeredTrials)} از ${toFaDigits(registered.meta.plannedTrials ?? 0)}`}
+              aria-valuemin={0}
+              aria-valuemax={registered.meta.plannedTrials ?? 0}
+              aria-valuenow={snapshot.answeredTrials}
             >
               <span
                 className={styles.progressBarFill}
                 style={{
-                  width: `${
+                  transform: `scaleX(${
                     registered.meta.plannedTrials && registered.meta.plannedTrials > 0
-                      ? Math.min(100, Math.round((snapshot.answeredTrials / registered.meta.plannedTrials) * 100))
+                      ? Math.min(1, snapshot.answeredTrials / registered.meta.plannedTrials)
                       : 0
-                  }%`,
+                  })`,
                 }}
               />
             </span>
-            <span
-              className={styles.progress}
-              aria-label={`مرحلهٔ ${toFaDigits(snapshot.answeredTrials)} از ${toFaDigits(registered.meta.plannedTrials ?? 0)}`}
-            >
+            {/* متن مرحله برای بینندگان — بدون aria-label تکراری (روی عنصر
+                بدون نقش معنا ندارد و صفحه‌خوان دوبار می‌خواند) */}
+            <span className={styles.progress}>
               مرحله {toFaDigits(snapshot.answeredTrials)} / {toFaDigits(registered.meta.plannedTrials ?? 0)}
             </span>
             <button
@@ -264,6 +319,20 @@ export function GameShell({
         ) : null}
       </header>
 
+      {fatalError !== null && phase === 'IDLE' ? (
+        <div className={styles.stage}>
+          <div className={styles.card}>
+            <h2>خطای ذخیره‌سازی</h2>
+            <p className={styles.hint}>{fatalError}</p>
+            <div className={styles.buttonRow} style={{ marginTop: 'var(--space-4)' }}>
+              <button type="button" className={styles.primaryButton} onClick={onExit}>
+                {APP_TEXTS_FA.home}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {phase === 'READY' ? (
         <InstructionsScreen
           registered={registered}
@@ -277,7 +346,7 @@ export function GameShell({
           onExit={() => {
             // خروج پیش از شروع: رکورد in_progressِ ساخته‌شده در start()
             // باید همین‌جا aborted شود، نه این که تا بوت بعدی زنده بماند
-            void manager.abort()
+            void manager.abort().catch(() => undefined)
             onExit()
           }}
         />
@@ -293,12 +362,13 @@ export function GameShell({
       {phase === 'ACTIVE' && ctx ? <div className={styles.stage}>{renderTrial(ctx)}</div> : null}
 
       {phase === 'PAUSED' ? (
-        <div className={styles.pauseOverlay} role="dialog" aria-label={APP_TEXTS_FA.sessionPaused}>
+        <div className={styles.pauseOverlay} role="dialog" aria-modal="true" aria-label={APP_TEXTS_FA.sessionPaused}>
           <h2>{APP_TEXTS_FA.sessionPaused}</h2>
           <p className={styles.hint}>
             با مخفی‌شدن صفحه، تمرین متوقف شد تا زمان اندازه‌گیری‌شده سالم بماند.
           </p>
-          <button type="button" className={styles.primaryButton} onClick={() => manager.resume()}>
+          {/* فوکوس خودکار: صحنهٔ بازی unmount شده و فوکوس به body افتاده بود */}
+          <button type="button" className={styles.primaryButton} autoFocus onClick={() => manager.resume()}>
             {APP_TEXTS_FA.resume}
           </button>
           <button type="button" className={styles.secondaryButton} onClick={requestExit}>
@@ -497,8 +567,9 @@ function CountdownRing({ seconds, total }: { seconds: number; total: number }) {
           strokeDashoffset={CIRCUMFERENCE * (1 - fraction)}
         />
       </svg>
-      {/* متن عدد همان متن قبلی است — تست‌ها روی آن سوارند */}
-      <div key={seconds} className={styles.countdownNumber}>
+      {/* متن عدد همان متن قبلی است — تست‌ها روی آن سوارند؛ role/aria-live
+          برای صفحه‌خوان‌ها (قبلاً شمارش کاملاً خاموش بود) */}
+      <div key={seconds} className={styles.countdownNumber} role="timer" aria-live="polite">
         {toFaDigits(seconds)}
       </div>
     </div>
