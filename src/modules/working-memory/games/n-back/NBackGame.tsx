@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { NBackTrial } from './engine'
@@ -12,24 +13,19 @@ import styles from './n-back.module.css'
  * جریان پیوسته: حرف برای stimulusMs دیده می‌شود، سپس فاصله خالی؛
  * اگر حرف فعلی با حرف n مرحله قبل یکی بود کاربر «تطبیق» را می‌زند،
  * وگرنه هیچ نمی‌کند. با انقضای مهلت، مرحله بدون پاسخ ثبت و بعدی
- * می‌آید. منطق در engine است.
+ * می‌آید. منطق در engine است. سه گارد الزامی + re-arm مهلت در
+ * useTrialGuards است.
  */
 export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
   const plannedTrials = NBACK_TOTAL_TRIALS
   const trial = ctx.trial as NBackTrial
   const [stimulusVisible, setStimulusVisible] = useState(true)
-  const deadlineRef = useRef<number | null>(null)
-  const timersRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // با هر حرف جدید ریست می‌شود — در بازنصبِ پس از مکث اگر نقطهٔ پنهان‌شدن
   // گذشته باشد (remaining از ISI کمتر) حرف از اول پنهان می‌ماند، نه نمایش
   // دوبارهٔ کامل همراه با مهلتِ در حال انقضا
   useEffect(() => {
-    submittedRef.current = false
-    for (const t of timersRef.current) window.clearTimeout(t)
-    timersRef.current = []
-
     const remaining = ctx.timeRemainingMs()
     const pastHide =
       remaining !== null && trial.responseWindowMs !== null
@@ -38,54 +34,19 @@ export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
     setStimulusVisible(!pastHide)
     if (!pastHide) {
       // پنهان‌شدن حرف بعد از stimulusMs (فاصله خالی تا حرف بعد)
-      timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+      guards.setTrackedTimeout(() => setStimulusVisible(false), trial.stimulusMs)
     }
 
     // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به حرف بعد
     if (remaining !== null) {
-      deadlineRef.current = window.setTimeout(() => {
-        if (submittedRef.current) return
-        submittedRef.current = true
-        void ctx.submit(null).then((result) => {
-          if (!result.accepted) {
-            // persist_failed: مدیر rollback کرده — قفل باید باز بماند تا
-            // تلاش مجدد ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
-            submittedRef.current = false
-            return
-          }
-          if (!result.sessionCompleted) {
-            try {
-              ctx.advance()
-            } catch {
-              // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-            }
-          }
-        })
-      }, remaining)
-    }
-    return () => {
-      for (const t of timersRef.current) window.clearTimeout(t)
-      if (deadlineRef.current !== null) window.clearTimeout(deadlineRef.current)
+      guards.armDeadline(() => null, remaining)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
   const respond = () => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit('match').then((result) => {
-      if (!result.accepted) {
-        submittedRef.current = false
-        return
-      }
-      if (!result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-        }
-      }
-    })
+    if (ctx.paused) return
+    void guards.submitOnce('match')
   }
 
   return (
@@ -108,7 +69,7 @@ export function NBackGame({ ctx }: { ctx: ActiveGameContext }) {
       </p>
       <button
         type="button"
-        className={`${styles.matchButton} ${submittedRef.current ? styles.matchClaimed : ''}`}
+        className={`${styles.matchButton} ${guards.isSubmitted() ? styles.matchClaimed : ''}`}
         onClick={respond}
         data-testid="nback-match"
       >

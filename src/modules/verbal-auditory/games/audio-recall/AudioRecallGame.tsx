@@ -29,6 +29,13 @@ export function AudioRecallGame({ ctx }: { ctx: ActiveGameContext }) {
   const [selected, setSelected] = useState<readonly string[]>([])
   const guards = useTrialGuards(ctx, trial.trialIndex)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن جدول بازیابی سنجیده
+  // شود نه از شروع ارائهٔ شنیداری (§۲-۲ ممیزی). idempotent؛ مسیر بازنصب مکث هم پوشش دارد.
+  useEffect(() => {
+    if (phase === 'recall') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   // کنترلر گفتار یک‌بار ساخته می‌شود؛ در unmount لغو می‌شود
   const speechRef = useRef<ReturnType<typeof createSpeechController> | null>(null)
   if (speechRef.current === null) {

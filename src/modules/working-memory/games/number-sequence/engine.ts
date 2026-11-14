@@ -46,7 +46,7 @@ export type NumberSequenceAnswer = readonly number[]
 
 export const NUMBER_SEQUENCE_ID = 'number-sequence'
 export const NUMBER_SEQUENCE_VERSION = '1.0.0'
-export const NUMBER_SEQUENCE_CONTENT_VERSION = '1'
+export const NUMBER_SEQUENCE_CONTENT_VERSION = '2' // v2: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع نمایش ارقام (§۲-۲ ممیزی)
 const TOTAL_TRIALS = 10
 
 /** تنظیمات سطح دشواری — اعداد طراحی‌اند، نه هنجار بالینی */

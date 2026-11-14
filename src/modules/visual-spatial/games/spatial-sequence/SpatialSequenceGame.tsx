@@ -24,6 +24,13 @@ export function SpatialSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState(false)
   const guards = useTrialGuards(ctx, trial.trialIndex)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن بازتولید توالی
+  // سنجیده شود نه از شروع نمایش خانه‌ها (§۲-۲ ممیزی). idempotent؛ مسیر بازنصب مکث هم پوشش دارد.
+  useEffect(() => {
+    if (phase === 'recall') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   // ریست فازها با شروع هر مرحله جدید + زمان‌بندی نمایش تک‌به‌تک:
   // هر خانه به‌مدت displayMsPerCell روشن است و gapMs فاصله تا بعدی.
   // بازنصبِ پس از مکث: ارائه از زمان سپری‌شدهٔ جلسه ادامه می‌یابد نه از

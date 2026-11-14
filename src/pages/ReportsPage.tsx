@@ -18,14 +18,12 @@ import {
   validateBackup,
 } from '../data/export-import'
 import { getAppData, subscribeToAppDataChanges } from '../data/app-data'
-import { createAppRegistry } from '../modules'
+import { catalogById, listCatalog } from '../modules/catalog'
 import { DOMAIN_LABELS_FA } from '../i18n/fa'
 import { APP_TEXTS_FA } from '../i18n/fa'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { formatDate, formatDateTime, formatDuration, toFaDigits } from '../utils/format'
 import styles from './reports.module.css'
-
-const registry = createAppRegistry()
 
 interface ReportsData {
   totals: DashboardTotals
@@ -58,7 +56,7 @@ export function ReportsPage() {
         const dashboard = await loadDashboard(allSessions)
         const progress = await loadProgressForExercises(
           allSessions,
-          registry.list().map((e) => e.meta.id),
+          listCatalog().map((m) => m.id),
         )
         return { ...dashboard, progress, runs, allSessions }
       })
@@ -195,7 +193,7 @@ export function ReportsPage() {
                 <div className={styles.cardLabel}>حوزه‌های فعال</div>
               </div>
               <div className={styles.card}>
-                <div className={styles.cardValue}>{toFaDigits(registry.list().length)}</div>
+                <div className={styles.cardValue}>{toFaDigits(listCatalog().length)}</div>
                 <div className={styles.cardLabel}>بازی‌های موجود</div>
               </div>
             </section>
@@ -203,7 +201,7 @@ export function ReportsPage() {
             <section aria-label="روند هر تمرین">
               <h2 className={styles.sectionTitle}>روند تمرین‌ها</h2>
               {data.byExercise.map((progress) => {
-                const meta = registry.get(progress.exerciseId)?.meta
+                const meta = catalogById(progress.exerciseId)
                 const adaptive = data.progress[progress.exerciseId]
                 return (
                   <div
@@ -266,7 +264,7 @@ export function ReportsPage() {
               <h2 className={styles.sectionTitle}>جلسات اخیر</h2>
               <ul className={styles.sessionList}>
                 {data.recent.map((session) => {
-                  const meta = registry.get(session.exerciseId)?.meta
+                  const meta = catalogById(session.exerciseId)
                   return (
                     <li className={styles.sessionItem} key={session.id}>
                       <span className={styles.sessionName}>{meta?.nameFa ?? session.exerciseId}</span>

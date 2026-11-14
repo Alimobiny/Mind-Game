@@ -1,7 +1,7 @@
 import type { CognitiveDomain } from '../types'
 import { COGNITIVE_DOMAINS } from '../types'
-import type { ExerciseType } from '../types'
-import { isCognitiveDomain, isExerciseType } from '../types'
+import type { ExerciseFamily, ExerciseType } from '../types'
+import { isCognitiveDomain, isExerciseFamily, isExerciseType } from '../types'
 import type { ExerciseConfig, ExerciseDefinition, ExerciseState, ExerciseTrial } from '../types'
 
 /**
@@ -19,6 +19,12 @@ export interface ExerciseMeta {
   readonly domain: CognitiveDomain
   /** نوع تمرین — جنس تکلیف (عددی/کلامی/دیداری/فضایی/واکنشی/منطقی) */
   readonly exerciseType: ExerciseType
+  /** خانوادهٔ پارادایمی — مکتب پژوهشی اقتباس‌شده (نمای «خانواده» + جست‌وجو) */
+  readonly family: ExerciseFamily
+  /** نام انگلیسی/علمی پارادایم — برای فهرست مرجع و جست‌وجوی لاتین */
+  readonly nameEn: string
+  /** کلیدواژه‌های فارسی برای جست‌وجو (مترادف‌هایی که در نام/شرح نیستند) */
+  readonly keywordsFa?: readonly string[]
   /** اثرهای شناختی این تمرین؛ عنصر اول = اثر اصلی (مبنای گروه‌بندی) */
   readonly effects: readonly CognitiveDomain[]
   readonly version: string
@@ -50,6 +56,12 @@ export class GameRegistry {
     }
     if (!isExerciseType(entry.meta.exerciseType)) {
       throw new Error(`نوع تمرین نامعتبر برای ${entry.definition.id}: ${entry.meta.exerciseType}`)
+    }
+    if (!isExerciseFamily(entry.meta.family)) {
+      throw new Error(`خانوادهٔ پارادایمی نامعتبر برای ${entry.definition.id}: ${entry.meta.family}`)
+    }
+    if (entry.meta.nameEn.trim().length === 0) {
+      throw new Error(`نام انگلیسی ${entry.definition.id} خالی است`)
     }
     if (
       entry.meta.effects.length === 0 ||

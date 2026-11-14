@@ -1,18 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «ان-بک دوگانه» برای ثبت مرکزی — هماهنگ‌کننده این شیء را
- * در Registry با id/domain/version/contentVersion از engine ترکیب می‌کند.
+ * متادیتای کامل «ان-بک دوگانه» — منبع یگانه برای کاتالوگ (catalog.ts)،
+ * رجیستری و فهرست مرجع. id/version/contentVersion باید با engine یکی
+ * بماند — نگهبان: registry-invariants.test.ts.
  */
-export const DUAL_NBACK_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const DUAL_NBACK_META_FA: ExerciseMeta = {
+  id: 'dual-n-back',
   nameFa: 'ان-بک دوگانه',
   descriptionFa:
     'هم‌زمان حرف و مکان دنبال کن: اگر هر کدام با N مرحله قبل یکی بود، دکمهٔ همان جریان را بزن.',
+  domain: 'working-memory',
   exerciseType: 'visual',
+  family: 'dual-n-back',
+  nameEn: 'Dual N-Back',
+  keywordsFa: ['انبک دوگانه', 'dual n back', 'دو جریان'],
   effects: ['working-memory', 'attention-control'],
+  version: '1.0.0',
+  contentVersion: '2',
   instructionsFa: [
     'در هر مرحله هم‌زمان یک حرف بالای صفحه و یک خانهٔ روشن در شبکهٔ ۳×۳ دیده می‌شود.',
     'اگر حرف فعلی با حرفِ N مرحله قبل یکی بود، «تطبیق حرف» را بزن.',

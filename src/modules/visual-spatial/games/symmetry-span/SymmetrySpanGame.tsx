@@ -51,6 +51,14 @@ export function SymmetrySpanGame({ ctx }: { ctx: ActiveGameContext }) {
   const rtsRef = useRef<(number | null)[]>([])
   const phaseStartRef = useRef(0)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن بازیابی خانه‌ها
+  // سنجیده شود نه از شروع زوج‌های تقارن (§۲-۲ ممیزی؛ قضاوت‌ها RT خود را
+  // جدا دارند). idempotent؛ مسیر بازنصب مکث هم پوشش دارد.
+  useEffect(() => {
+    if (phase.kind === 'recall') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase.kind])
+
   const clearPhaseTimers = () => {
     for (const t of timersRef.current) window.clearTimeout(t)
     timersRef.current = []

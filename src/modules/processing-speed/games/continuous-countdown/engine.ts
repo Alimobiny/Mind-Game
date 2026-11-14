@@ -62,7 +62,7 @@ export type ContinuousCountdownAnswer = number
 
 export const CONTINUOUS_COUNTDOWN_ID = 'continuous-countdown'
 export const CONTINUOUS_COUNTDOWN_VERSION = '1.0.0'
-export const CONTINUOUS_COUNTDOWN_CONTENT_VERSION = '1'
+export const CONTINUOUS_COUNTDOWN_CONTENT_VERSION = '2' // v2: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع نمایش دنباله (§۲-۲ ممیزی)
 const TOTAL_TRIALS = 10
 
 /**

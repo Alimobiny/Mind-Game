@@ -31,6 +31,13 @@ export function AttentionalBlinkGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(null)
   const guards = useTrialGuards(ctx, trial.trialIndex)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن انتخاب اهداف سنجیده
+  // شود نه از شروع جریان RSVP (§۲-۲ ممیزی). idempotent؛ مسیر بازنصب مکث هم پوشش دارد.
+  useEffect(() => {
+    if (phase === 'recall') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   // ریست با شروع هر جریان جدید + زمان‌بندی RSVP: آیتم i در [FIXATION + i×itemMs)
   useEffect(() => {
     // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰)

@@ -18,6 +18,18 @@ export interface TrialEventRecord extends RecordedTrial {
    * غایب = تجربه نکرده (پیش‌فرض قدیمی‌ داده‌ها).
    */
   readonly contaminated?: boolean
+  /**
+   * پاسخ پس از حداقل یک شکست ذخیره‌سازی (persist_failed → rollback) با
+   * تلاش مجدد ثبت شده — RT ممکن است متورم باشد؛ برای تحلیل قابل فیلتر.
+   * غایب = ثبت بار اول (پیش‌فرض قدیمی‌ داده‌ها).
+   */
+  readonly retryAfterPersistFailure?: boolean
+}
+
+/** پرچم‌های رویداد خام — فقط کلیدهای true نوشته می‌شوند (داده‌های قدیمی بدون پرچم) */
+export interface TrialEventFlags {
+  readonly contaminated?: boolean
+  readonly retryAfterPersistFailure?: boolean
 }
 
 export function toTrialEventRecord(
@@ -26,7 +38,7 @@ export function toTrialEventRecord(
   exerciseVersion: string,
   trial: RecordedTrial,
   createdAt: number,
-  contaminated = false,
+  flags: TrialEventFlags = {},
 ): TrialEventRecord {
   return {
     ...trial,
@@ -35,7 +47,8 @@ export function toTrialEventRecord(
     difficulty,
     exerciseVersion,
     createdAt,
-    ...(contaminated ? { contaminated: true } : {}),
+    ...(flags.contaminated ? { contaminated: true } : {}),
+    ...(flags.retryAfterPersistFailure ? { retryAfterPersistFailure: true } : {}),
   }
 }
 

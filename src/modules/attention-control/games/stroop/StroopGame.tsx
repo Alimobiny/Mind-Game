@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import {
   STROOP_COLORS,
@@ -30,76 +31,47 @@ interface FlashState {
  * نمایش داده می‌شود؛ کاربر رنگ جوهر را از چهار دکمه انتخاب می‌کند. پس از
  * پاسخ، فلش کوتاه تمام-صحنه (سبز/قرمز) نتیجه را نشان می‌دهد و سپس مرحلهٔ
  * بعد می‌آید (e2e با waitProgressAdvance همگام است). با انقضای مهلت، مرحله
- * بدون پاسخ ثبت و بعدی می‌آید.
+ * بدون پاسخ ثبت و بعدی می‌آید. سه گارد الزامی + re-arm مهلت در useTrialGuards است.
  */
 export function StroopGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as StroopTrial
-  const deadlineRef = useRef<number | null>(null)
-  const flashTimerRef = useRef<number | null>(null)
-  const submittedRef = useRef(false)
   const [flash, setFlash] = useState<FlashState | null>(null)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // با هر مرحله جدید ریست می‌شود
   useEffect(() => {
-    submittedRef.current = false
     setFlash(null)
 
     // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به مرحله بعد
     const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
-      deadlineRef.current = window.setTimeout(() => {
-        if (submittedRef.current) return
-        submittedRef.current = true
-        void ctx.submit(null).then((result) => {
-          if (!result.accepted) {
-            // persist_failed: مدیر rollback کرده — قفل باز بماند تا تلاش
-            // مجدد ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
-            submittedRef.current = false
-            return
-          }
-          if (!result.sessionCompleted) {
-            try {
-              ctx.advance()
-            } catch {
-              // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-            }
-          }
-        })
-      }, remaining)
-    }
-    return () => {
-      if (deadlineRef.current !== null) window.clearTimeout(deadlineRef.current)
-      if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current)
+      guards.armDeadline(() => null, remaining)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
   /** فلش نتیجه و سپس پیشروی — e2e با waitProgressAdvance صبر می‌کند */
-  const flashThenAdvance = (correct: boolean, ink: StroopColorKey, onAdvance: () => void) => {
+  const flashThenAdvance = (correct: boolean, ink: StroopColorKey) => {
     setFlash({ correct, ink })
-    flashTimerRef.current = window.setTimeout(() => {
+    guards.setTrackedTimeout(() => {
       setFlash(null)
-      onAdvance()
+      try {
+        ctx.advance()
+      } catch {
+        // جلسه هم‌زمان قطع/تکمیل شده
+      }
     }, 650)
   }
 
   const answer = (color: StroopColorKey) => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit(color).then((result) => {
-      if (!result.accepted) {
-        // persist_failed: مدیر rollback کرده — قفل باز بماند
-        submittedRef.current = false
-        return
-      }
-      if (result.sessionCompleted) return
-      flashThenAdvance(result.record.correct, trial.ink, () => {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده
-        }
-      })
+    if (ctx.paused) return
+    void guards.submitOnce(color, {
+      onAccepted: (result) => {
+        if (result.sessionCompleted) return
+        flashThenAdvance(result.record.correct, trial.ink)
+      },
+      // پیشروی با تایمر فلش — نه بلافاصله پس از پذیرش
+      autoAdvance: false,
     })
   }
 

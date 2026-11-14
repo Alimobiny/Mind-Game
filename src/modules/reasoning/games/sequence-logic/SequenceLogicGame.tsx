@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { SequenceLogicTrial } from './engine'
@@ -11,19 +12,13 @@ import styles from './sequence-logic.module.css'
  * نمایش توالی با ارقام فارسی (اعداد چپ‌به‌راست)، انتخاب جمله بعدی از
  * شبکه ۲×۲ گزینه؛ پس از هر پاسخ بلافاصله مرحله بعد (مثل Calculation).
  * منطق کاملاً در engine است؛ این کامپوننت فقط رندر و ورودی.
+ * سه گارد الزامی در useTrialGuards است.
  */
 export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as SequenceLogicTrial
-  // قفل موقت تا اتمام ثبت پاسخ — جلوگیری از دوبار‌کلیک روی گزینه‌ها
-  const [locked, setLocked] = useState(false)
   const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
   const badgeTimerRef = useRef<number | null>(null)
-
-  // با شروع هر مرحله جدید قفل برداشته می‌شود — نشان دست نمی‌خورد: پاک‌شدن
-  // نشان در همین افکت آن را ~۱ فریم می‌کشت و کاربر هیچ بازخوردی نمی‌دید
-  useEffect(() => {
-    setLocked(false)
-  }, [trial.trialIndex])
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // پاک‌سازی تایمر نشان شناور فقط در unmount
   useEffect(
@@ -33,25 +28,15 @@ export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
     [],
   )
 
-  const choose = async (value: number) => {
-    if (locked) return
-    setLocked(true)
-    const result = await ctx.submit(value)
-    if (result.accepted) {
-      // نشان شناور نتیجه — پیشروی همان لحظه است (رفتار زمانی دست‌نخورده)
-      setBadge(result.record.correct ? 'correct' : 'wrong')
-      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
-      badgeTimerRef.current = window.setTimeout(() => setBadge(null), 900)
-    }
-    if (result.accepted && !result.sessionCompleted) {
-      try {
-        ctx.advance()
-      } catch {
-        // جلسه هم‌زمان قطع/تکمیل شده
-      }
-    } else {
-      setLocked(false)
-    }
+  const choose = (value: number) => {
+    void guards.submitOnce(value, {
+      onAccepted: (result) => {
+        // نشان شناور نتیجه — پیشروی همان لحظه است (رفتار زمانی دست‌نخورده)
+        setBadge(result.record.correct ? 'correct' : 'wrong')
+        if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
+        badgeTimerRef.current = window.setTimeout(() => setBadge(null), 900)
+      },
+    })
   }
 
   return (
@@ -95,8 +80,7 @@ export function SequenceLogicGame({ ctx }: { ctx: ActiveGameContext }) {
             className={styles.optionButton}
             data-testid="seq-option"
             data-value={option}
-            onClick={() => void choose(option)}
-            disabled={locked}
+            onClick={() => choose(option)}
           >
             {toFaDigits(option)}
           </button>

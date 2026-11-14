@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
@@ -13,23 +14,20 @@ import styles from './calculation-20.module.css'
  * زمانی برای سؤال منفرد؛ پس از هر پاسخ بلافاصله سؤال بعدی می‌آید و
  * نتیجهٔ پاسخ پیشین به‌صورت نشان شناور (درست ✓ / غلط ✗) دیده می‌شود —
  * بدون تأخیر در پیشروی تا رفتار زمانی دست‌نخورده بماند.
+ * سه گارد الزامی (قفل/advance امن/تایمرهای ردیابی‌شده) در useTrialGuards است.
  */
 export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as Calculation20Trial
   const [entry, setEntry] = useState('')
   const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
   const badgeTimerRef = useRef<number | null>(null)
-  // قفل پاسخِ ثبت‌شده — تپ دومی روی «تأیید» نباید همان پاسخ را
-  // به سؤال بعدی هم بفرستد (پنجره race بین advance و پاک‌شدن entry)
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   useEffect(() => {
-    submittedRef.current = false
     setEntry('')
     // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۱۰۰)
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
       try {
         ctx.advance()
       } catch {
@@ -62,23 +60,12 @@ export function Calculation20Game({ ctx }: { ctx: ActiveGameContext }) {
     badgeTimerRef.current = window.setTimeout(() => setBadge(null), 900)
   }
 
-  const submit = async () => {
-    if (submittedRef.current || entry.length === 0) return
-    submittedRef.current = true
+  const submit = () => {
+    if (guards.isSubmitted() || entry.length === 0) return
     const value = Number.parseInt(entry, 10)
-    const result = await ctx.submit(value)
-    if (result.accepted) {
-      flashBadge(result.record.correct)
-    }
-    if (result.accepted && !result.sessionCompleted) {
-      try {
-        ctx.advance()
-      } catch {
-        // جلسه هم‌زمان متوقف/قطع/تکمیل شده
-      }
-    } else if (!result.accepted) {
-      submittedRef.current = false
-    }
+    void guards.submitOnce(value, {
+      onAccepted: (result) => flashBadge(result.record.correct),
+    })
   }
 
   const q = trial.question

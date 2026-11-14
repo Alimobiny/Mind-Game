@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
@@ -25,25 +26,26 @@ export function ContinuousCountdownGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(null)
   const trialKey = `${trial.trialIndex}`
   const timeoutsRef = useRef<number[]>([])
-  // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
-  // (advance روی مرحله پاسخ‌داده‌شده استثنای مهارنشده می‌دهد)
-  const submittedRef = useRef(false)
-  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
-  const currentTrialRef = useRef(trial.trialIndex)
-  currentTrialRef.current = trial.trialIndex
   // باقیمانده هرگز از عدد شروع بزرگ‌تر نیست → سقف ارقام ورودی
   const maxEntryDigits = String(trial.startNumber).length
+
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن ورودی سنجیده شود
+  // نه از شروع نمایش دنبالهٔ کم‌شونده (§۲-۲ ممیزی). idempotent.
+  useEffect(() => {
+    if (phase === 'input') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
 
   const clearTimers = useCallback(() => {
     for (const t of timeoutsRef.current) window.clearTimeout(t)
     timeoutsRef.current = []
   }, [])
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // ریست فازها با شروع هر مرحله جدید + زمان‌بندی نمایش:
   // عدد شروع به‌مدت startDisplayMs، سپس هر عدد کم‌شونده به‌مدت
   // stepDisplayMs با فاصلهٔ gapMs؛ پایان نمایش → فاز ورود پاسخ
   useEffect(() => {
-    submittedRef.current = false
     setPhase('showing')
     setDisplay({ kind: 'start', value: trial.startNumber })
     setEntry('')
@@ -53,7 +55,6 @@ export function ContinuousCountdownGame({ ctx }: { ctx: ActiveGameContext }) {
     // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
       try {
         ctx.advance()
       } catch {
@@ -88,32 +89,28 @@ export function ContinuousCountdownGame({ ctx }: { ctx: ActiveGameContext }) {
     setEntry((current) => (current.length >= maxEntryDigits ? current : current + key))
   }
 
-  const submit = async () => {
-    if (submittedRef.current || phase !== 'input' || entry.length === 0) return
-    submittedRef.current = true
-    const result = await ctx.submit(Number.parseInt(entry, 10))
-    if (!result.accepted) {
-      submittedRef.current = false
-      return
-    }
-    // آخرین پاسخ جلسه را کامل کرد → advanceی برای مرحله بعدی وجود ندارد
-    // (advance روی جلسه تمام‌شده خطای «در فاز COMPLETED مجاز نیست» می‌دهد)
-    if (result.sessionCompleted) return
-    setWasCorrect(result.record.correct)
-    setPhase('feedback')
-    // تایمر رفتن به مرحلهٔ بعد هم داخل timeoutsRef ثبت می‌شود تا با
-    // unmount یا شروع مرحلهٔ جدید پاک شود — به‌علاوهٔ گارد کهنگی (ریمانتِ
-    // پس از مکث خودش پیشروی کرده) و مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
-    timeoutsRef.current.push(
-      window.setTimeout(() => {
-        if (currentTrialRef.current !== trial.trialIndex) return
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده
-        }
-      }, 1500),
-    )
+  const submit = () => {
+    if (guards.isSubmitted() || phase !== 'input' || entry.length === 0) return
+    void guards.submitOnce(Number.parseInt(entry, 10), {
+      onAccepted: (result) => {
+        // آخرین پاسخ جلسه را کامل کرد → advanceی برای مرحله بعدی وجود ندارد
+        // (advance روی جلسه تمام‌شده خطای «در فاز COMPLETED مجاز نیست» می‌دهد)
+        if (result.sessionCompleted) return
+        setWasCorrect(result.record.correct)
+        setPhase('feedback')
+        // تایمر رفتن به مرحلهٔ بعد ردیابی‌شده — با unmount یا شروع مرحلهٔ
+        // جدید پاک می‌شود؛ مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
+        guards.setTrackedTimeout(() => {
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده
+          }
+        }, 1500)
+      },
+      // پیشروی با تایمر بازخورد — نه بلافاصله پس از پذیرش
+      autoAdvance: false,
+    })
   }
 
   if (phase === 'showing') {

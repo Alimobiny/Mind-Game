@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «واژهٔ به‌هم‌ریخته» — موج زبانی.
+ * متادیتای کامل «واژهٔ به‌هم‌ریخته» — موج زبانی. منبع یگانه برای کاتالوگ،
+ * رجیستری و فهرست مرجع. id/version/contentVersion باید با engine یکی
+ * بماند — نگهبان: registry-invariants.test.ts.
  */
-export const WORD_SCRAMBLE_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const WORD_SCRAMBLE_META_FA: ExerciseMeta = {
+  id: 'word-scramble',
   nameFa: 'واژهٔ به‌هم‌ریخته',
   descriptionFa:
     'حروف یک واژه به‌هم ریخته‌اند — با لمس به ترتیب، واژه را از نو بساز و به یاد بیاور.',
+  domain: 'verbal-auditory',
   exerciseType: 'verbal',
+  family: 'anagram',
+  nameEn: 'Word Scramble (Anagram)',
+  keywordsFa: ['آناماگرام', 'واژه بهم ریخته', 'بازسازی واژه'],
   effects: ['verbal-auditory', 'working-memory'],
+  version: '1.0.0',
+  contentVersion: '2',
   instructionsFa: [
     'حروف یک واژهٔ فارسی به‌هم ریخته و به‌صورت کاشی نمایش داده می‌شوند.',
     'به ترتیب روی حروف بزن تا واژه در نوار بالا ساخته شود؛ «برگشت آخر» آخرین حرف را برمی‌گرداند.',

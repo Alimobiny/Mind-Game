@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «کارت‌بندی قاعده» — موج ۷.
+ * متادیتای کامل «کارت‌بندی قاعده» — موج ۷. منبع یگانه برای کاتالوگ، رجیستری
+ * و فهرست مرجع. id/version/contentVersion باید با engine یکی بماند —
+ * نگهبان: registry-invariants.test.ts.
  */
-export const RULE_DISCOVERY_CARD_SORTING_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const RULE_DISCOVERY_CARD_SORTING_META_FA: ExerciseMeta = {
+  id: 'rule-discovery-card-sorting',
   nameFa: 'کارت‌بندی قاعده',
   descriptionFa:
     'قاعدهٔ پنهان دسته‌بندی کارت‌ها — رنگ، شکل یا تعداد — را از بازخوردها کشف کن و با عوض‌شدنش انعطاف نشان بده.',
+  domain: 'reasoning',
   exerciseType: 'visual',
+  family: 'wcst',
+  nameEn: 'Rule Discovery (WCST-style)',
+  keywordsFa: ['ویسکانسین', 'WCST', 'کارت بندی', 'کشف قاعده'],
   effects: ['reasoning', 'attention-control'],
+  version: '1.0.0',
+  contentVersion: '2',
   instructionsFa: [
     'چهار کارت مرجع بالای صفحه ثابت‌اند؛ هر کارت جدیدی که می‌آید را زیر یکی از آن‌ها بگذار.',
     'فقط «درست» یا «غلط» می‌شنوی — قاعدهٔ پنهان (رنگ، شکل یا تعداد) را با آزمون و خطا کشف کن.',

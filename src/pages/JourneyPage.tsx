@@ -6,14 +6,12 @@ import { getAppData, subscribeToAppDataChanges } from '../data/app-data'
 import { APP_TEXTS_FA, JOURNEY_TEXTS_FA } from '../i18n/fa'
 import { buildHeatmapWeeks, loadJourney } from '../analytics/journey'
 import type { JourneyData, JourneyMilestone } from '../analytics/journey'
-import { createAppRegistry } from '../modules'
+import { catalogById, listCatalog } from '../modules/catalog'
 import { formatDate, formatDuration, toFaDigits } from '../utils/format'
 import { DomainEmblem } from '../components/icons/DomainEmblems'
 import { ChartGlyph, FlagGlyph, FlameGlyph } from '../components/icons/UiGlyphs'
 import { ActivityHeatmap } from '../components/journey/ActivityHeatmap'
 import styles from './journey.module.css'
-
-const registry = createAppRegistry()
 
 interface JourneyPageState {
   readonly data: JourneyData | null
@@ -53,7 +51,7 @@ function MilestoneIcon({ m }: { m: JourneyMilestone }) {
 
 export function JourneyPage() {
   const exerciseNames = useMemo(
-    () => new Map(registry.list().map((e) => [e.meta.id, e.meta.nameFa])),
+    () => new Map(listCatalog().map((m) => [m.id, m.nameFa])),
     [],
   )
   const [state, setState] = useState<JourneyPageState>({ data: null, error: false })
@@ -203,7 +201,7 @@ export function JourneyPage() {
                 </span>
                 <div className={styles.timelineChips}>
                   {day.sessions.map((session) => {
-                    const meta = registry.get(session.exerciseId)?.meta
+                    const meta = catalogById(session.exerciseId)
                     return (
                       <span
                         key={session.id}

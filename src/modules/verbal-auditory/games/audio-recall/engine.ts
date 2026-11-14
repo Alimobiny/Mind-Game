@@ -59,7 +59,7 @@ export type AudioRecallAnswer = readonly string[] | null
 
 export const AUDIO_RECALL_ID = 'audio-recall'
 export const AUDIO_RECALL_VERSION = '1.0.0'
-export const AUDIO_RECALL_CONTENT_VERSION = '1'
+export const AUDIO_RECALL_CONTENT_VERSION = '2' // v2: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع ارائهٔ شنیداری (§۲-۲ ممیزی)
 
 const SPAN_BY_DIFFICULTY: readonly number[] = [3, 4, 5, 6, 7]
 const DISPLAY_MS_BY_DIFFICULTY: readonly number[] = [1300, 1200, 1100, 1000, 900]

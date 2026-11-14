@@ -54,7 +54,7 @@ export type SpatialSequenceAnswer = readonly number[]
 
 export const SPATIAL_SEQUENCE_ID = 'spatial-sequence'
 export const SPATIAL_SEQUENCE_VERSION = '1.0.0'
-export const SPATIAL_SEQUENCE_CONTENT_VERSION = '1'
+export const SPATIAL_SEQUENCE_CONTENT_VERSION = '2' // v2: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع نمایش توالی (§۲-۲ ممیزی)
 const TOTAL_TRIALS = 10
 const GAP_MS = 250
 

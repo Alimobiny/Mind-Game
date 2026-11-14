@@ -205,7 +205,7 @@ export interface ReadingAloudAnswer {
 
 export const READING_ALOUD_ID = 'reading-aloud'
 export const READING_ALOUD_VERSION = '1.0.0'
-export const READING_ALOUD_CONTENT_VERSION = '2'
+export const READING_ALOUD_CONTENT_VERSION = '3' // v3: RT از بازشدن سؤال‌های فهم سنجیده می‌شود نه شروع خواندن — زمان خواندن جدا ثبت می‌شود (§۲-۲ ممیزی)
 
 const TOTAL_TRIALS = 3
 

@@ -1,16 +1,21 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «دنبال‌کردن اشیا» برای ثبت مرکزی — هماهنگ‌کننده این شیء را
- * در Registry با id/domain/version/contentVersion از engine ترکیب می‌کند.
+ * متادیتای کامل «دنبال‌کردن اشیا» — منبع یگانه برای کاتالوگ، رجیستری و
+ * فهرست مرجع. id/version/contentVersion باید با engine یکی بماند —
+ * نگهبان: registry-invariants.test.ts.
  */
-export const OBJECT_TRACKING_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const OBJECT_TRACKING_META_FA: ExerciseMeta = {
+  id: 'object-tracking',
   nameFa: 'دنبال‌کردن اشیا',
+  domain: 'visual-spatial',
   exerciseType: 'visual',
+  family: 'mot',
+  nameEn: 'Multiple Object Tracking (MOT)',
+  keywordsFa: ['ردیابی اشیا', 'MOT', 'دنبال کردن توپ'],
   effects: ['visual-spatial', 'attention-control'],
+  version: '1.0.0',
+  contentVersion: '2',
   descriptionFa:
     'چند دایرهٔ هدف را به خاطر بسپار و در میان حرکت همهٔ دایره‌ها فقط همان‌ها را دنبال کن؛ در پایان بگو کدام‌ها بودند.',
   instructionsFa: [

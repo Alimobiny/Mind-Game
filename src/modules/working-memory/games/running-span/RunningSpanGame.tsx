@@ -25,6 +25,13 @@ export function RunningSpanGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(null)
   const guards = useTrialGuards(ctx, trial.trialIndex)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن ورودی سنجیده شود
+  // نه از شروع نمایش جریان (§۲-۲ ممیزی). idempotent؛ مسیر بازنصب مکث هم پوشش دارد.
+  useEffect(() => {
+    if (phase === 'input') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   // ریست فازها با شروع هر جریان + زمان‌بندی نمایش ارقام. بازنصبِ پس از
   // مکث (PAUSED=unmount): جریان از زمانِ سپری‌شدهٔ جلسه ادامه می‌یابد نه
   // از صفر — برای running span مخرب‌تر بود چون پایان جریان پیش‌بینی‌ناپذیر

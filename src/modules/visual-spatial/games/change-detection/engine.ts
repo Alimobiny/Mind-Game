@@ -87,7 +87,7 @@ export const CHANGE_DETECTION_VERSION = '1.0.0'
  * ۲ = مخلوط‌کردن اندازهٔ آرایه داخل جلسه + میانگین‌گیری k به تفکیک اندازه
  * (به‌جای N̄×نرخ pooled — GAMES-AUDIT §۳-۲)
  */
-export const CHANGE_DETECTION_CONTENT_VERSION = '2'
+export const CHANGE_DETECTION_CONTENT_VERSION = '3' // v3: RT از نمایش آرایهٔ آزمون سنجیده می‌شود نه آرایهٔ نمونه (§۲-۲ ممیزی)
 const TOTAL_TRIALS = 16
 
 /** اندازهٔ آرایه و فاصلهٔ خالی با دشواری بالا می‌روند: ۲→۸ مربع، ۹۰۰→۱۵۰۰ms */

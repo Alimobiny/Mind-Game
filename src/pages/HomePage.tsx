@@ -6,13 +6,14 @@ import { describeStreakFa, toLocalIsoDate } from '../core/difficulty/adaptive-di
 import { buildHeatmapWeeks, groupSessionsByDay } from '../analytics/journey'
 import type { HeatCell } from '../analytics/journey'
 import { getAppData, subscribeToAppDataChanges } from '../data/app-data'
-import { APP_TEXTS_FA, DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA, PROGRAM_TEXTS_FA } from '../i18n/fa'
-import { COGNITIVE_DOMAINS, EXERCISE_TYPES } from '../core/types'
+import { APP_TEXTS_FA, DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA, FAMILY_LABELS_FA, PROGRAM_TEXTS_FA } from '../i18n/fa'
+import { COGNITIVE_DOMAINS } from '../core/types'
 import type { CognitiveDomain, ExerciseType } from '../core/types'
-import { createAppRegistry } from '../modules'
-import type { RegisteredExercise } from '../core/registry/game-registry'
+import type { ExerciseMeta } from '../core/registry/game-registry'
+// کاتالوگ متادیتا — بدون بار موتورها؛ صفحات فهرست‌محور فقط متا لازم دارند
+import { GAME_CATALOG } from '../modules/catalog'
+import { activeCatalogDomains, groupCatalog, searchCatalog, type CatalogViewMode } from './home-catalog'
 import { formatDate, toFaDigits } from '../utils/format'
-import { normalizePersian } from '../utils/persian'
 import { LogoMark } from '../components/icons/LogoMark'
 import { DomainEmblem } from '../components/icons/DomainEmblems'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
@@ -20,28 +21,19 @@ import { ActivityHeatmap } from '../components/journey/ActivityHeatmap'
 import { CalendarGlyph, ChartGlyph, CloseGlyph, FlagGlyph, FlameGlyph, ForwardGlyph } from '../components/icons/UiGlyphs'
 import styles from './home.module.css'
 
-const registry = createAppRegistry()
-
-/** نماهای گروه‌بندی فهرست — طبقه‌بندی و دسترسی بر اساس حوزه/نوع/اثر */
-type ViewMode = 'domain' | 'type' | 'effect'
-
-interface ExerciseGroup {
-  readonly key: string
-  readonly label: string
-  /** سرفصل در نمای نوع، گلیف نوع دارد؛ در دو نمای دیگر نشان حوزه */
-  readonly kind: 'domain' | 'type'
-  readonly list: readonly RegisteredExercise[]
-}
+/** نماهای گروه‌بندی فهرست — حوزه/نوع/اثر/خانواده (منطق خالص در home-catalog) */
+type ViewMode = CatalogViewMode
 
 const VIEW_LABELS: Readonly<Record<ViewMode, string>> = {
   domain: APP_TEXTS_FA.groupByDomain,
   type: APP_TEXTS_FA.groupByType,
   effect: APP_TEXTS_FA.groupByEffect,
+  family: APP_TEXTS_FA.groupByFamily,
 }
 
 export function HomePage() {
-  const exercises = useMemo(() => registry.list(), [])
-  const activeDomains = useMemo(() => registry.activeDomains(), [])
+  const exercises = useMemo(() => GAME_CATALOG, [])
+  const activeDomains = useMemo(() => activeCatalogDomains(exercises), [exercises])
   const [viewMode, setViewMode] = useState<ViewMode>('domain')
   /** جستجوی زندهٔ بازی — خالی یعنی حالت مرور گروه‌بندی‌شده */
   const [search, setSearch] = useState('')
@@ -61,7 +53,7 @@ export function HomePage() {
         if (cancelled) return
         const days = groupSessionsByDay(recent)
         setHeatmapWeeks(buildHeatmapWeeks(days, toLocalIsoDate(Date.now()), 8))
-        void loadProgressForExercises(recent, exercises.map((e) => e.meta.id)).then((result) => {
+        void loadProgressForExercises(recent, exercises.map((m) => m.id)).then((result) => {
           if (!cancelled) setProgress(result)
         })
       })
@@ -73,28 +65,9 @@ export function HomePage() {
   // تازه‌سازی دقیق پس از تغییر واقعی داده (پایان/ایجاد جلسه) — نه هر focus
   useEffect(() => subscribeToAppDataChanges(() => setRefreshKey((k) => k + 1)), [])
 
-  // گروه‌بندی بر اساس نمای فعال:
-  // حوزه → meta.domain · نوع → meta.exerciseType · اثر → effects[0] (اثر اصلی؛
-  // هر تمرین دقیقاً یک‌بار ظاهر می‌شود تا انتخابگرهای تست تک‌نما بمانند)
-  const groups = useMemo<ExerciseGroup[]>(() => {
-    const byDomain = (pick: (e: RegisteredExercise) => CognitiveDomain | ExerciseType, kind: 'domain' | 'type') =>
-      (kind === 'domain' ? COGNITIVE_DOMAINS : EXERCISE_TYPES)
-        .map((key) => ({
-          key: key as string,
-          label: kind === 'domain' ? DOMAIN_LABELS_FA[key as CognitiveDomain] : EXERCISE_TYPE_LABELS_FA[key as ExerciseType],
-          kind,
-          list: exercises.filter((e) => pick(e) === key),
-        }))
-        .filter((g) => g.list.length > 0)
-
-    if (viewMode === 'type') {
-      return byDomain((e) => e.meta.exerciseType, 'type')
-    }
-    if (viewMode === 'effect') {
-      return byDomain((e) => e.meta.effects[0] as CognitiveDomain, 'domain')
-    }
-    return byDomain((e) => e.meta.domain, 'domain')
-  }, [viewMode, exercises])
+  // گروه‌بندی بر اساس نمای فعال — منطق خالص و تست‌شده در home-catalog.ts
+  // (حوزه/نوع/اثر/خانواده؛ هر تمرین دقیقاً یک‌بار ظاهر می‌شود)
+  const groups = useMemo(() => groupCatalog(exercises, viewMode), [viewMode, exercises])
 
   // با تعویض نما، حالت تاشو به پیش‌فرض برمی‌گردد: فقط نخستین بخش باز
   const firstGroupKey = groups.length > 0 ? `${viewMode}-${groups[0]?.key}` : null
@@ -113,23 +86,12 @@ export function HomePage() {
     })
   }
 
-  /** جستجوی نرمال‌شده روی نام/توضیح/برچسب‌ها — با ۳۱ بازی، مسیر سریع اصلی */
+  /** جست‌وجوی نرمال‌شده — نام/شرح/انگلیسی/شناسه/خانواده/کلیدواژه‌ها (home-catalog) */
   const trimmedQuery = search.trim()
-  const searchResults = useMemo(() => {
-    if (trimmedQuery === '') return null
-    const q = normalizePersian(trimmedQuery)
-    return exercises.filter((e) => {
-      const haystack = [
-        e.meta.nameFa,
-        e.meta.descriptionFa,
-        DOMAIN_LABELS_FA[e.meta.domain],
-        EXERCISE_TYPE_LABELS_FA[e.meta.exerciseType],
-      ]
-        .map(normalizePersian)
-        .join(' ')
-      return haystack.includes(q)
-    })
-  }, [exercises, trimmedQuery])
+  const searchResults = useMemo(
+    () => (trimmedQuery === '' ? null : searchCatalog(exercises, trimmedQuery)),
+    [exercises, trimmedQuery],
+  )
 
   // کارت فعالیت فقط برای کاربرِ سابقه‌دار — نقشهٔ همه‌خامث برای کاربر تازه نویز است
   const hasActivity = useMemo(
@@ -138,30 +100,33 @@ export function HomePage() {
   )
 
   /** کارت تمرین — مشترک بین بخش‌های تاشو و نتایج جستجو (مارک‌آپ واحد برای تست‌ها) */
-  const renderExerciseCard = (exercise: RegisteredExercise, index: number) => {
-    const p = progress?.[exercise.meta.id]
+  const renderExerciseCard = (meta: ExerciseMeta, index: number) => {
+    const p = progress?.[meta.id]
     return (
       <Link
-        to={`/play/${exercise.meta.id}`}
+        to={`/play/${meta.id}`}
         className={styles.exerciseCard}
-        key={exercise.meta.id}
-        data-domain={exercise.meta.domain}
+        key={meta.id}
+        data-domain={meta.domain}
         style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
       >
         <span className={styles.cardHead}>
-          <span className={styles.typeTile} data-type={exercise.meta.exerciseType}>
-            <TypeGlyph type={exercise.meta.exerciseType} size={22} />
+          <span className={styles.typeTile} data-type={meta.exerciseType}>
+            <TypeGlyph type={meta.exerciseType} size={22} />
           </span>
           <span className={styles.cardTexts}>
-            <span className={styles.exerciseName}>{exercise.meta.nameFa}</span>
-            <span className={styles.exerciseDesc}>{exercise.meta.descriptionFa}</span>
+            <span className={styles.exerciseName}>{meta.nameFa}</span>
+            <span className={styles.exerciseDesc}>{meta.descriptionFa}</span>
           </span>
         </span>
         <span className={styles.chipRow}>
-          <span className={styles.chip} data-type={exercise.meta.exerciseType}>
-            {EXERCISE_TYPE_LABELS_FA[exercise.meta.exerciseType]}
+          <span className={styles.chip} data-type={meta.exerciseType}>
+            {EXERCISE_TYPE_LABELS_FA[meta.exerciseType]}
           </span>
-          {exercise.meta.effects.map((effect) => (
+          <span className={styles.chip} data-family={meta.family}>
+            {FAMILY_LABELS_FA[meta.family]}
+          </span>
+          {meta.effects.map((effect) => (
             <span key={effect} className={styles.chip} data-domain={effect}>
               {DOMAIN_LABELS_FA[effect]}
             </span>
@@ -170,7 +135,7 @@ export function HomePage() {
         <span className={styles.exerciseMeta}>
           {p
             ? `سطح ${toFaDigits(p.recommendedLevel)} · ${toFaDigits(p.totalSessions)} جلسه · ${describeStreakFa(p)}`
-            : `${toFaDigits(exercise.meta.difficultyLevels.length)} سطح · نسخه ${exercise.meta.version}`}
+            : `${toFaDigits(meta.difficultyLevels.length)} سطح · نسخه ${meta.version}`}
         </span>
         {p?.lastPlayedIsoDate ? (
           <span className={styles.lastPlayed}>
@@ -295,9 +260,13 @@ export function HomePage() {
                   >
                     {group.kind === 'domain' ? (
                       <DomainEmblem domain={group.key as CognitiveDomain} size={20} className={styles.sectionIcon} />
-                    ) : (
+                    ) : group.kind === 'type' ? (
                       <span data-type={group.key} className={styles.sectionIconWrap}>
                         <TypeGlyph type={group.key as ExerciseType} size={20} />
+                      </span>
+                    ) : (
+                      <span data-family={group.key} className={styles.sectionIconWrap} aria-hidden="true">
+                        <span className={styles.sectionFamilyMark} />
                       </span>
                     )}
                     <span className={styles.sectionLabel}>{group.label}</span>

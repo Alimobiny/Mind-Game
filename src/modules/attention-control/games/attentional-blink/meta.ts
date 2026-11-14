@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «پلک توجه» — موج نهم؛ تنها پارادایم توجه زمانی کاتالوگ.
+ * متادیتای کامل «پلک توجه» — موج نهم؛ تنها پارادایم توجه زمانی کاتالوگ.
+ * منبع یگانه برای کاتالوگ، رجیستری و فهرست مرجع. id/version/contentVersion
+ * باید با engine یکی بماند — نگهبان: registry-invariants.test.ts.
  */
-export const ATTENTIONAL_BLINK_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const ATTENTIONAL_BLINK_META_FA: ExerciseMeta = {
+  id: 'attentional-blink',
   nameFa: 'پلک توجه',
   descriptionFa:
     'جریان سریع حروف می‌گذرد؛ دو هدف رنگی داخل آن پنهان شده — هر دو را تا پایان جریان به خاطر بسپار.',
+  domain: 'attention-control',
   exerciseType: 'visual',
+  family: 'attentional-blink',
+  nameEn: 'Attentional Blink (RSVP)',
+  keywordsFa: ['پلک', 'RSVP', 'توجه زمانی', 'جریان سریع حروف'],
   effects: ['attention-control'],
+  version: '1.0.0',
+  contentVersion: '3',
   instructionsFa: [
     'حروف فارسی یکی‌یکی و بسیار سریع (حدود ۱۰ حرف در ثانیه) وسط صفحه رد می‌شوند.',
     'دو هدف داخل جریان رنگی‌اند: هدف اول روشن‌آبی و هدف دوم سبز — فاصلهٔ هدف دوم از اولی هر بار فرق می‌کند.',

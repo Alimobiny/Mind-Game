@@ -49,7 +49,7 @@ export type MemoriseGridAnswer = readonly number[]
 
 export const MEMORISE_GRID_ID = 'memorise-grid'
 export const MEMORISE_GRID_VERSION = '1.0.0'
-export const MEMORISE_GRID_CONTENT_VERSION = '1'
+export const MEMORISE_GRID_CONTENT_VERSION = '2' // v2: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع نمایش الگو (§۲-۲ ممیزی)
 const TOTAL_TRIALS = 10
 
 /** سطح‌های دشواری — اعداد طراحی‌اند، نه هنجار جمعیتی */

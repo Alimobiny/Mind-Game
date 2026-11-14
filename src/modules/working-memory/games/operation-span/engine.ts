@@ -111,7 +111,7 @@ export type OperationSpanAnswer = ComplexSpanSetAnswer<string> | null
 
 export const OPERATION_SPAN_ID = 'operation-span'
 export const OPERATION_SPAN_VERSION = '1.0.0'
-export const OPERATION_SPAN_CONTENT_VERSION = '2' // v2: بازیابی بلندتر از دسته دیگر «کامل» شمرده نمی‌شود (complex-span)
+export const OPERATION_SPAN_CONTENT_VERSION = '3' // v3: RT از شروع فاز بازیابی سنجیده می‌شود نه شروع دسته (§۲-۲ ممیزی) · v2: بازیابی بلندتر از دسته دیگر «کامل» شمرده نمی‌شود (complex-span)
 
 /** طول دسته‌ها بر حسب دشواری ۱..۵ (۳ دسته در همهٔ سطوح؛ ۳ تا ۷ آیتم) */
 const SET_LENGTHS_BY_DIFFICULTY: readonly (readonly number[])[] = [

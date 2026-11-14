@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import { FRAME_MS } from './engine'
@@ -21,8 +22,8 @@ import styles from './object-tracking.module.css'
  * مرحله هرگز از نو شروع نمی‌شود.
  *
  * نگهبان‌های اجباری:
- *  ۱) قفل submittedRef: تپ دومی روی «تأیید» یا انقضای هم‌زمان مهلت نباید
- *     پاسخ دوباره بفرستد؛ قفل فقط با result.accepted === false باز می‌شود.
+ *  ۱) قفل پاسخ + مهلتِ re-arm-دار در useTrialGuards: تپ دومی روی «تأیید»
+ *     یا انقضای هم‌زمان مهلت پاسخ دوباره نمی‌فرستد.
  *  ۲) پس از result.sessionCompleted === true هیچ advanceای (زمان‌بندی‌شده یا
  *     مستقیم) صدا زده نمی‌شود — advance روی جلسهٔ کامل‌شده خطا می‌دهد.
  *  ۳) همهٔ تایمرها در timersRef و دستهٔ rAF در rafRef؛ هر دو در پایان هر
@@ -56,13 +57,21 @@ export function ObjectTrackingGame({ ctx }: { ctx: ActiveGameContext }) {
   const [phase, setPhase] = useState<Phase>('highlight')
   const [selected, setSelected] = useState<number[]>([])
   const [wasCorrect, setWasCorrect] = useState(false)
-  // گارد ۱ — قفل پاسخ ثبت‌شده
-  const submittedRef = useRef(false)
-  // گارد ۳ — همهٔ تایمرها و rAF در ref با پاک‌سازی مرکزی
+  // گارد ۳ — همهٔ تایمرها و rAF در ref با پاک‌سازی مرکزی (قفل پاسخ و
+  // مهلتِ re-arm-دار در useTrialGuards است)
   const timersRef = useRef<number[]>([])
   const rafRef = useRef<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const phaseRef = useRef<Phase>('highlight')
+  const guards = useTrialGuards(ctx, trial.trialIndex)
+
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن انتخاب شماره‌ها
+  // سنجیده شود نه از شروع هایلایت/حرکت (§۲-۲ ممیزی). idempotent؛ مسیر
+  // بازسازی فاز پس از مکث هم همین اثر را می‌زند.
+  useEffect(() => {
+    if (phase === 'answer') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
 
   const radiusPx = trial.trajectory.radius * CANVAS_SIZE
   const lastFrameIndex = trial.frames.length - 1
@@ -75,10 +84,6 @@ export function ObjectTrackingGame({ ctx }: { ctx: ActiveGameContext }) {
       cancelAnimationFrame(rafRef.current)
       rafRef.current = null
     }
-  }
-
-  const addTimer = (id: number) => {
-    timersRef.current.push(id)
   }
 
   /** تغییر فاز فقط یک‌بار برای هر مقدار (جلوگیری از re-render در هر فریم) */
@@ -130,29 +135,25 @@ export function ObjectTrackingGame({ ctx }: { ctx: ActiveGameContext }) {
     })
   }
 
-  /** ثبت پاسخ (انتخاب یا انقضای مهلت) + رفتن به بازخورد — گارد ۱ و ۲ */
-  const finishTrial = async (answer: readonly number[] | null) => {
-    if (submittedRef.current) return
-    submittedRef.current = true
-    const result = await ctx.submit(answer)
-    if (!result.accepted) {
-      // پاسخ رد شد (مثلاً مرحله از قبل پاسخ داده شده) — قفل باز شود
-      submittedRef.current = false
-      return
-    }
-    // جلسهٔ کامل‌شده: هیچ advanceای زمان‌بندی نشود (گارد ۲)
-    if (result.sessionCompleted) return
-    setWasCorrect(result.record.correct)
-    setPhaseOnce('feedback')
-    addTimer(
-      window.setTimeout(() => {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده؛ کامپوننت به‌زودی حذف می‌شود
-        }
-      }, FEEDBACK_MS),
-    )
+  /** ثبت پاسخ (انتخاب یا انقضای مهلت) + رفتن به بازخورد — گاردها در useTrialGuards */
+  const finishTrial = (answer: readonly number[] | null) => {
+    void guards.submitOnce(answer, {
+      onAccepted: (result) => {
+        // جلسهٔ کامل‌شده: هیچ advanceای زمان‌بندی نشود
+        if (result.sessionCompleted) return
+        setWasCorrect(result.record.correct)
+        setPhaseOnce('feedback')
+        guards.setTrackedTimeout(() => {
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده؛ کامپوننت به‌زودی حذف می‌شود
+          }
+        }, FEEDBACK_MS)
+      },
+      // پیشروی با تایمر بازخورد — نه بلافاصله پس از پذیرش
+      autoAdvance: false,
+    })
   }
 
   // ساخت/بازسازی فاز برای هر مرحله — و باز-نصبِ pause-safe پس از resume
@@ -162,22 +163,18 @@ export function ObjectTrackingGame({ ctx }: { ctx: ActiveGameContext }) {
 
     // آیا این مرحله از پیش پاسخ داده شده (باز-نصب وسط بازخورد)؟
     const outcome = ctx.lastOutcome
-    const answered = outcome !== null && outcome.trialIndex === trial.trialIndex
-    submittedRef.current = answered
-    if (answered && outcome !== null) {
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
       setWasCorrect(outcome.correct)
       phaseRef.current = 'feedback'
       setPhase('feedback')
       // پیشرویِ قطع‌شدهٔ قبلی دوباره زمان‌بندی می‌شود تا جلسه قفل نماند
-      addTimer(
-        window.setTimeout(() => {
-          try {
-            ctx.advance()
-          } catch {
-            // فاز دیگر ACTIVE نیست (خروج/تکمیل هم‌زمان)
-          }
-        }, FEEDBACK_MS),
-      )
+      guards.setTrackedTimeout(() => {
+        try {
+          ctx.advance()
+        } catch {
+          // فاز دیگر ACTIVE نیست (خروج/تکمیل هم‌زمان)
+        }
+      }, FEEDBACK_MS)
       return clearAllTimers
     }
 
@@ -192,14 +189,23 @@ export function ObjectTrackingGame({ ctx }: { ctx: ActiveGameContext }) {
     phaseRef.current = initialPhase
     setPhase(initialPhase)
 
-    // انقضای مهلت پاسخ → ثبت بی‌پاسخی دقیقاً یک‌بار (همان قفل گارد ۱)
+    // انقضای مهلت پاسخ → ثبت بی‌پاسخی دقیقاً یک‌بار + re-arm پس از rollback
     if (remaining !== null && remaining > 0) {
-      addTimer(
-        window.setTimeout(() => {
-          if (submittedRef.current) return
-          void finishTrial(null)
-        }, remaining),
-      )
+      guards.armDeadline(() => null, remaining, {
+        onAccepted: (result) => {
+          if (result.sessionCompleted) return
+          setWasCorrect(result.record.correct)
+          setPhaseOnce('feedback')
+          guards.setTrackedTimeout(() => {
+            try {
+              ctx.advance()
+            } catch {
+              // جلسه هم‌زمان قطع/تکمیل شده
+            }
+          }, FEEDBACK_MS)
+        },
+        autoAdvance: false,
+      })
     }
 
     if (initialPhase === 'answer') {
@@ -248,7 +254,7 @@ export function ObjectTrackingGame({ ctx }: { ctx: ActiveGameContext }) {
   }, [phase, selected, trial.trialIndex])
 
   const toggleObject = (index: number) => {
-    if (phase !== 'answer' || submittedRef.current) return
+    if (phase !== 'answer' || guards.isSubmitted()) return
     setSelected((current) => {
       if (current.includes(index)) return current.filter((i) => i !== index)
       if (current.length >= trial.targetCount) return current
@@ -256,7 +262,7 @@ export function ObjectTrackingGame({ ctx }: { ctx: ActiveGameContext }) {
     })
   }
 
-  const canConfirm = phase === 'answer' && !submittedRef.current && selected.length === trial.targetCount
+  const canConfirm = phase === 'answer' && !guards.isSubmitted() && selected.length === trial.targetCount
 
   return (
     <div className={styles.stage}>

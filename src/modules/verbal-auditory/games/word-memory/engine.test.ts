@@ -111,7 +111,7 @@ describe('Word Memory — engine', () => {
     expect(summary.accuracy).toBe(100)
     expect(summary.exerciseId).toBe('word-memory')
     expect(summary.exerciseVersion).toBe('1.0.0')
-    expect(summary.contentVersion).toBe('1')
+    expect(summary.contentVersion).toBe('2') // v2: RT از شروع فاز پاسخ (§۲-۲ ممیزی)
     expect(summary.domain).toBe('verbal-auditory')
     expect(summary.metrics['hits']).toBe(6 * 6)
     expect(summary.metrics['falseAlarms']).toBe(0)

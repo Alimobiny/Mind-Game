@@ -37,6 +37,7 @@ function makeCtx(): CtxHarness {
     lastOutcome: null,
     timeRemainingMs: () => null,
     trialElapsedMs: () => 0,
+    beginResponsePhase: () => undefined,
     trialPresentation: { get: () => undefined, set: () => undefined, wasInterrupted: () => false },
     pause: () => undefined,
     paused: false,

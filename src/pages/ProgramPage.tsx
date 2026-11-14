@@ -19,13 +19,11 @@ import type {
 } from '../core/program/types'
 import { getAppData, subscribeToAppDataChanges } from '../data/app-data'
 import { APP_TEXTS_FA, DOMAIN_LABELS_FA, PROGRAM_TEXTS_FA } from '../i18n/fa'
-import { createAppRegistry } from '../modules'
+import { catalogById, listCatalog } from '../modules/catalog'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
 import { ForwardGlyph } from '../components/icons/UiGlyphs'
 import { formatDate, formatDuration, toFaDigits } from '../utils/format'
 import styles from './program.module.css'
-
-const registry = createAppRegistry()
 
 interface ProgramViewData {
   readonly plan: TrainingPlanRecord
@@ -41,11 +39,11 @@ export function ProgramPage() {
   // کاتالوگ ورودی منطق برنامه — فقط متادیتا، بدون وابستگی به موتورها
   const catalog = useMemo<ProgramExerciseEntry[]>(
     () =>
-      registry.list().map((exercise) => ({
-        exerciseId: exercise.meta.id,
-        domain: exercise.meta.domain,
-        plannedTrials: exercise.meta.plannedTrials ?? 0,
-        difficultyLevels: exercise.meta.difficultyLevels,
+      listCatalog().map((meta) => ({
+        exerciseId: meta.id,
+        domain: meta.domain,
+        plannedTrials: meta.plannedTrials ?? 0,
+        difficultyLevels: meta.difficultyLevels,
       })),
     [],
   )
@@ -200,7 +198,7 @@ export function ProgramPage() {
 
           <ul className={styles.itemList}>
             {data.plan.items.map((item) => {
-              const meta = registry.get(item.exerciseId)?.meta
+              const meta = catalogById(item.exerciseId)
               const done = data.doneIds.has(item.exerciseId)
               return (
                 <li

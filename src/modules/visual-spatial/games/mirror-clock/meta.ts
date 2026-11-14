@@ -1,16 +1,21 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «ساعت آینه‌ای» برای ثبت مرکزی — هماهنگ‌کننده این شیء را
- * در Registry با id/domain/version/contentVersion از engine ترکیب می‌کند.
+ * متادیتای کامل «ساعت آینه‌ای» — منبع یگانه برای کاتالوگ، رجیستری و فهرست
+ * مرجع. id/version/contentVersion باید با engine یکی بماند — نگهبان:
+ * registry-invariants.test.ts.
  */
-export const MIRROR_CLOCK_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const MIRROR_CLOCK_META_FA: ExerciseMeta = {
+  id: 'mirror-clock',
   nameFa: 'ساعت آینه‌ای',
+  domain: 'visual-spatial',
   exerciseType: 'spatial',
+  family: 'mirror-reading',
+  nameEn: 'Mirror Clock (Mirror Reading)',
+  keywordsFa: ['آینه', 'ساعت آنالوگ', 'بازتاب'],
   effects: ['visual-spatial', 'reasoning'],
+  version: '1.0.0',
+  contentVersion: '1',
   descriptionFa:
     'ساعت آنالوگ را در آینه ببین و زمان واقعی را از میان چهار گزینه تشخیص بده؛ چرخش ذهنی و تصویرسازی دیداری را تمرین می‌کند.',
   instructionsFa: [

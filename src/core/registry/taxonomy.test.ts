@@ -3,14 +3,40 @@ import { describe, expect, it } from 'vitest'
 import { createAppRegistry } from '../../modules'
 import { EXERCISE_TYPES, isExerciseType } from '../types'
 import { isCognitiveDomain } from '../types'
+import { EXERCISE_FAMILIES, FAMILY_LABELS_FA, isExerciseFamily } from '../types'
 
 /**
- * تست‌های طبقه‌بندی — هر تمرین ثبت‌شده باید «نوع تمرین» معتبر و
- * «اثرهای شناختی» غیرخالی (با اعضای معتبر) داشته باشد.
+ * تست‌های طبقه‌بندی — هر تمرین ثبت‌شده باید «نوع تمرین» معتبر،
+ * «اثرهای شناختی» غیرخالی (با اعضای معتبر) و «خانوادهٔ پارادایمی»
+ * معتبر با برچسب داشته باشد.
  */
-describe('طبقه‌بندی تمرین‌ها (نوع تمرین / اثر شناختی)', () => {
+describe('طبقه‌بندی تمرین‌ها (نوع تمرین / اثر شناختی / خانواده)', () => {
   const registry = createAppRegistry()
   const exercises = registry.list()
+
+  it('هر تمرین خانوادهٔ پارادایمی معتبر با برچسب فارسی دارد', () => {
+    for (const exercise of exercises) {
+      expect(isExerciseFamily(exercise.meta.family), `${exercise.meta.id}: ${exercise.meta.family}`).toBe(true)
+      expect(FAMILY_LABELS_FA[exercise.meta.family], `label ${exercise.meta.id}`).toBeTruthy()
+    }
+  })
+
+  it('هر خانوادهٔ اعلان‌شده در تاکسونومی دست‌کم یک بازی دارد (بدون خانوادهٔ مرده)', () => {
+    for (const family of EXERCISE_FAMILIES) {
+      const count = exercises.filter((e) => e.meta.family === family).length
+      expect(count, `خانواده ${family}`).toBeGreaterThanOrEqual(1)
+    }
+  })
+
+  it('گروه‌بندی بر اساس خانواده، همهٔ بازی‌ها را دقیقاً یک‌بار پوشش می‌دهد', () => {
+    const grouped = new Map<string, number>()
+    for (const exercise of exercises) {
+      const key = exercise.meta.family
+      grouped.set(key, (grouped.get(key) ?? 0) + 1)
+    }
+    const total = [...grouped.values()].reduce((a, b) => a + b, 0)
+    expect(total).toBe(exercises.length)
+  })
 
   it('هر تمرین نوع معتبر دارد', () => {
     for (const exercise of exercises) {

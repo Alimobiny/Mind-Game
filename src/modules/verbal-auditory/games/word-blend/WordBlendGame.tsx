@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { SpeakerGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
@@ -23,8 +24,7 @@ export function WordBlendGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as WordBlendTrial
   const [phase, setPhase] = useState<Phase>('present')
   const [partIndex, setPartIndex] = useState(0)
-  const submittedRef = useRef(false)
-  const timersRef = useRef<number[]>([])
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   const speechRef = useRef<ReturnType<typeof createSpeechController> | null>(null)
   if (speechRef.current === null) {
@@ -37,54 +37,42 @@ export function WordBlendGame({ ctx }: { ctx: ActiveGameContext }) {
     return () => speech.cancel()
   }, [speech])
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن چهار گزینه سنجیده
+  // شود نه از شروع ارائهٔ قطعات (§۲-۲ ممیزی). idempotent.
   useEffect(() => {
-    submittedRef.current = false
+    if (phase === 'choose') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
+  useEffect(() => {
     setPhase('present')
     setPartIndex(0)
-    for (const t of timersRef.current) window.clearTimeout(t)
-    timersRef.current = []
-    return () => {
-      for (const t of timersRef.current) window.clearTimeout(t)
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
-  // فاز ارائه: قطعهٔ جاری + تایمرِ رفتن به قطعهٔ بعد (یا فاز انتخاب)
+  // فاز ارائه: قطعهٔ جاری + تایمرِ رفتن به قطعهٔ بعد (یا فاز انتخاب) —
+  // تایمرها ردیابی‌شده: با تغییر مرحله/unmount پاک می‌شوند (useTrialGuards)
   useEffect(() => {
     if (phase !== 'present') return
     const part = trial.entry.parts[partIndex]
     if (part === undefined) {
-      const t = window.setTimeout(() => setPhase('choose'), 300)
-      timersRef.current.push(t)
+      guards.setTrackedTimeout(() => setPhase('choose'), 300)
       return
     }
     if (mode === 'speech') {
       speech.speak(part, { rate: trial.speechRate ?? 0.85 })
     }
-    const timer = window.setTimeout(() => setPartIndex((i) => i + 1), trial.partGapMs)
-    timersRef.current.push(timer)
-    return () => window.clearTimeout(timer)
+    guards.setTrackedTimeout(() => setPartIndex((i) => i + 1), trial.partGapMs)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, partIndex, trial.trialIndex])
 
   const currentPart = trial.entry.parts[partIndex]
 
   const choose = (index: number) => {
-    if (submittedRef.current || ctx.paused) return
+    if (ctx.paused) return
     if (phase !== 'choose') return
-    submittedRef.current = true
     speech.cancel()
-    void ctx.submit(index).then((result) => {
-      if (result.accepted && !result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان تمام/قطع شده — بی‌اثر
-        }
-      } else if (!result.accepted) {
-        submittedRef.current = false
-      }
-    })
+    void guards.submitOnce(index)
   }
 
   return (

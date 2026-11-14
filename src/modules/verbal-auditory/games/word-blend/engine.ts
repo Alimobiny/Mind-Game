@@ -115,7 +115,7 @@ export type WordBlendAnswer = number | null
 
 export const WORD_BLEND_ID = 'word-blend'
 export const WORD_BLEND_VERSION = '1.0.0'
-export const WORD_BLEND_CONTENT_VERSION = '2' // v2: املای درست مرکب‌ها با نیم‌فاصله + سیم‌کشی speechRate به کامپوننت
+export const WORD_BLEND_CONTENT_VERSION = '3' // v3: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع ارائهٔ قطعات (§۲-۲ ممیزی) · v2: املای درست مرکب‌ها با نیم‌فاصله + سیم‌کشی speechRate به کامپوننت
 
 const TOTAL_TRIALS = 12
 const PART_GAP_MS_BY_DIFFICULTY: readonly number[] = [1200, 1000, 900, 800, 700]

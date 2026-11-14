@@ -22,13 +22,12 @@ import type { ProgramRunSummary } from '../core/program/run-chain'
 import type { ProgramRunRecord, TrainingPlanItem, TrainingPlanRecord } from '../core/program/types'
 import { getAppData } from '../data/app-data'
 import { PROGRAM_TEXTS_FA } from '../i18n/fa'
-import { createAppRegistry, createExerciseConfig } from '../modules'
+import { appRegistry as registry, createExerciseConfig } from '../modules'
+import type { ExerciseId } from '../modules/catalog'
 import { TypeGlyph } from '../components/icons/TypeGlyphs'
-import { DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA } from '../i18n/fa'
+import { DOMAIN_LABELS_FA, EXERCISE_TYPE_LABELS_FA, FAMILY_LABELS_FA } from '../i18n/fa'
 import { formatDuration, toFaDigits } from '../utils/format'
 import styles from './exercise.module.css'
-
-const registry = createAppRegistry()
 
 /** پراپ کامپوننت بازی — ctx پوستهٔ مشترک؛ auditory فقط ان-بک شنیداری */
 type GameComponent = ComponentType<{ ctx: ActiveGameContext; auditory?: boolean }>
@@ -37,9 +36,10 @@ type GameComponent = ComponentType<{ ctx: ActiveGameContext; auditory?: boolean 
  * بارگذاری تنبل هر بازی — به‌جای این‌که هر ۳۷ کامپوننت در یک chunk تمرینِ
  * ۱۳۵KB بسته شوند، فقط بازیِ در حال اجرا دانلود و parse می‌شود (~۳-۶KB).
  * پیش‌واکشی در مونت صفحه (زیر) حین انتخاب سطح/دستورالعمل، سوسپنس را
- * عملاً نامرئی می‌کند.
+ * عملاً نامرئی می‌کند. تایپ Record<ExerciseId, …> یعنی جاماندن loader هر
+ * بازی در زمان کامپایل خطا می‌دهد (نه در زمان اجرا).
  */
-const GAME_LOADERS: Readonly<Record<string, () => Promise<{ default: GameComponent }>>> = {
+const GAME_LOADERS: Readonly<Record<ExerciseId, () => Promise<{ default: GameComponent }>>> = {
   'number-sequence': () => import('../modules/working-memory/games/number-sequence/NumberSequenceGame').then((m) => ({ default: m.NumberSequenceGame })),
   'n-back': () => import('../modules/working-memory/games/n-back/NBackGame').then((m) => ({ default: m.NBackGame })),
   'dual-n-back': () => import('../modules/working-memory/games/dual-n-back/DualNBackGame').then((m) => ({ default: m.DualNBackGame })),
@@ -135,7 +135,8 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
   // پیش‌واکشی کامپوننت بازی حین انتخاب سطح/دستورالعمل — سوسپنس تقریباً
   // هرگز دیده نمی‌شود و فقط یک میکرو-chunk (~۳-۶KB) اضافه بار می‌شود
   useEffect(() => {
-    void GAME_LOADERS[exerciseId]?.()
+    const load = GAME_LOADERS[exerciseId as ExerciseId]
+    if (load !== undefined) void load()
   }, [exerciseId])
   const [, setSearchParams] = useSearchParams()
   const registered = registry.get(exerciseId)
@@ -330,6 +331,9 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
           <div className={styles.pickerChips}>
             <span className={styles.pickerChip} data-type={registered.meta.exerciseType}>
               {EXERCISE_TYPE_LABELS_FA[registered.meta.exerciseType]}
+            </span>
+            <span className={styles.pickerChip} data-family={registered.meta.family}>
+              خانواده: {FAMILY_LABELS_FA[registered.meta.family]}
             </span>
             {registered.meta.effects.map((effect) => (
               <span key={effect} className={styles.pickerChip} data-domain={effect}>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { SwapGlyph } from '../../../../components/icons/UiGlyphs'
 import type { AssociativePairsTrial } from './engine'
@@ -11,49 +12,23 @@ import { e2e } from '../../../../utils/e2e'
  *
  * فاز مطالعه: جفت واژه نمایش داده می‌شود و با انقضای پنجره، خودکار به
  * بعدی می‌رود (تماشا). فاز آزمون: نشانه + دکمه‌های گزینه؛ انتخاب، ثبت و
- * مرحلهٔ بعد. سه گارد الزامی رعایت شده است. بازخورد انتخاب با نشان
- * شناور — بدون تغییر زمانی پیشروی فوری.
+ * مرحلهٔ بعد. سه گارد الزامی + re-arm مهلت در useTrialGuards است. بازخورد
+ * انتخاب با نشان شناور — بدون تغییر زمانی پیشروی فوری.
  */
 export function AssociativePairsGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as AssociativePairsTrial
   const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
   const badgeTimerRef = useRef<number | null>(null)
-  const timersRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   useEffect(() => {
-    submittedRef.current = false
-    for (const t of timersRef.current) window.clearTimeout(t)
-    timersRef.current = []
-
-    // فاز مطالعه: پایان پنجره = ثبت تماشا و رفتن به مرحلهٔ بعد
+    // فاز مطالعه: پایان پنجره = ثبت تماشا و رفتن به مرحلهٔ بعد (با re-arm
+    // پس از rollback ذخیره در useTrialGuards)
     if (trial.item.phase === 'study') {
       const remaining = ctx.timeRemainingMs()
       if (remaining !== null) {
-        timersRef.current.push(
-          window.setTimeout(() => {
-            if (submittedRef.current) return
-            submittedRef.current = true
-            void ctx.submit(null).then((result) => {
-              if (!result.accepted) {
-                // persist_failed: مدیر rollback کرده — قفل باز بماند
-                submittedRef.current = false
-                return
-              }
-              if (!result.sessionCompleted) {
-                try {
-                  ctx.advance()
-                } catch {
-                  // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-                }
-              }
-            })
-          }, remaining),
-        )
+        guards.armDeadline(() => null, remaining)
       }
-    }
-    return () => {
-      for (const t of timersRef.current) window.clearTimeout(t)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
@@ -66,22 +41,9 @@ export function AssociativePairsGame({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   const choose = (index: number) => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit(index).then((result) => {
-      if (!result.accepted) {
-        // persist_failed: مدیر rollback کرده — قفل باز بماند
-        submittedRef.current = false
-        return
-      }
-      flashBadge(result.record.correct)
-      if (!result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-        }
-      }
+    if (ctx.paused) return
+    void guards.submitOnce(index, {
+      onAccepted: (result) => flashBadge(result.record.correct),
     })
   }
 

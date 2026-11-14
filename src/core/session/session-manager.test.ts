@@ -485,4 +485,123 @@ describe('ExerciseSessionManager — تاب‌آوری مکث و خطای ذخی
     const r2 = await manager.submitAnswer(2)
     expect(r2.accepted && r2.sessionCompleted).toBe(true)
   })
+
+  it('رویداد تلاش‌مجدد پس از rollback با پرچم retryAfterPersistFailure ثبت می‌شود (A7)', async () => {
+    const sessions = new InMemorySessionRepository()
+    const inner = new InMemoryTrialEventRepository()
+    let failuresLeft = 1
+    const flakyTrials = {
+      append: async (record: unknown) => {
+        if (failuresLeft > 0) {
+          failuresLeft -= 1
+          throw new Error('QuotaExceededError')
+        }
+        return inner.append(record as never)
+      },
+    }
+    const c = fakeClock()
+    const manager = new ExerciseSessionManager({
+      definition: fakeDefinition(),
+      config: { difficulty: 2 },
+      sessions,
+      trialEvents: flakyTrials as never,
+      settings: new InMemoryExerciseSettingsRepository(),
+      timer: new SessionTimer(c.clock),
+      clock: c.clock,
+      seed: 123,
+      wallClock: () => 1_700_000_000_000,
+    })
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    const failed = await manager.submitAnswer(0)
+    expect(failed).toEqual({ accepted: false, reason: 'persist_failed' })
+    const retry = await manager.submitAnswer(0)
+    expect(retry.accepted).toBe(true)
+    manager.advanceTrial()
+    await manager.submitAnswer(1)
+
+    const events = await inner.listBySession(manager.getSnapshot().sessionId as string)
+    // تلاش مجدد → پرچم؛ ثبت بار اولِ مراحل بعد → بدون پرچم
+    expect(events[0]?.retryAfterPersistFailure).toBe(true)
+    expect(events[1]?.retryAfterPersistFailure).toBeUndefined()
+  })
+})
+
+describe('ExerciseSessionManager — beginResponsePhase (RT از شروع فاز پاسخ)', () => {
+  it('RT از شروع فاز پاسخ سنجیده می‌شود وقتی بازی علامت زده باشد (چندفازی)', async () => {
+    const { manager, clock } = await createManager()
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    clock.tick(2000) // فاز نمایش — دیگر داخل RT نمی‌نشیند
+    manager.beginResponsePhase()
+    clock.tick(300)
+    const result = await manager.submitAnswer(0)
+    expect(result.accepted && result.record.reactionTimeMs).toBe(300)
+  })
+
+  it('idempotent: نخستین علامت مبنای RT می‌ماند (فراخوانی بازنصب بی‌اثر)', async () => {
+    const { manager, clock } = await createManager()
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    clock.tick(1000)
+    manager.beginResponsePhase()
+    clock.tick(50)
+    manager.beginResponsePhase() // بازنصب پس از مکث دوباره علامت می‌زند
+    clock.tick(250)
+    const result = await manager.submitAnswer(0)
+    expect(result.accepted && result.record.reactionTimeMs).toBe(300)
+  })
+
+  it('علامت با advance به مرحلهٔ بعد پاک می‌شود (بازگشت به مبنای نمایش)', async () => {
+    const { manager, clock } = await createManager()
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    clock.tick(1000)
+    manager.beginResponsePhase()
+    clock.tick(200)
+    await manager.submitAnswer(0)
+    manager.advanceTrial()
+
+    clock.tick(400) // مرحلهٔ ۱ بدون علامت — RT از نمایش محرک
+    const result = await manager.submitAnswer(1)
+    expect(result.accepted && result.record.reactionTimeMs).toBe(400)
+  })
+
+  it('در فاز غیر ACTIVE بی‌اثر است', async () => {
+    const { manager, clock } = await createManager()
+    await manager.start()
+    manager.beginCountdown()
+    // هنوز ACTIVE نیست — علامت باید نادیده گرفته شود
+    manager.beginResponsePhase()
+    manager.beginActive()
+
+    clock.tick(120)
+    const result = await manager.submitAnswer(0)
+    expect(result.accepted && result.record.reactionTimeMs).toBe(120)
+  })
+
+  it('مکثِ داخل فاز پاسخ زمان RT را آلوده نمی‌کند (ساعت pause-aware)', async () => {
+    const { manager, clock } = await createManager()
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    clock.tick(1000)
+    manager.beginResponsePhase()
+    clock.tick(100)
+    manager.pause()
+    clock.tick(5000) // tab مخفی — به ساعت جلسه اضافه نمی‌شود
+    manager.resume()
+    clock.tick(150)
+    const result = await manager.submitAnswer(0)
+    expect(result.accepted && result.record.reactionTimeMs).toBe(250)
+  })
 })

@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { NumberComparisonTrial, NumberDisplayFormat } from './engine'
@@ -17,12 +18,8 @@ import styles from './number-comparison.module.css'
  * اپ. اعداد فارسی ذاتاً چپ‌به‌راست خوانده می‌شوند، پس این همسویی
  * طبیعی است. پاسخ موتور همین مختصات فیزیکی است: 'left' | 'right'.
  *
- * گردهای صحت:
- *  - قفل submittedRef: تپ دومی روی یک مرحله دوباره submit نمی‌کند؛
- *    قفل فقط با result.accepted === false باز می‌شود.
- *  - پس از result.sessionCompleted === true هرگز advance() صدا زده
- *    نمی‌شود (جلسهٔ کامل‌شده advance را reject می‌کند).
- *  - انقضای مهلت دقیقاً یک‌بار null ثبت می‌کند (همان قفل را می‌بندد).
+ * گردهای صحت (قفل پاسخ + advance امن + مهلتِ دقیقاً یک‌بار با re-arm
+ * پس از rollback) همه در useTrialGuards است.
  */
 function formatQuantityFa(value: number, format: NumberDisplayFormat): string {
   return format === 'digits' ? toFaDigits(String(value).split('').join(' ')) : toFaDigits(value)
@@ -30,58 +27,21 @@ function formatQuantityFa(value: number, format: NumberDisplayFormat): string {
 
 export function NumberComparisonGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as NumberComparisonTrial
-  const deadlineRef = useRef<number | null>(null)
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // با هر مرحله جدید ریست می‌شود
   useEffect(() => {
-    submittedRef.current = false
-
     // انقضای مهلت پاسخ → ثبت بی‌پاسخی (دقیقاً یک‌بار) و رفتن به مرحله بعد
     const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
-      deadlineRef.current = window.setTimeout(() => {
-        if (submittedRef.current) return
-        submittedRef.current = true
-        void ctx.submit(null).then((result) => {
-          if (result.accepted) {
-            if (!result.sessionCompleted) {
-              try {
-                ctx.advance()
-              } catch {
-                // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-              }
-            }
-          } else {
-            submittedRef.current = false
-          }
-        })
-      }, remaining)
-    }
-    return () => {
-      if (deadlineRef.current !== null) window.clearTimeout(deadlineRef.current)
+      guards.armDeadline(() => null, remaining)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
   const answer = (side: 'left' | 'right') => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit(side).then((result) => {
-      if (result.accepted) {
-        // جلسهٔ کامل‌شده: فقط رها کن؛ advance روی جلسهٔ بسته خطا می‌دهد
-        if (!result.sessionCompleted) {
-          try {
-            ctx.advance()
-          } catch {
-            // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-          }
-        }
-      } else {
-        // پاسخ رد شد (مثلاً wrong_phase) — قفل باز شود تا مسیر مجدد ممکن بماند
-        submittedRef.current = false
-      }
-    })
+    if (ctx.paused) return
+    void guards.submitOnce(side)
   }
 
   return (

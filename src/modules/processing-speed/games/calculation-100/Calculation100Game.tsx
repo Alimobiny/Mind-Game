@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
@@ -17,13 +18,10 @@ import { e2e } from '../../../../utils/e2e'
  * پاسخ درست). زمان فلش جزء RT مرحله بعد نیست — ساعت RT با آمدن سؤال
  * بعدی شروع می‌شود.
  *
- * نگهبان‌های اجباری:
- *  ۱) قفل submittedRef: تپ دومی روی «تأیید» (یا Enter تکراری) نباید
- *     پاسخ دوباره بفرستد؛ قفل فقط وقتی باز می‌شود که پاسخ رد شد
- *     (result.accepted === false).
- *  ۲) بعد از result.sessionCompleted === true هیچ advanceای زمان‌بندی
- *     نمی‌شود (advance روی جلسهٔ کامل‌شده خطا می‌دهد؛ پوسته خودش به
- *     صفحهٔ نتایج می‌رود).
+ * نگهبان‌های اجباری (قفل پاسخ + advance امن + تایمرهای ردیابی‌شده) در
+ * useTrialGuards است؛ بعد از sessionCompleted هیچ advanceای زمان‌بندی
+ * نمی‌شود (advance روی جلسهٔ کامل‌شده خطا می‌دهد؛ پوسته خودش به
+ * صفحهٔ نتایج می‌رود).
  *
  * نکته pause: هنگام PAUSE این کامپوننت unmount می‌شود؛ اگر فلش وسط
  * pause قطع شد، در باز-نصبِ پس از resume با تشخیص «مرحله جاری از پیش
@@ -71,7 +69,7 @@ export function Calculation100Game({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as Calculation100Trial
   const [entry, setEntry] = useState('')
   const [flash, setFlash] = useState<FlashState | null>(null)
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const flashTimerRef = useRef<number | null>(null)
 
   const clearFlashTimer = () => {
@@ -103,9 +101,7 @@ export function Calculation100Game({ ctx }: { ctx: ActiveGameContext }) {
     clearFlashTimer()
     setEntry('')
     const outcome = ctx.lastOutcome
-    const answered = outcome !== null && outcome.trialIndex === trial.trialIndex
-    submittedRef.current = answered
-    if (answered && outcome !== null) {
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
       setFlash({ correct: outcome.correct, expected: outcome.expected as number })
       scheduleAdvance(outcome.correct)
     } else {
@@ -115,7 +111,7 @@ export function Calculation100Game({ ctx }: { ctx: ActiveGameContext }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
-  const locked = flash !== null || submittedRef.current
+  const locked = flash !== null || guards.isSubmitted()
 
   const press = (key: string) => {
     if (locked) return
@@ -126,22 +122,21 @@ export function Calculation100Game({ ctx }: { ctx: ActiveGameContext }) {
     setEntry((current) => (current.length >= MAX_ENTRY_DIGITS ? current : current + key))
   }
 
-  const submit = async () => {
-    if (submittedRef.current || flash !== null || entry.length === 0) return
-    submittedRef.current = true
+  const submit = () => {
+    if (guards.isSubmitted() || flash !== null || entry.length === 0) return
     const value = Number.parseInt(entry, 10)
-    const result = await ctx.submit(value)
-    if (!result.accepted) {
-      // پاسخ رد شد (مثلاً مرحله از قبل پاسخ داده شده) — قفل باز شود
-      submittedRef.current = false
-      return
-    }
-    if (result.sessionCompleted) {
-      // جلسه تمام است — هیچ advanceای زمان‌بندی نشود (نگهبان ۲)
-      return
-    }
-    setFlash({ correct: result.record.correct, expected: result.record.expected as number })
-    scheduleAdvance(result.record.correct)
+    void guards.submitOnce(value, {
+      onAccepted: (result) => {
+        if (result.sessionCompleted) {
+          // جلسه تمام است — هیچ advanceای زمان‌بندی نشود
+          return
+        }
+        setFlash({ correct: result.record.correct, expected: result.record.expected as number })
+        scheduleAdvance(result.record.correct)
+      },
+      // پیشرویِ خودکار خاموش — تایمر فلش خودش در پایان پنجره advance می‌زند
+      autoAdvance: false,
+    })
   }
 
   // صفحه‌کلید فیزیکی: ارقام (لاتین/فارسی)، Backspace و Enter

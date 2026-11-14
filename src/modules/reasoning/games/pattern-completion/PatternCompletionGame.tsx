@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import { PATTERN_COLORS_FA, type PatternCell, type PatternCompletionTrial } from './engine'
@@ -42,35 +42,15 @@ function CellArt({ cell }: { readonly cell: PatternCell }) {
  * ماتریس ۳×۳ الگو (خانه پایین-راست با «؟» خالی) + چهار گزینه ۲×۲.
  * بازی غیرزمانی است (responseWindowMs = null): با انتخاب گزینه، پاسخ
  * ثبت و بلافاصله مرحله بعد می‌آید. منطق کاملاً در engine است.
+ * سه گارد الزامی (قفل/advance امن/rollback) در useTrialGuards است.
  */
 export function PatternCompletionGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as PatternCompletionTrial
-  const submittedRef = useRef(false)
-
-  // با هر مرحله جدید ریست می‌شود
-  useEffect(() => {
-    submittedRef.current = false
-  }, [trial.trialIndex])
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   const choose = (index: number) => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit(index).then((result) => {
-      if (!result.accepted) {
-        // persist_failed: مدیر rollback کرده — قفل باز بماند تا تلاش
-        // مجدد ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
-        submittedRef.current = false
-        return
-      }
-      // advance روی جلسه تمام‌شده (آخرین گزینه) خطا می‌دهد
-      if (!result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-        }
-      }
-    })
+    if (ctx.paused) return
+    void guards.submitOnce(index)
   }
 
   return (

@@ -125,6 +125,6 @@ describe('Attentional Blink — engine', () => {
     expect(summary.metrics['blinkMagnitude']).toBe(0)
     // با تخصیص دقیقِ فعلی جریان lag-1 نیست → کلید شرطی اصلاً منتشر نمی‌شود
     expect('lagOneSparing' in summary.metrics).toBe(false)
-    expect(summary.contentVersion).toBe('2')
+    expect(summary.contentVersion).toBe('3') // v3: RT از شروع فاز پاسخ (§۲-۲ ممیزی)
   })
 })

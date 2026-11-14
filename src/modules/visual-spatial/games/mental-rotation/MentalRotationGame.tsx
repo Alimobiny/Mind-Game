@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import type { MentalRotationTrial, MentalRotationVerdict, Polyomino } from './engine'
 import styles from './mental-rotation.module.css'
@@ -90,21 +91,13 @@ function FigureArt({
 export function MentalRotationGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as MentalRotationTrial
   const [flash, setFlash] = useState<FlashState | null>(null)
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const flashTimerRef = useRef<number | null>(null)
-  const deadlineRef = useRef<number | null>(null)
 
   const clearFlashTimer = () => {
     if (flashTimerRef.current !== null) {
       window.clearTimeout(flashTimerRef.current)
       flashTimerRef.current = null
-    }
-  }
-
-  const clearDeadline = () => {
-    if (deadlineRef.current !== null) {
-      window.clearTimeout(deadlineRef.current)
-      deadlineRef.current = null
     }
   }
 
@@ -128,12 +121,9 @@ export function MentalRotationGame({ ctx }: { ctx: ActiveGameContext }) {
   // ریست برای هر مرحلهٔ جدید — و باز-نصب پس از pause/resume
   useEffect(() => {
     clearFlashTimer()
-    clearDeadline()
     setFlash(null)
     const outcome = ctx.lastOutcome
-    const answered = outcome !== null && outcome.trialIndex === trial.trialIndex
-    submittedRef.current = answered
-    if (answered && outcome !== null) {
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
       // فلشِ قطع‌شده وسط pause: بازسازی و زمان‌بندی دوبارهٔ پیشروی
       setFlash({
         correct: outcome.correct,
@@ -143,62 +133,47 @@ export function MentalRotationGame({ ctx }: { ctx: ActiveGameContext }) {
       scheduleAdvance(outcome.correct)
       return
     }
-    // انقضای مهلت پاسخ (سطح ۳+) → ثبت بی‌پاسخی دقیقاً یک‌بار (نگهبان ۱ و ۲)
+    // انقضای مهلت پاسخ (سطح ۳+) → ثبت بی‌پاسخی دقیقاً یک‌بار + re-arm
     const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
-      deadlineRef.current = window.setTimeout(() => {
-        deadlineRef.current = null
-        if (submittedRef.current) return
-        submittedRef.current = true
-        void ctx.submit(null).then((result) => {
-          if (!result.accepted) {
-            // پاسخ رد شد — قفل باز شود
-            submittedRef.current = false
-            return
-          }
-          if (result.sessionCompleted) {
-            // جلسه تمام است — هیچ advanceای زمان‌بندی نشود (نگهبان ۲)
-            return
-          }
+      guards.armDeadline(() => null, remaining, {
+        onAccepted: (result) => {
+          if (result.sessionCompleted) return
           setFlash({
             correct: false,
             expected: result.record.expected as MentalRotationVerdict,
             omission: true,
           })
           scheduleAdvance(false)
-        })
-      }, remaining)
+        },
+        autoAdvance: false,
+      })
     }
-    return () => {
-      clearFlashTimer()
-      clearDeadline()
-    }
+    return clearFlashTimer
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
-  const locked = flash !== null || submittedRef.current
+  const locked = flash !== null || guards.isSubmitted()
 
   const choose = (verdict: MentalRotationVerdict) => {
-    if (submittedRef.current || flash !== null || ctx.paused) return
-    submittedRef.current = true
+    if (flash !== null || ctx.paused) return
     // پاسخ رسید؛ تایمر انقضای مهلت دیگر موضوعیت ندارد
-    clearDeadline()
-    void ctx.submit(verdict).then((result) => {
-      if (!result.accepted) {
-        // پاسخ رد شد (مثلاً مرحله از قبل پاسخ داده شده) — قفل باز شود
-        submittedRef.current = false
-        return
-      }
-      if (result.sessionCompleted) {
-        // جلسه تمام است — هیچ advanceای زمان‌بندی نشود (نگهبان ۲)
-        return
-      }
-      setFlash({
-        correct: result.record.correct,
-        expected: result.record.expected as MentalRotationVerdict,
-        omission: false,
-      })
-      scheduleAdvance(result.record.correct)
+    guards.clearDeadline()
+    void guards.submitOnce(verdict, {
+      onAccepted: (result) => {
+        if (result.sessionCompleted) {
+          // جلسه تمام است — هیچ advanceای زمان‌بندی نشود
+          return
+        }
+        setFlash({
+          correct: result.record.correct,
+          expected: result.record.expected as MentalRotationVerdict,
+          omission: false,
+        })
+        scheduleAdvance(result.record.correct)
+      },
+      // پیشروی با تایمر فلش خودش — نه بلافاصله پس از پذیرش
+      autoAdvance: false,
     })
   }
 

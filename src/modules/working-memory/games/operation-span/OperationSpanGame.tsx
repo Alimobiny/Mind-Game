@@ -49,6 +49,14 @@ export function OperationSpanGame({ ctx }: { ctx: ActiveGameContext }) {
   const rtsRef = useRef<(number | null)[]>([])
   const phaseStartRef = useRef(0)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن بازیابی واژه‌ها
+  // سنجیده شود نه از شروع دسته (§۲-۲ ممیزی؛ قضاوت‌های محاسبه RT جدا دارند).
+  // idempotent؛ مسیر بازنصب مکث هم پوشش دارد.
+  useEffect(() => {
+    if (phase.kind === 'recall') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase.kind])
+
   const clearPhaseTimers = () => {
     for (const t of timersRef.current) window.clearTimeout(t)
     timersRef.current = []

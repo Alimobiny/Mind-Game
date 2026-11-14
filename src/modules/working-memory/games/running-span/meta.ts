@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «دهانهٔ جاری» — موج نهم؛ سنجش به‌روزرسانی خالص.
+ * متادیتای کامل «دهانهٔ جاری» — موج نهم؛ سنجش به‌روزرسانی خالص. منبع یگانه
+ * برای کاتالوگ، رجیستری و فهرست مرجع. id/version/contentVersion باید با
+ * engine یکی بماند — نگهبان: registry-invariants.test.ts.
  */
-export const RUNNING_SPAN_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const RUNNING_SPAN_META_FA: ExerciseMeta = {
+  id: 'running-span',
   nameFa: 'دهانهٔ جاری',
   descriptionFa:
     'ارقام سریع می‌گذرند و نمی‌دانی کی تمام می‌شوند — به‌محض توقف، چند رقم آخر را به ترتیب وارد کن.',
+  domain: 'working-memory',
   exerciseType: 'numeric',
+  family: 'running-span',
+  nameEn: 'Running Span',
+  keywordsFa: ['به روزرسانی', 'ارقام آخر', 'پایان پیش بینی ناپذیر'],
   effects: ['working-memory'],
+  version: '1.0.0',
+  contentVersion: '2',
   instructionsFa: [
     'ارقام یکی‌یکی و سریع نمایش داده می‌شوند.',
     'طول جریان اعلام نمی‌شود — نمی‌دانی کی تمام می‌شود، پس مدام «آخرین ارقام» را در ذهن نگه دار.',

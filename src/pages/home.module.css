@@ -326,6 +326,16 @@
   color: var(--type-accent, var(--color-primary));
 }
 
+/* نشان سرفصل‌های نمای خانواده — لوزی کوچک اکسنت (خانواده گلیف اختصاصی ندارد) */
+.sectionFamilyMark {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: rotate(45deg);
+  opacity: 0.85;
+}
+
 .sectionCount {
   font-size: 0.7rem;
   font-weight: 400;

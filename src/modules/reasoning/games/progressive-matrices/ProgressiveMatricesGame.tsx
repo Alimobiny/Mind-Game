@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { PmCell, ProgressiveMatricesTrial } from './engine'
@@ -45,20 +46,16 @@ function CellArt({ cell }: { readonly cell: PmCell }) {
  * ماتریس ۳×۳ قاعده‌محور (خانهٔ پایین-راست خالی) + چهار گزینهٔ ۲×۲.
  * بازی غیرزمانی است: با انتخاب گزینه، پاسخ ثبت و بلافاصله مرحلهٔ بعد
  * می‌آید؛ نتیجه با نشان شناور دیده می‌شود (رفتار زمانی دست‌نخورده).
+ * سه گارد الزامی (قفل/advance امن/rollback) در useTrialGuards است.
  */
 export function ProgressiveMatricesGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as ProgressiveMatricesTrial
   const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
-  const submittedRef = useRef(false)
   const badgeTimerRef = useRef<number | null>(null)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
-  // با هر مرحله جدید ریست می‌شود (بدون دست بردن به نشان — پاک‌سازی تایمر
-  // نشان در تغییر مرحله، محوشدنش را می‌کشت و می‌چسبید)
-  useEffect(() => {
-    submittedRef.current = false
-  }, [trial.trialIndex])
-
-  // پاک‌سازی تایمر نشان شناور فقط در unmount
+  // پاک‌سازی تایمر نشان شناور فقط در unmount (بدون دست بردن به نشان در
+  // تغییر مرحله — پاک‌سازی تایمر نشان، محوشدنش را می‌کشت و می‌چسبید)
   useEffect(
     () => () => {
       if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
@@ -73,24 +70,9 @@ export function ProgressiveMatricesGame({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   const choose = (index: number) => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit(index).then((result) => {
-      if (!result.accepted) {
-        // persist_failed: مدیر rollback کرده — قفل باز بماند تا تلاش
-        // مجدد ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
-        submittedRef.current = false
-        return
-      }
-      flashBadge(result.record.correct)
-      // advance روی جلسه تمام‌شده (آخرین گزینه) خطا می‌دهد
-      if (!result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-        }
-      }
+    if (ctx.paused) return
+    void guards.submitOnce(index, {
+      onAccepted: (result) => flashBadge(result.record.correct),
     })
   }
 

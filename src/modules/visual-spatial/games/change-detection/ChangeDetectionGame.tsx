@@ -41,6 +41,14 @@ export function ChangeDetectionGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(null)
   const guards = useTrialGuards(ctx, trial.trialIndex)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از نمایش آرایهٔ آزمون سنجیده
+  // شود نه از شروع آرایهٔ نمونه (§۲-۲ ممیزی). idempotent؛ مسیر پرش به
+  // آزمون پس از مکث را هم می‌پوشاند.
+  useEffect(() => {
+    if (phase === 'test') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   // ریست با شروع هر مرحله + زمان‌بندی نمونه→خالی→آزمون. مکث = پرش به آزمون
   useEffect(() => {
     // رفع ریس pause بین پذیرش پاسخ و advance: پاسخِ ثبت‌شدهٔ بدون پیشروی

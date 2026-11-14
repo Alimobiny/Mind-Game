@@ -19,6 +19,14 @@ export function MemoriseGridGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState(false)
   const guards = useTrialGuards(ctx, trial.trialIndex)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن انتخاب خانه‌ها
+  // سنجیده شود نه از شروع نمایش الگو (§۲-۲ ممیزی). idempotent؛ مسیر
+  // بازنصب مکث (ست مستقیم 'recall') را هم می‌پوشاند.
+  useEffect(() => {
+    if (phase === 'recall') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   useEffect(() => {
     // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰): پاسخِ
     // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند

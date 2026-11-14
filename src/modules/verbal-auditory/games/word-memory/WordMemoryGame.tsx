@@ -27,6 +27,13 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState(false)
   const guards = useTrialGuards(ctx, trial.trialIndex)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن جدول انتخاب سنجیده
+  // شود نه از شروع مطالعهٔ واژه‌ها (§۲-۲ ممیزی). idempotent؛ مسیر بازنصب مکث هم پوشش دارد.
+  useEffect(() => {
+    if (phase === 'recall') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   // ریست فازها با شروع هر مرحله جدید + زمان‌بندی نمایش واژه‌ها:
   // هر واژه به‌مدت displayMsPerWord دیده می‌شود و gapMs فاصله تا بعدی.
   // بازنصبِ پس از مکث (PAUSED=unmount): مطالعه از زمانِ سپری‌شدهٔ جلسه

@@ -46,6 +46,26 @@ test.describe('طبقه‌بندی فهرست تمرین‌ها', () => {
     await expect(page.getByRole('heading', { name: 'حافظه کاری' })).toBeVisible()
     await expandAllSections(page)
     await expect(page.locator('main a[href^="/play/"]')).toHaveCount(TOTAL_EXERCISES)
+
+    // نمای خانوادهٔ پارادایمی — سرفصل‌های خانواده؛ ان-بک دوگانه دو عضو دارد
+    await page.getByTestId('view-family').click()
+    await expect(page.getByTestId('view-family')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('heading', { name: 'ان-بک دوگانه' })).toBeVisible()
+    await expandAllSections(page)
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(TOTAL_EXERCISES)
+  })
+
+  test('جستجو: عبارت لاتین شناسه بازی را می‌یابد (n-back/pasat)', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('game-search').fill('pasat')
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(1)
+    await expect(page.getByRole('link', { name: /جمع زنجیره‌ای گام‌دار/ })).toBeVisible()
+
+    await page.getByTestId('game-search').fill('n-back')
+    const nbackLinks = page.locator('main a[href^="/play/"]')
+    await expect(nbackLinks.first()).toBeVisible()
+    // سه عضو خانوادهٔ ان-بک: n-back و دو dual — هر سه لاتینِ «n-back» را دارند
+    await expect(nbackLinks).toHaveCount(3)
   })
 
   test('از جستجو، پیمایش تا picker سالم است', async ({ page }) => {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { SpeakerGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
@@ -13,7 +14,8 @@ import styles from './dual-n-back.module.css'
  * دو جریان هم‌زمان: حرف (بالای شبکه) + خانهٔ فعال شبکهٔ ۳×۳. در پنجرهٔ پاسخ،
  * «تطبیق حرف» و «تطبیق مکان» فقط ادعا ثبت می‌کنند (قفل یک‌بار هر جریان)؛
  * تایمر مهلت، یک submit با هر دو ادعا و زمان هر فشردن می‌فرستد — قرارداد
- * یک-submit-per-trial موتور. هر سه گارد الزامی رعایت شده است.
+ * یک-submit-per-trial موتور. هر سه گارد الزامی + re-arm مهلت در
+ * useTrialGuards است.
  *
  * گونهٔ شنیداری (prop auditory): جریان حرف با صدای محلی دستگاه گفته
  * می‌شود و به‌جای متن، نشان بلندگو دیده می‌شود؛ ریتم کاملاً تایمری و
@@ -29,8 +31,7 @@ export function DualNBackGame({
 }) {
   const trial = ctx.trial as DualNBackTrial
   const [stimulusVisible, setStimulusVisible] = useState(true)
-  const timersRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const trialStartRef = useRef(0)
   const claimsRef = useRef({ letterClaimed: false, letterRtMs: null as number | null, cellClaimed: false, cellRtMs: null as number | null })
 
@@ -46,11 +47,8 @@ export function DualNBackGame({
   )
 
   useEffect(() => {
-    submittedRef.current = false
     claimsRef.current = { letterClaimed: false, letterRtMs: null, cellClaimed: false, cellRtMs: null }
     trialStartRef.current = performance.now()
-    for (const t of timersRef.current) window.clearTimeout(t)
-    timersRef.current = []
 
     const remaining = ctx.timeRemainingMs()
     // در بازنصبِ پس از مکث: اگر نقطهٔ پنهان‌شدن گذشته باشد، جریان‌ها از
@@ -69,41 +67,21 @@ export function DualNBackGame({
 
     if (!pastHide) {
       // پنهان‌شدن هر دو جریان بعد از stimulusMs (فاصله خالی تا محرک بعد)
-      timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+      guards.setTrackedTimeout(() => setStimulusVisible(false), trial.stimulusMs)
     }
 
-    // انقضای مهلت → یک submit با ادعاهای جمع‌شدهٔ هر دو جریان
+    // انقضای مهلت → یک submit با ادعاهای جمع‌شدهٔ هر دو جریان (با re-arm
+    // پس از rollback ذخیره در useTrialGuards)
     if (remaining !== null) {
-      timersRef.current.push(
-        window.setTimeout(() => {
-          if (submittedRef.current) return
-          submittedRef.current = true
-          const c = claimsRef.current
-          const anyClaim = c.letterClaimed || c.cellClaimed
-          void ctx.submit(
-            anyClaim
-              ? { letterClaimed: c.letterClaimed, cellClaimed: c.cellClaimed, letterRtMs: c.letterRtMs, cellRtMs: c.cellRtMs }
-              : null,
-          ).then((result) => {
-            if (!result.accepted) {
-              // persist_failed: مدیر rollback کرده — قفل باز بماند تا
-              // پاسخ/انقضای بعدی ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
-              submittedRef.current = false
-              return
-            }
-            if (!result.sessionCompleted) {
-              try {
-                ctx.advance()
-              } catch {
-                // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-              }
-            }
-          })
-        }, remaining),
-      )
+      guards.armDeadline(() => {
+        const c = claimsRef.current
+        const anyClaim = c.letterClaimed || c.cellClaimed
+        return anyClaim
+          ? { letterClaimed: c.letterClaimed, cellClaimed: c.cellClaimed, letterRtMs: c.letterRtMs, cellRtMs: c.cellRtMs }
+          : null
+      }, remaining)
     }
     return () => {
-      for (const t of timersRef.current) window.clearTimeout(t)
       speech?.cancel()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -119,7 +97,7 @@ export function DualNBackGame({
 
   /** ادعای یک جریان — فقط یک‌بار؛ فشردنِ دوبارهٔ همان دکمه بی‌اثر است */
   const claim = (stream: 'letter' | 'cell') => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     const rt = Math.round(performance.now() - trialStartRef.current)
     if (stream === 'letter' && !claimsRef.current.letterClaimed) {
       claimsRef.current.letterClaimed = true

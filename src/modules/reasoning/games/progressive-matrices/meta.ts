@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «ماتریس پیشرونده» — موج دهم؛ خانوادهٔ قواعد کامل ریون.
+ * متادیتای کامل «ماتریس پیشرونده» — موج دهم؛ خانوادهٔ قواعد کامل ریون.
+ * منبع یگانه برای کاتالوگ، رجیستری و فهرست مرجع. id/version/contentVersion
+ * باید با engine یکی بماند — نگهبان: registry-invariants.test.ts.
  */
-export const PROGRESSIVE_MATRICES_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const PROGRESSIVE_MATRICES_META_FA: ExerciseMeta = {
+  id: 'progressive-matrices',
   nameFa: 'ماتریس پیشرونده',
   descriptionFa:
     'ماتریس ۳×۳ نمادهایی که زیر قاعده‌های پنهان شکل، رنگ و تعداد چیده شده‌اند — خانهٔ خالی را کامل کن.',
+  domain: 'reasoning',
   exerciseType: 'logic',
+  family: 'matrices',
+  nameEn: 'Progressive Matrices (Raven-style)',
+  keywordsFa: ['ریون', 'ماتریس ریون', 'استدلال ماتریسی'],
   effects: ['reasoning'],
+  version: '1.0.0',
+  contentVersion: '2',
   instructionsFa: [
     'ماتریس ۳×۳ نمادهای چندصفته (شکل، رنگ، تعداد) دیده می‌شود و خانهٔ پایین-راست خالی است.',
     'قاعده‌ها در سطرها و ستون‌ها پنهان‌اند: توزیع سه‌تایی مقادیر، پیشروی عددی، عمل منطقی روی صفت‌ها، یا چیدمان موقعیتی.',

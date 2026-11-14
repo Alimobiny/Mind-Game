@@ -118,7 +118,7 @@ export type WordMemoryAnswer = readonly string[]
 
 export const WORD_MEMORY_ID = 'word-memory'
 export const WORD_MEMORY_VERSION = '1.0.0'
-export const WORD_MEMORY_CONTENT_VERSION = '1'
+export const WORD_MEMORY_CONTENT_VERSION = '2' // v2: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع مطالعهٔ واژه‌ها (§۲-۲ ممیزی)
 const TOTAL_TRIALS = 6
 
 /** سطح‌های دشواری — اعداد طراحی‌اند، نه هنجار بالینی */

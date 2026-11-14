@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «دهانهٔ تقارن» — موج ۷.
+ * متادیتای کامل «دهانهٔ تقارن» — موج ۷. منبع یگانه برای کاتالوگ، رجیستری
+ * و فهرست مرجع. id/version/contentVersion باید با engine یکی بماند —
+ * نگهبان: registry-invariants.test.ts.
  */
-export const SYMMETRY_SPAN_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const SYMMETRY_SPAN_META_FA: ExerciseMeta = {
+  id: 'symmetry-span',
   nameFa: 'دهانهٔ تقارن',
   descriptionFa:
     'وسط قضاوت تقارن الگوها، مکان خانه‌های روشن را در ذهن نگه دار و پایان هر دسته به ترتیب بازسازی کن.',
+  domain: 'visual-spatial',
   exerciseType: 'spatial',
+  family: 'complex-span',
+  nameEn: 'Symmetry Span',
+  keywordsFa: ['اسپن تقارن', 'دهانه تقارن', 'قضاوت تقارن'],
   effects: ['working-memory', 'visual-spatial'],
+  version: '1.0.0',
+  contentVersion: '3',
   instructionsFa: [
     'هر دسته چند زوج پشت‌سرهم دارد: اول یک الگوی شبکه‌ای می‌آید — با دکمه‌های «متقارن» یا «نامتقارن» قضاوت کن.',
     'بلافاصله بعد از قضاوت، یک خانه در شبکهٔ خالی روشن می‌شود — مکانش را به خاطر بسپار.',

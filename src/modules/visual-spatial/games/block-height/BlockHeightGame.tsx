@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
@@ -19,11 +20,8 @@ import { e2e } from '../../../../utils/e2e'
  * پاسخ کل با صفحه‌کلید عددی (یا کلیدهای دستگاه + Enter) وارد می‌شود؛
  * مرحله مهلت ندارد.
  *
- * نگهبان‌های اجباری:
- *  ۱) قفل submittedRef: تپ دومی روی «تأیید»/Enter نباید پاسخ دومی بفرستد؛
- *     قفل فقط با result.accepted === false باز می‌شود.
- *  ۲) بعد از result.sessionCompleted === true هیچ advanceای زمان‌بندی نمی‌شود.
- *  ۳) تایمر بازخورد در flashTimerRef؛ در unmount و تغییر مرحله پاک می‌شود.
+ * نگهبان‌های اجباری (قفل پاسخ + advance امن پس از sessionCompleted ناپذیر +
+ * تایمر بازخورد ردیابی‌شده با پاک‌سازی) در useTrialGuards است.
  *
  * نکته pause: هنگام PAUSE این کامپوننت unmount می‌شود؛ اگر فلش وسط pause
  * قطع شد، در باز-نصبِ پس از resume با تشخیص «مرحلهٔ جاری از پیش پاسخ
@@ -108,7 +106,7 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as BlockHeightTrial
   const [entry, setEntry] = useState('')
   const [flash, setFlash] = useState<FlashState | null>(null)
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const flashTimerRef = useRef<number | null>(null)
 
   const clearFlashTimer = () => {
@@ -135,14 +133,12 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
     }, correct ? FLASH_CORRECT_MS : FLASH_WRONG_MS)
   }
 
-  // ریست برای هر مرحله جدید — و باز-نصب پس از pause/resume (نگهبان ۳)
+  // ریست برای هر مرحله جدید — و باز-نصب پس از pause/resume
   useEffect(() => {
     clearFlashTimer()
     setEntry('')
     const outcome = ctx.lastOutcome
-    const answered = outcome !== null && outcome.trialIndex === trial.trialIndex
-    submittedRef.current = answered
-    if (answered && outcome !== null) {
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
       setFlash({ correct: outcome.correct, expected: outcome.expected as number })
       scheduleAdvance(outcome.correct)
     } else {
@@ -152,7 +148,7 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
-  const locked = flash !== null || submittedRef.current
+  const locked = flash !== null || guards.isSubmitted()
 
   const press = (key: string) => {
     if (locked) return
@@ -163,22 +159,21 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
     setEntry((current) => (current.length >= MAX_ENTRY_DIGITS ? current : current + key))
   }
 
-  const submit = async () => {
-    if (submittedRef.current || flash !== null || entry.length === 0) return
-    submittedRef.current = true
+  const submit = () => {
+    if (guards.isSubmitted() || flash !== null || entry.length === 0) return
     const value = Number.parseInt(entry, 10)
-    const result = await ctx.submit(value)
-    if (!result.accepted) {
-      // پاسخ رد شد (مثلاً مرحله از قبل پاسخ داده شده) — قفل باز شود (نگهبان ۱)
-      submittedRef.current = false
-      return
-    }
-    if (result.sessionCompleted) {
-      // جلسه تمام است — هیچ advanceای زمان‌بندی نشود (نگهبان ۲)
-      return
-    }
-    setFlash({ correct: result.record.correct, expected: result.record.expected as number })
-    scheduleAdvance(result.record.correct)
+    void guards.submitOnce(value, {
+      onAccepted: (result) => {
+        if (result.sessionCompleted) {
+          // جلسه تمام است — هیچ advanceای زمان‌بندی نشود
+          return
+        }
+        setFlash({ correct: result.record.correct, expected: result.record.expected as number })
+        scheduleAdvance(result.record.correct)
+      },
+      // پیشروی با تایمر فلش خودش — نه بلافاصله پس از پذیرش
+      autoAdvance: false,
+    })
   }
 
   // صفحه‌کلید فیزیکی: ارقام (لاتین/فارسی)، Backspace و Enter

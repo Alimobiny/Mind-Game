@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «جمع زنجیره‌ای گام‌دار (پاسات)» برای ثبت مرکزی.
+ * متادیتای کامل «جمع زنجیره‌ای گام‌دار (پاسات)» — منبع یگانه برای کاتالوگ،
+ * رجیستری و فهرست مرجع. id/version/contentVersion باید با engine یکی
+ * بماند — نگهبان: registry-invariants.test.ts.
  */
-export const PASAT_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const PASAT_META_FA: ExerciseMeta = {
+  id: 'pasat',
   nameFa: 'جمع زنجیره‌ای گام‌دار',
   descriptionFa:
     'ارقام با ریتم ثابت می‌آیند؛ حاصل جمع هر رقم با رقم قبل را پیش از رقم بعدی وارد کن.',
+  domain: 'processing-speed',
   exerciseType: 'numeric',
+  family: 'pasat',
+  nameEn: 'PASAT (Paced Serial Addition)',
+  keywordsFa: ['پاسات', 'PASAT', 'جمع زنجیره‌ای', 'جمع سریع'],
   effects: ['processing-speed', 'working-memory'],
+  version: '1.0.0',
+  contentVersion: '2',
   instructionsFa: [
     'ارقام یکی‌یکی و با فاصلهٔ ثابت نمایش داده می‌شوند و بعد محو می‌شوند.',
     'رقم اول فقط برای تماشاست — به خاطر بسپار.',

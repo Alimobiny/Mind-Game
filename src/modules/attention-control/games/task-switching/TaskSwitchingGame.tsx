@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import {
   DIMENSION_LABELS_FA,
@@ -28,8 +29,11 @@ import { e2e } from '../../../../utils/e2e'
  *     (result.accepted === false).
  *  ۲) بعد از result.sessionCompleted === true هیچ advanceای زمان‌بندی
  *     نمی‌شود (هر دو مسیر پاسخ و انقضای مهلت).
- *  ۳) همهٔ تایمرها (CSI، مهلت پاسخ، پیشروی پس از فلش) در timersRef با
- *     پاک‌سازی در unmount و تغییر مرحله.
+ *  ۳) همهٔ تایمرها (CSI، مهلت پاسخ، پیشروی پس از فلش) ردیابی‌شده با
+ *     پاک‌سازی در unmount و تغییر مرحله + re-arm مهلت پس از rollback.
+ *
+ * هر سه گارد و re-arm در useTrialGuards است؛ timersRef فقط برای CSI و
+ * پیشرویِ پس از فلشِ قطع‌شدهٔ pause (باززمان‌بندی در بازنصب) می‌ماند.
  *
  * نکته pause: هنگام PAUSE این کامپوننت unmount می‌شود؛ اگر فلش وسط
  * pause قطع شد، در باز-نصبِ پس از resume با تشخیص «مرحلهٔ جاری از پیش
@@ -73,7 +77,7 @@ export function TaskSwitchingGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as TaskSwitchingTrial
   const [stimulusVisible, setStimulusVisible] = useState(false)
   const [flash, setFlash] = useState<FlashState | null>(null)
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const timersRef = useRef<number[]>([])
 
   const clearTimers = () => {
@@ -104,14 +108,13 @@ export function TaskSwitchingGame({ ctx }: { ctx: ActiveGameContext }) {
     setStimulusVisible(false)
     const outcome = ctx.lastOutcome
     const answered = outcome !== null && outcome.trialIndex === trial.trialIndex
-    submittedRef.current = answered
     if (answered && outcome !== null) {
       setFlash({
         correct: outcome.correct,
         omission: outcome.given === null,
         correctSide: outcome.expected as ResponseSide,
       })
-      // فلشِ قطع‌شده توسط pause را دوباره زمان‌بندی کن (نگهبان ۳: در timersRef)
+      // فلشِ قطع‌شده توسط pause را دوباره زمان‌بندی کن (تایمر ردیابی‌شده)
       scheduleAdvance(outcome.correct)
     } else {
       setFlash(null)
@@ -133,25 +136,19 @@ export function TaskSwitchingGame({ ctx }: { ctx: ActiveGameContext }) {
       }
       // انقضای مهلت کل مرحله (CSI + پنجرهٔ محرک) → ثبت بی‌پاسخی و مرحله بعد
       if (remaining !== null) {
-        addTimer(() => {
-          if (submittedRef.current) return
-          submittedRef.current = true
-          clearTimers()
-          void ctx.submit(null).then((result) => {
-            if (!result.accepted) {
-              // پاسخ رد شد — قفل باز شود (نگهبان ۱)
-              submittedRef.current = false
-              return
-            }
-            if (result.sessionCompleted) return // نگهبان ۲
+        guards.armDeadline(() => null, remaining, {
+          onAccepted: (result) => {
+            if (result.sessionCompleted) return
+            clearTimers()
             setFlash({
               correct: false,
               omission: true,
               correctSide: correctSideForTrial(trial),
             })
             scheduleAdvance(false)
-          })
-        }, remaining)
+          },
+          autoAdvance: false,
+        })
       }
     }
     return clearTimers
@@ -161,22 +158,20 @@ export function TaskSwitchingGame({ ctx }: { ctx: ActiveGameContext }) {
   const answer = (side: ResponseSide) => {
     // پاسخ فقط وقتی معقول است که محرک دیده شده باشد (پاسخ پیش‌دستی ثبت
     // نمی‌شود) و مرحله قفل نباشد
-    if (submittedRef.current || !stimulusVisible || ctx.paused || flash !== null) return
-    submittedRef.current = true
+    if (!stimulusVisible || ctx.paused || flash !== null) return
     clearTimers()
-    void ctx.submit(side).then((result) => {
-      if (!result.accepted) {
-        // پاسخ رد شد (مثلاً مرحله از قبل پاسخ داده شده) — قفل باز شود (نگهبان ۱)
-        submittedRef.current = false
-        return
-      }
-      if (result.sessionCompleted) return // نگهبان ۲
-      setFlash({
-        correct: result.record.correct,
-        omission: false,
-        correctSide: result.record.expected as ResponseSide,
-      })
-      scheduleAdvance(result.record.correct)
+    guards.clearDeadline()
+    void guards.submitOnce(side, {
+      onAccepted: (result) => {
+        if (result.sessionCompleted) return
+        setFlash({
+          correct: result.record.correct,
+          omission: false,
+          correctSide: result.record.expected as ResponseSide,
+        })
+        scheduleAdvance(result.record.correct)
+      },
+      autoAdvance: false,
     })
   }
 
@@ -190,7 +185,7 @@ export function TaskSwitchingGame({ ctx }: { ctx: ActiveGameContext }) {
     return () => window.removeEventListener('keydown', onKeyDown)
   })
 
-  const locked = submittedRef.current || flash !== null
+  const locked = guards.isSubmitted() || flash !== null
 
   return (
     <div className={styles.stage}>

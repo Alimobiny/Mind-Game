@@ -83,11 +83,11 @@
 ## ۲. سلامت کد — یافته‌های عرضی بازمانده
 
 ۱. ~~آلودگی replay پس از مکث~~ **رفع شد (نشست ۱۴):** useTrialGuards + ذخیرهٔ ارائهٔ per-trial در GameShell + trialElapsedMs؛ پرچم contaminated در رویداد خام. شرح تاریخی: PAUSED=unmount ⇒ فاز درون کامپوننت می‌میرد ⇒ resume همان مرحله را از صفر mount می‌کند. بازبینی نشان داد فقط CD/AB/RS نیست: **number-sequence، running-span، operation-span، symmetry-span، word-memory، audio-recall، memorise-grid، spatial-sequence، attentional-blink، change-detection، reading-aloud (ازدست‌رفتن داده)** هم مبتلااند. اثر: تمدید encoding/دوبار دیدن محرک/بازنویسی قضاوت‌ها = بایاس صعودی سیستماتیک. راه‌حل کلی (فاز بیرون از چرخهٔ حیات کامپوننت یا پرش به فاز پاسخ + پرچم contamination در stimulus) — پیش‌نیاز طبیعی: هوک `useTrialGuards` (بدهی §۵-۱ HANDOFF).
-۲. **RT آلوده به فاز نمایش در بازی‌های چندفازی**: `reactionTimeMs` از `advanceTrialInternal` ثبت می‌شود نه از شروع فاز پاسخ؛ در NS/RS/MG/spatial-seq/CD/ospan/PASAT کل زمان presentation داخل «میانه زمان پاسخ» است و در صفحهٔ نتایج نمایش می‌یابد. اصلاح پیشنهادی: `responseStartAtMs` جدا در manager یا حذف نمایش RT از بازی‌های phased.
+۲. ~~**RT آلوده به فاز نمایش در بازی‌های چندفازی**~~ **رفع شد (نشست ۱۵):** `beginResponsePhase()` در مدیر جلسه + `responseStartAtMs` — بازی‌های چندفازی در لحظهٔ بازشدن UI پاسخ علامت می‌زنند و RT از همان نقطه سنجیده می‌شود (۱۴ بازی + بامپ contentVersion؛ بازبینی PASAT: RT از onset رقم معنای استاندارد آزمونگر است — بدون تغییر). به‌علاوه پرچم `retryAfterPersistFailure` در رویداد خام، RT تلاش‌مجدد پس از rollback قابل فیلتر است (A7 بسته شد).
 ۳. ~~«صفرِ جعلی» متریک‌های زمانی خالی~~ **رفع شد (نشست ۱۴):** هر ۶ بازی + میانگین پاسات به کلید شرطی مهاجرت کردند (cv2). شرح تاریخی: stroop (stroopCostMs/congruentAccuracy)، task-switching (switchCost/rtSwitch/rtRepeat)، go-no-go (medianGo)، reaction-time (median/mean/best)، progressive-matrices (meanRtMs)، AB (t2GivenT1). الگوی سالم موجود: Simon/تغییریاب/PM-band — کلید فقط با داده منتشر شود. گذار یکنواخت + بامپ contentVersion.
-۴. **تست کامپوننت صفر** برای ۳۷ بازی؛ سه‌گارد/deadlock/پخش‌مجدد فقط از طریق e2e (و فقط مسیر خوش‌بینانه) پوشش دارند. باگ‌های این نشست (بن‌بست قفل، plannedTrials، فریب word-scramble) همگی از دل تست‌های موجود عبور کرده بودند.
+۴. **تست کامپوننت صفر** برای ۳۷ بازی؛ سه‌گارد/deadlock/پخش‌مجدد فقط از طریق e2e (و فقط مسیر خوش‌بینانه) پوشش دارند. باگ‌های این نشست (بن‌بست قفل، plannedTrials، فریب word-scramble) همگی از دل تست‌های موجود عبور کرده بودند. (نشست ۱۵: همهٔ ۳۶ کامپوننت به `useTrialGuards` مهاجرت یافتند — هوک و GameShell تست‌شده‌اند؛ لایهٔ تست کامپوننت در سطح بازی همچنان باز است → نشست ۱۶.)
 ۵. ~~نشت پاسخ در DOM~~ **رفع شد (نشست ۱۴):** قلاب‌های data-* پاسخ‌دار با e2e() فقط در DEV رندر می‌شوند (e2e روی dev اجرا می‌شود؛ باندل تولیدی با grep راستی‌آزمایی شد).
-۶. موارد ریزتر ثبت‌شده (اولویت پایین): ~~Math.random در جدول بازیابی AB (رفع شد — بُر قطعی FNV+SeededRandom)~~؛ نشت listener voiceschanged در dual-n-back؛ RT نامعتبر در omission (word-scramble/audio-recall/word-blend/AP-test)؛ نوار «شکستن رقم» number-comparison؛ لبهٔ remaining===0 در MOT (omission در لحظهٔ انقضا بلعیده می‌شود)؛ دکمهٔ خروج overlay بدون حالت تأیید؛ abort هم‌زمان submit (شمارش بدون رویداد)؛ چند-تب abortStaleSessions؛ A7 (RT تلاش مجدد پس از rollback متورم)؛ A10 (onSessionFinished در unmount-abort گم می‌شود)؛ rounding accuracyPercent روی آستانهٔ ۸۰٪؛ domain drift متاهای inline موج ۱.
+۶. موارد ریزتر ثبت‌شده (اولویت پایین): ~~Math.random در جدول بازیابی AB (رفع شد — بُر قطعی FNV+SeededRandom)~~؛ ~~A7 (RT تلاش مجدد پس از rollback متورم — رفع شد نشست ۱۵: پرچم retryAfterPersistFailure)~~؛ ~~domain drift متاهای inline موج ۱ (رفع ساختاری نشست ۱۵: دیگر هیچ متای inline‌ای وجود ندارد — هر ۳۷ بازی متای کامل در meta.ts خودش)~~؛ نشت listener voiceschanged در dual-n-back؛ RT نامعتبر در omission (word-scramble/audio-recall/word-blend/AP-test)؛ نوار «شکستن رقم» number-comparison؛ لبهٔ remaining===0 در MOT (omission در لحظهٔ انقضا بلعیده می‌شود)؛ دکمهٔ خروج overlay بدون حالت تأیید؛ abort هم‌زمان submit (شمارش بدون رویداد)؛ چند-تب abortStaleSessions؛ A10 (onSessionFinished در unmount-abort گم می‌شود)؛ rounding accuracyPercent روی آستانهٔ ۸۰٪.
 
 ## ۳. بازبینی علمی
 
@@ -133,7 +133,7 @@
 - **فارسی‌محوری**: ارقام فارسی در همهٔ محرک‌ها ✓؛ جداکنندهٔ اعشار لاتین در نتایج (format.ts)؛ بانک واژه بدون نرم فراوانی — نسخهٔ محتوایی آینده با فراوانی‌سنجه‌بندی بانک‌ها بهتر می‌شود.
 - **بدون فرادادهٔ پژوهشی**: pauseCount (در state-machine شمرده می‌شود ولی ذخیره نمی‌شود)، روش ورودی، افست منطقهٔ زمانی، وضعیت صدای TTS — برای تحلیل آینده ارزشمندند.
 
-## ۴. صف اولویت — وضعیت پس از نشست چهاردهم
+## ۴. صف اولویت — وضعیت پس از نشست پانزدهم
 
 1. ~~آلودگی replay پس از مکث~~ ✅ نشست ۱۴.
 2. ~~ریتم examiner-paced در PASAT + متریک‌های dyad/string/before-next~~ ✅ نشست ۱۴ (cv2).
@@ -141,10 +141,10 @@
 4. ~~Quota جایگاه هدف ان-بک‌ها + تخصیص دقیق lag پلک توجه~~ ✅ نشست ۱۴ (cv2).
 5. ~~گذار «کلید شرطی» برای ۶ بازی صفرِ جعلی~~ ✅ نشست ۱۴ (cv2).
 6. ~~موارد متوسط: WCST/چرخش ذهنی/L5 تکمیل الگو/ماتریس ۶ گزینه/تغییریاب cv2/d′ loglinear/data-* تولیدی~~ ✅ نشست ۱۴.
-7. **RT آلوده به فاز نمایش در بازی‌های چندفازی** (`responseStartAtMs` جدا در مدیر یا حذف نمایش RT) — مهم‌ترین باقی‌ماندهٔ اعتبار متریک.
-8. **لایهٔ تست کامپوننت** برای ادامهٔ پس از مکث/سه‌گارد در سطح بازی (فعلاً فقط useTrialGuards و GameShell تست شده‌اند) + مهاجرت باقی ۳۵ کامپوننت به هوک.
-9. بدهی‌های معماری (تفکیک رجیستری، TRecord تایپ‌شده، ESLint، فرادادهٔ پژوهشی: pauseCount ذخیره‌سازی/روش ورودی/TTS-mode).
-10. موارد ریزتر §۲-۶ باقی‌مانده (اولویت پایین).
+7. ~~RT آلوده به فاز نمایش در بازی‌های چندفازی~~ ✅ نشست ۱۵ — `beginResponsePhase`/`responseStartAtMs` در مدیر + علامت‌گذاری ۱۴ بازی چندفازی (بامپ cv) + پرچم `retryAfterPersistFailure` (A7). PASAT بازبینی شد: onset-locked RT معنای استاندارد است، بدون تغییر.
+8. ~~مهاجرت کامل کامپوننت‌ها به useTrialGuards~~ ✅ نشست ۱۵ — هر ۳۶ کامپوننت (dual-auditory با کامپوننت مشترک) روی هوک‌اند؛ **لایهٔ تست کامپوننت در سطح بازی همچنان باز** (فعلاً فقط useTrialGuards و GameShell تست‌شده‌اند) → نشست ۱۶.
+9. ~~تفکیک متا/انجین رجیستری + یکسان‌سازی متاها~~ ✅ نشست ۱۵ — `catalog.ts` فقط متا (۳۷ متای کامل ExerciseMeta در meta.ts هر بازی، الگوی واحد، بدون inline)؛ `appRegistry` تک‌نمونه؛ `ExerciseId` تایپ‌شده با `Record<ExerciseId,…>` در DEFINITIONS و GAME_LOADERS؛ لایهٔ خانوادهٔ پارادایمی (`EXERCISE_FAMILIES` + `family/nameEn/keywordsFa`) + نمای چهارم «خانواده» + جست‌وجوی لاتین/کلیدواژه + فهرست مرجع تولیدشده `docs/GAMES-CATALOG.md` با تست drift. باقی بدهی معماری (ESLint، فرادادهٔ پژوهشی pauseCount/روش ورودی/TTS-mode؛ TRecord تا حدی با flags تایپ‌شده انجام شد) → نشست ۱۶.
+10. موارد ریزتر §۲-۶ باقی‌مانده (اولویت پایین؛ A7 و domain-drift در نشست ۱۵ بسته شدند).
 
 ## ۵. منابع کلیدی این ممیزی (تازه‌ها)
 

@@ -88,8 +88,16 @@ export class ExerciseSessionManager {
   private currentTrialAnswered = false
   /** زمان نمایش محرک جاری به ساعت تایمر (برای RT و مهلت پاسخ) */
   private trialShownAtMs = 0
+  /**
+   * زمان شروع فاز پاسخ مرحلهٔ جاری — بازی‌های چندفازی با beginResponsePhase
+   * علامت می‌زنند تا RT از شروع پاسخ سنجیده شود نه شروع نمایش (§۲-۲ ممیزی).
+   * null = بازی تک‌فازی است/هنوز علامت نخورده؛ RT از trialShownAtMs.
+   */
+  private responseStartAtMs: number | null = null
   /** pauseCount ماشین هنگام تولید مرحلهٔ جاری — مبنای پرچم contaminated */
   private pauseCountAtTrialStart = 0
+  /** شکست‌های ذخیره‌سازی پاسخ مرحلهٔ جاری — مبنای پرچم retryAfterPersistFailure */
+  private trialPersistFailures = 0
   private lastOutcome: RecordedTrial | null = null
   private summary: ExerciseSummary | null = null
   private readonly listeners = new Set<() => void>()
@@ -219,8 +227,21 @@ export class ExerciseSessionManager {
     this.currentTrial = trial
     this.currentTrialAnswered = false
     this.trialShownAtMs = this.timer.now()
+    this.responseStartAtMs = null
+    this.trialPersistFailures = 0
     this.pauseCountAtTrialStart = this.machine.pauseCount
     return trial
+  }
+
+  /**
+   * شروع فاز پاسخ مرحلهٔ جاری را علامت بزن — بازی‌های چندفازی در لحظهٔ
+   * بازشدن UI پاسخ صدا می‌زنند تا «میانهٔ زمان پاسخ» آلوده به مدت نمایش
+   * محرک نباشد (GAMES-AUDIT §۲-۲). idempotent به اولین علامت: بازنصب پس از
+   * مکث مبنا را جابه‌جا نمی‌کند؛ در فاز غیر ACTIVE یا بدون مرحلهٔ فعال بی‌اثر.
+   */
+  beginResponsePhase(): void {
+    if (this.machine.phase !== 'ACTIVE' || this.currentTrial === null) return
+    if (this.responseStartAtMs === null) this.responseStartAtMs = this.timer.now()
   }
 
   /**
@@ -250,7 +271,10 @@ export class ExerciseSessionManager {
     }
     if (this.currentTrialAnswered) return { accepted: false, reason: 'already_answered' }
 
-    const reactionTimeMs = Math.max(0, Math.round(this.timer.now() - this.trialShownAtMs))
+    // RT از شروع فاز پاسخ اگر بازی علامت زده باشد (چندفازی)؛ وگرنه از
+    // نمایش محرک (تک‌فازی — محرک و پاسخ هم‌زمان‌اند)
+    const rtBaseMs = this.responseStartAtMs ?? this.trialShownAtMs
+    const reactionTimeMs = Math.max(0, Math.round(this.timer.now() - rtBaseMs))
     // برای rollback در صورت خطای ذخیره‌سازی — وضعیت قبلی حفظ می‌شود
     const prevState = this.exerciseState
     const prevOutcome = this.lastOutcome
@@ -271,13 +295,19 @@ export class ExerciseSessionManager {
           this.definition.version,
           record,
           this.wallClock(),
-          this.isCurrentTrialContaminated(),
+          {
+            contaminated: this.isCurrentTrialContaminated(),
+            retryAfterPersistFailure: this.trialPersistFailures > 0,
+          },
         ),
       )
     } catch (err) {
       this.exerciseState = prevState
       this.currentTrialAnswered = false
       this.lastOutcome = prevOutcome
+      // تلاش مجددِ پس از rollback RT را متورم می‌کند — در رویداد خام پرچم
+      // می‌خورد تا تحلیل آینده فیلترش کند (A7 ممیزی)
+      this.trialPersistFailures += 1
       console.error('ثبت رویداد مرحله در ذخیره‌سازی محلی ناموفق بود', err)
       return { accepted: false, reason: 'persist_failed' }
     }

@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «دهانهٔ عملیاتی» — موج ۷.
+ * متادیتای کامل «دهانهٔ عملیاتی» — موج ۷. منبع یگانه برای کاتالوگ، رجیستری
+ * و فهرست مرجع. id/version/contentVersion باید با engine یکی بماند —
+ * نگهبان: registry-invariants.test.ts.
  */
-export const OPERATION_SPAN_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const OPERATION_SPAN_META_FA: ExerciseMeta = {
+  id: 'operation-span',
   nameFa: 'دهانهٔ عملیاتی',
   descriptionFa:
     'وسط حل مسئله‌های محاسبه، واژه‌ها را در ذهن نگه دار و پایان هر دسته به ترتیب بازیابی کن.',
+  domain: 'working-memory',
   exerciseType: 'numeric',
+  family: 'complex-span',
+  nameEn: 'Operation Span (OSpan)',
+  keywordsFa: ['اسپن عملیاتی', 'دهانه عملیاتی', 'OSpan'],
   effects: ['working-memory', 'processing-speed'],
+  version: '1.0.0',
+  contentVersion: '3',
   instructionsFa: [
     'هر دسته چند زوج پشت‌سرهم دارد: اول یک معادله می‌آید — با دکمه‌های «درست» یا «غلط» قضاوت کن.',
     'بلافاصله بعد از قضاوت، یک واژه کوتاه نمایش داده می‌شود — آن را به خاطر بسپار.',

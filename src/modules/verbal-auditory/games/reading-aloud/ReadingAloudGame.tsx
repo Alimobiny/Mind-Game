@@ -38,6 +38,14 @@ export function ReadingAloudGame({ ctx }: { ctx: ActiveGameContext }) {
     trial.questions.map(() => null),
   )
   const guards = useTrialGuards(ctx, trial.trialIndex)
+
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن سؤال‌های فهم سنجیده
+  // شود نه از شروع خواندن (§۲-۲ ممیزی؛ زمان خودِ خواندن جدا در readingMs
+  // ثبت می‌شود). idempotent؛ مسیر بازنصب مکث هم پوشش دارد.
+  useEffect(() => {
+    if (phase === 'questions') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
   /** زنجیرهٔ زمان‌سنج خواندن — جدا از تایمرهای گارد چون interval است */
   const intervalRef = useRef<number | null>(null)
   const readStartRef = useRef(0)

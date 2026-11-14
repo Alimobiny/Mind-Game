@@ -1,16 +1,21 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «چرخش ذهنی» برای ثبت مرکزی — هماهنگ‌کننده این شیء را
- * در Registry با id/domain/version/contentVersion از engine ترکیب می‌کند.
+ * متادیتای کامل «چرخش ذهنی» — منبع یگانه برای کاتالوگ، رجیستری و فهرست
+ * مرجع. id/version/contentVersion باید با engine یکی بماند — نگهبان:
+ * registry-invariants.test.ts.
  */
-export const MENTAL_ROTATION_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const MENTAL_ROTATION_META_FA: ExerciseMeta = {
+  id: 'mental-rotation',
   nameFa: 'چرخش ذهنی',
+  domain: 'visual-spatial',
   exerciseType: 'spatial',
+  family: 'mental-rotation',
+  nameEn: 'Mental Rotation',
+  keywordsFa: ['چرخش فضایی', 'شکل چرخیده', 'آینه ای'],
   effects: ['visual-spatial', 'reasoning'],
+  version: '1.0.0',
+  contentVersion: '2',
   descriptionFa:
     'شکل مرجع را در ذهن بچرخان و داوری کن: گزینه همان شکلِ چرخیده است یا تصویر آینه‌ای آن؟',
   instructionsFa: [

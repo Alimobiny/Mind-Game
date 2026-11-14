@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import {
@@ -56,15 +57,10 @@ type FlashKind = 'correct' | 'incorrect' | 'omission'
 export function MirrorClockGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as MirrorClockTrial
   const [flash, setFlash] = useState<FlashKind | null>(null)
-  const submittedRef = useRef(false)
-  const deadlineRef = useRef<number | null>(null)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const flashTimerRef = useRef<number | null>(null)
 
-  const clearTimers = () => {
-    if (deadlineRef.current !== null) {
-      window.clearTimeout(deadlineRef.current)
-      deadlineRef.current = null
-    }
+  const clearFlashTimer = () => {
     if (flashTimerRef.current !== null) {
       window.clearTimeout(flashTimerRef.current)
       flashTimerRef.current = null
@@ -85,56 +81,48 @@ export function MirrorClockGame({ ctx }: { ctx: ActiveGameContext }) {
 
   // ریست برای هر مرحله جدید — و باز-نصب پس از pause/resume
   useEffect(() => {
-    clearTimers()
+    clearFlashTimer()
     const outcome = ctx.lastOutcome
-    const answered = outcome !== null && outcome.trialIndex === trial.trialIndex
-    submittedRef.current = answered
-    if (answered && outcome !== null) {
+    if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
       // فلشِ قطع‌شده را بساز و پیشروی را دوباره زمان‌بندی کن
       setFlash(outcome.correct ? 'correct' : outcome.outcome === 'omission' ? 'omission' : 'incorrect')
       scheduleAdvance(outcome.correct ? FLASH_CORRECT_MS : FLASH_WRONG_MS)
-      return clearTimers
+      return clearFlashTimer
     }
     setFlash(null)
-    // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به مرحله بعد
+    // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به مرحله بعد (با re-arm پس
+    // از rollback ذخیره در useTrialGuards)
     const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
-      deadlineRef.current = window.setTimeout(() => {
-        if (submittedRef.current) return
-        submittedRef.current = true
-        void ctx.submit(null).then((result) => {
-          if (!result.accepted) {
-            // مرحله از پیش پاسخ داده شده — قفل باز شود
-            submittedRef.current = false
-            return
-          }
+      guards.armDeadline(() => null, remaining, {
+        onAccepted: (result) => {
           setFlash('omission')
-          if (result.sessionCompleted) return // نگهبان ۲
+          if (result.sessionCompleted) return
           scheduleAdvance(FLASH_OMISSION_MS)
-        })
-      }, remaining)
+        },
+        autoAdvance: false,
+      })
     }
-    return clearTimers
+    return clearFlashTimer
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
-  const locked = submittedRef.current || flash !== null
+  const locked = guards.isSubmitted() || flash !== null
 
   const answer = (option: TimeOption) => {
-    if (submittedRef.current || flash !== null || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit(option).then((result) => {
-      if (!result.accepted) {
-        // پاسخ رد شد (مثلاً مرحله از قبل پاسخ داده شده) — قفل باز شود
-        submittedRef.current = false
-        return
-      }
-      if (result.sessionCompleted) {
-        // جلسه تمام است — هیچ advanceای زمان‌بندی نشود (نگهبان ۲)
-        return
-      }
-      setFlash(result.record.correct ? 'correct' : 'incorrect')
-      scheduleAdvance(result.record.correct ? FLASH_CORRECT_MS : FLASH_WRONG_MS)
+    if (flash !== null || ctx.paused) return
+    guards.clearDeadline()
+    void guards.submitOnce(option, {
+      onAccepted: (result) => {
+        if (result.sessionCompleted) {
+          // جلسه تمام است — هیچ advanceای زمان‌بندی نشود
+          return
+        }
+        setFlash(result.record.correct ? 'correct' : 'incorrect')
+        scheduleAdvance(result.record.correct ? FLASH_CORRECT_MS : FLASH_WRONG_MS)
+      },
+      // پیشروی با تایمر فلش خودش — نه بلافاصله پس از پذیرش
+      autoAdvance: false,
     })
   }
 

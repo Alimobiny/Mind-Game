@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { WordScrambleTrial } from './engine'
@@ -12,16 +13,15 @@ import styles from './word-scramble.module.css'
  * می‌فرستد (آخرین حرف با دکمهٔ برگشت برمی‌گردد) و وقتی واژه کامل شد تأیید
  * می‌کند. حروف استفاده‌شده خاموش می‌شوند؛ در سطح‌های فریب، حرف زائد را
  * نباید به کار برد. یک submit در پایان — قرارداد یک-submit-per-trial؛
- * هر سه گارد الزامی رعایت شده است.
+ * هر سه گارد الزامی در useTrialGuards است.
  */
 
 export function WordScrambleGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as WordScrambleTrial
   const [used, setUsed] = useState<readonly number[]>([])
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   useEffect(() => {
-    submittedRef.current = false
     setUsed([])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
@@ -31,37 +31,25 @@ export function WordScrambleGame({ ctx }: { ctx: ActiveGameContext }) {
   const hasDecoy = trial.letters.length > trial.target.length
 
   const tapLetter = (index: number) => {
-    if (submittedRef.current || ctx.paused) return
+    if (ctx.paused) return
     if (used.includes(index)) return
     if (built.length >= trial.letters.length) return
     setUsed((current) => [...current, index])
   }
 
   const undoLast = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (ctx.paused) return
     setUsed((current) => current.slice(0, -1))
   }
 
   const clearAll = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (ctx.paused) return
     setUsed([])
   }
 
   const submit = () => {
-    if (submittedRef.current || ctx.paused) return
-    if (!complete) return
-    submittedRef.current = true
-    void ctx.submit(built).then((result) => {
-      if (result.accepted && !result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان تمام/قطع شده — بی‌اثر
-        }
-      } else if (!result.accepted) {
-        submittedRef.current = false
-      }
-    })
+    if (ctx.paused || !complete) return
+    void guards.submitOnce(built)
   }
 
   return (

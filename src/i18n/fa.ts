@@ -23,6 +23,9 @@ export const EXERCISE_TYPE_LABELS_FA: Readonly<Record<ExerciseType, string>> = {
   logic: 'منطقی',
 }
 
+/** برچسب فارسی خانواده‌های پارادایمی — منبع اصلی در taxonomy؛ اینجا برای هماهنگی importهای UI */
+export { FAMILY_LABELS_FA } from '../core/types'
+
 export const APP_TEXTS_FA = {
   appName: 'آزمایشگاه تمرین شناختی',
   appSubtitle: 'تمرین‌های تعاملی حافظه، توجه و سرعت پردازش — همه داده‌ها فقط روی دستگاه شما',
@@ -45,6 +48,7 @@ export const APP_TEXTS_FA = {
   groupByDomain: 'حوزهٔ شناختی',
   groupByType: 'نوع تمرین',
   groupByEffect: 'اثر شناختی',
+  groupByFamily: 'خانوادهٔ پارادایم',
   exerciseCountUnit: 'تمرین',
   journey: 'سیر پیشرفت',
   recentActivity: 'فعالیت تمرین — ۸ هفتهٔ گذشته',

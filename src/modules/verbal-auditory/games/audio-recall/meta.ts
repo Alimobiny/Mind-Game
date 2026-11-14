@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «یادآوری شنیداری» — موج زبانی.
+ * متادیتای کامل «یادآوری شنیداری» — موج زبانی. منبع یگانه برای کاتالوگ،
+ * رجیستری و فهرست مرجع. id/version/contentVersion باید با engine یکی
+ * بماند — نگهبان: registry-invariants.test.ts.
  */
-export const AUDIO_RECALL_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const AUDIO_RECALL_META_FA: ExerciseMeta = {
+  id: 'audio-recall',
   nameFa: 'یادآوری شنیداری',
   descriptionFa:
     'واژه‌ها را یکی‌یکی بشنو و بعد به همان ترتیب از میان گزینه‌ها بازیابی کن.',
+  domain: 'verbal-auditory',
   exerciseType: 'verbal',
+  family: 'auditory-word-span',
+  nameEn: 'Audio Recall (Auditory Word Span)',
+  keywordsFa: ['دهانه شنیداری', 'یادآوری صوتی', 'حافظه شنیداری'],
   effects: ['verbal-auditory', 'working-memory'],
+  version: '1.0.0',
+  contentVersion: '2',
   instructionsFa: [
     'چند واژه یکی‌یکی و با فاصله ارائه می‌شود — با صدای دستگاه می‌شنوی و باید به همان ترتیب به خاطر بسپاری.',
     'پایان ارائه، جدولی از واژه‌ها می‌آید؛ واژه‌های همان دسته را به همان ترتیبی که شنیدی لمس کن و تأیید بزن.',

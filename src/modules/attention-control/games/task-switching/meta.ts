@@ -1,20 +1,25 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «جابه‌جایی تکلیف» برای ثبت مرکزی — هماهنگ‌کننده این شیء را
- * در Registry با id/domain/version/contentVersion از engine ترکیب می‌کند.
+ * متادیتای کامل «جابه‌جایی تکلیف» — منبع یگانه برای کاتالوگ، رجیستری و
+ * فهرست مرجع. id/version/contentVersion باید با engine یکی بماند —
+ * نگهبان: registry-invariants.test.ts.
  *
  * متریک‌های اختصاصی بر اساس پیشنهاد ۴ سند پژوهشی
  * (docs/ADVANCED-GAMES-RESEARCH.md): rtRepeatMs، rtSwitchMs، switchCostMs،
  * switchAccuracy، repeatAccuracy — به‌همراه شمارنده‌های تفسیری.
  */
-export const TASK_SWITCHING_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const TASK_SWITCHING_META_FA: ExerciseMeta = {
+  id: 'task-switching',
   nameFa: 'جابه‌جایی تکلیف',
+  domain: 'attention-control',
   exerciseType: 'visual',
+  family: 'task-switching',
+  nameEn: 'Task Switching',
+  keywordsFa: ['انعطاف اجرایی', 'هزینه جابجایی', 'تعویض قاعده'],
   effects: ['attention-control'],
+  version: '1.0.0',
+  contentVersion: '2',
   descriptionFa:
     'نشانهٔ بالای صفحه می‌گوید این‌بار به کدام ویژگی شکل پاسخ بدهی — رنگ، شکل یا اندازه. سرعتِ تطبیق ذهن‌ات با عوض‌شدن قاعده به‌صورت «هزینهٔ جابه‌جایی» اندازه‌گیری می‌شود.',
   instructionsFa: [

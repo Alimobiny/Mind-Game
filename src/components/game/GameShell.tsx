@@ -51,6 +51,12 @@ export interface ActiveGameContext {
    * همهٔ بازی‌ها حتی بدون responseWindowMs؛ مبنای ادامهٔ ارائه پس از مکث
    */
   trialElapsedMs: () => number
+  /**
+   * شروع فاز پاسخ مرحلهٔ جاری را علامت بزن (بازی‌های چندفازی، لحظهٔ
+   * بازشدن UI پاسخ) — از این نقطه RT سنجیده می‌شود نه از شروع نمایش
+   * محرک (§۲-۲ ممیزی). idempotent؛ بازنصب پس از مکث بی‌اثر.
+   */
+  beginResponsePhase: () => void
   /** حالت ارائهٔ نجات‌یافته برای مکث/بازنصب — بخش «TrialPresentationStore» */
   readonly trialPresentation: TrialPresentationStore
   /** توقف/ادامه — بازی‌های زمان‌بندی‌شده باید تایمرهای خود را با آن همگام کنند */
@@ -337,6 +343,7 @@ export function GameShell({
       lastOutcome: snapshot.lastOutcome,
       timeRemainingMs: () => manager.timeRemainingMs(),
       trialElapsedMs: () => manager.trialElapsedMs(),
+      beginResponsePhase: () => manager.beginResponsePhase(),
       trialPresentation,
       pause: () => manager.pause(),
       paused: snapshot.machine.phase === 'PAUSED',

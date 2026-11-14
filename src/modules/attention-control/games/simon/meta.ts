@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «تداخل مکانی» (تکلیف سایمون) — موج نهم.
+ * متادیتای کامل «تداخل مکانی» (تکلیف سایمون) — موج نهم. منبع یگانه برای
+ * کاتالوگ، رجیستری و فهرست مرجع. id/version/contentVersion باید با engine
+ * یکی بماند — نگهبان: registry-invariants.test.ts.
  */
-export const SIMON_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const SIMON_META_FA: ExerciseMeta = {
+  id: 'simon-task',
   nameFa: 'تداخل مکانی',
   descriptionFa:
     'دایرهٔ رنگی چپ یا راست وسط صفحه ظاهر می‌شود؛ فقط به رنگش پاسخ بده و مکانش را نادیده بگیر.',
+  domain: 'attention-control',
   exerciseType: 'reaction',
+  family: 'simon',
+  nameEn: 'Simon Task',
+  keywordsFa: ['سایمون', 'اثر سایمون', 'تداخل مکان و رنگ'],
   effects: ['attention-control'],
+  version: '1.0.0',
+  contentVersion: '2',
   instructionsFa: [
     'یک نقطهٔ ثابت وسط صفحه دیده می‌شود و دایرهٔ آبی یا قرمز در سمت چپ یا راست آن روشن می‌شود.',
     'فقط بر اساس رنگ پاسخ بده: دایرهٔ آبی یعنی دکمهٔ آبی، دایرهٔ قرمز یعنی دکمهٔ قرمز.',

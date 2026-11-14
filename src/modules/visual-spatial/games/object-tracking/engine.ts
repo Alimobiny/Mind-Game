@@ -88,7 +88,7 @@ export type ObjectTrackingAnswer = readonly number[]
 
 export const OBJECT_TRACKING_ID = 'object-tracking'
 export const OBJECT_TRACKING_VERSION = '1.0.0'
-export const OBJECT_TRACKING_CONTENT_VERSION = '1'
+export const OBJECT_TRACKING_CONTENT_VERSION = '2' // v2: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع هایلایت/حرکت (§۲-۲ ممیزی)
 const TOTAL_TRIALS = 8
 
 /** گام زمانی شبیه‌سازی مسیر — ۲۵ فریم بر ثانیه برای این سرعت‌ها روان است */

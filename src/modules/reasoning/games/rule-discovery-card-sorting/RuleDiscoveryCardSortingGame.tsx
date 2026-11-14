@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import type { CardStimulus, RuleDiscoveryTrial } from './engine'
 import { REF_CARDS } from './engine'
@@ -13,8 +14,8 @@ import { e2e } from '../../../../utils/e2e'
   * جایگاه زیر کارت‌های مرجع دسته‌بندی می‌شود. پس از ثبت، فلش بازخوردِ درون‌بازی
  * (که در سطح ۵ ممکن است گمراه‌کننده باشد) برای feedbackMs می‌ماند و بعد
  * مرحلهٔ بعد می‌آید — advance با تأخیر، ولی فقط تا قبل از sessionCompleted.
- * هر سه گارد الزامی: قفل submittedRef · عدم advance پس از sessionCompleted ·
- * تایمرها در timersRef با پاک‌سازی.
+ * هر سه گارد الزامی (قفل پاسخ · advance امن پس از sessionCompleted ناپذیر ·
+ * تایمرهای ردیابی‌شده + re-arm مهلت) در useTrialGuards است.
  */
 
 /** رنگ‌ها: قرمز، سبز، آبی، زرد */
@@ -46,32 +47,25 @@ interface FeedbackState {
 export function RuleDiscoveryCardSortingGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as RuleDiscoveryTrial
   const [feedback, setFeedback] = useState<FeedbackState | null>(null)
-  const timersRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   useEffect(() => {
-    submittedRef.current = false
     setFeedback(null)
-    for (const t of timersRef.current) window.clearTimeout(t)
-    timersRef.current = []
 
-    // انقضای پنجرهٔ پاسخ → بی‌پاسخ و کارت بعد
+    // انقضای پنجرهٔ پاسخ → بی‌پاسخ و کارت بعد (با re-arm پس از rollback در
+    // useTrialGuards)
     const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
-      timersRef.current.push(
-        window.setTimeout(() => {
-          if (submittedRef.current) return
-          submittedRef.current = true
-          void ctx.submit(null).then((result) => {
-            if (result.accepted) {
-              showFeedbackThenAdvance(result.record as { stimulus: { shownCorrect: boolean } }, result.sessionCompleted, true)
-            }
-          })
-        }, remaining),
-      )
-    }
-    return () => {
-      for (const t of timersRef.current) window.clearTimeout(t)
+      guards.armDeadline(() => null, remaining, {
+        onAccepted: (result) => {
+          showFeedbackThenAdvance(
+            result.record as { stimulus: { shownCorrect: boolean } },
+            result.sessionCompleted,
+            true,
+          )
+        },
+        autoAdvance: false,
+      })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
@@ -83,33 +77,29 @@ export function RuleDiscoveryCardSortingGame({ ctx }: { ctx: ActiveGameContext }
     omission: boolean,
   ) => {
     setFeedback({ shownCorrect: record.stimulus.shownCorrect, omission })
-    timersRef.current.push(
-      window.setTimeout(() => {
-        setFeedback(null)
-        if (!sessionCompleted) {
-          try {
-            ctx.advance()
-          } catch {
-            // جلسه هم‌زمان تمام/قطع شده — بی‌اثر
-          }
+    guards.setTrackedTimeout(() => {
+      setFeedback(null)
+      if (!sessionCompleted) {
+        try {
+          ctx.advance()
+        } catch {
+          // جلسه هم‌زمان تمام/قطع شده — بی‌اثر
         }
-      }, trial.feedbackMs),
-    )
+      }
+    }, trial.feedbackMs)
   }
 
   const choose = (pileIndex: number) => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit(pileIndex).then((result) => {
-      if (result.accepted) {
+    if (ctx.paused) return
+    void guards.submitOnce(pileIndex, {
+      onAccepted: (result) => {
         showFeedbackThenAdvance(
           result.record as { stimulus: { shownCorrect: boolean } },
           result.sessionCompleted,
           false,
         )
-      } else {
-        submittedRef.current = false
-      }
+      },
+      autoAdvance: false,
     })
   }
 

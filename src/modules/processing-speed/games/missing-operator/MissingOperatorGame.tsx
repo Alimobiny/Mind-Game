@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import {
@@ -24,66 +25,45 @@ interface FlashState {
  * پاسخ، عملگر درست با فرود پرشی در جای خود می‌نشیند و فلش کوتاه نتیجه
  * دیده می‌شود و سپس مرحلهٔ بعد می‌آید (e2e با waitProgressAdvance همگام
  * است). در سطح‌های دارای مهلت، با انقضای پنجره پاسخ مرحله «بی‌پاسخ» ثبت
- * و بعدی می‌آید. منطق در engine است.
+ * و بعدی می‌آید. منطق در engine است. سه گارد الزامی + re-arm مهلت در
+ * useTrialGuards است.
  */
 export function MissingOperatorGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as MissingOperatorTrial
-  // قفل پاسخِ ثبت‌شده — تپ دومی (روی هر دکمه‌ای) نباید پاسخ دومی به مرحله
-  // بعد بفرستد؛ قفل فقط وقتی نتیجه رد شد (مثلاً حین pause) باز می‌گردد
-  const submittedRef = useRef(false)
-  const deadlineRef = useRef<number | null>(null)
-  const flashTimerRef = useRef<number | null>(null)
   const [flash, setFlash] = useState<FlashState | null>(null)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // با هر مرحله جدید ریست می‌شود
   useEffect(() => {
-    submittedRef.current = false
     setFlash(null)
 
-    // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به مرحله بعد
+    // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به مرحله بعد (با re-arm پس
+    // از rollback ذخیره در useTrialGuards)
     const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
-      deadlineRef.current = window.setTimeout(() => {
-        if (submittedRef.current) return
-        submittedRef.current = true
-        void ctx.submit(null).then((result) => {
-          if (result.accepted && !result.sessionCompleted) {
-            try {
-              ctx.advance()
-            } catch {
-              // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-            }
-          } else if (!result.accepted) {
-            submittedRef.current = false
-          }
-        })
-      }, remaining)
-    }
-    return () => {
-      if (deadlineRef.current !== null) window.clearTimeout(deadlineRef.current)
-      if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current)
+      guards.armDeadline(() => null, remaining)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
   const choose = (op: MissingOperator) => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit(op).then((result) => {
-      if (!result.accepted || result.sessionCompleted) {
-        if (!result.accepted) submittedRef.current = false
-        return
-      }
-      const solution = trial.puzzle.solution
-      setFlash({ correct: result.record.correct, solution })
-      flashTimerRef.current = window.setTimeout(() => {
-        setFlash(null)
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده
-        }
-      }, 700)
+    if (ctx.paused) return
+    void guards.submitOnce(op, {
+      onAccepted: (result) => {
+        if (result.sessionCompleted) return
+        const solution = trial.puzzle.solution
+        setFlash({ correct: result.record.correct, solution })
+        guards.setTrackedTimeout(() => {
+          setFlash(null)
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده
+          }
+        }, 700)
+      },
+      // پیشروی با تایمر فلش — نه بلافاصله پس از پذیرش
+      autoAdvance: false,
     })
   }
 

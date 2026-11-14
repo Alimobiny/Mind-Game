@@ -1,21 +1,26 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «ارتفاع بلوک‌ها» برای ثبت مرکزی — هماهنگ‌کننده این شیء را
- * در Registry با id/domain/version/contentVersion از engine ترکیب می‌کند.
+ * متادیتای کامل «ارتفاع بلوک‌ها» — منبع یگانه برای کاتالوگ، رجیستری و فهرست
+ * مرجع. id/version/contentVersion باید با engine یکی بماند — نگهبان:
+ * registry-invariants.test.ts.
  *
  * بازنویسی موج اجرای خودکار (۱۴۰۵/آبان): دستورالعمل پیشین با واژهٔ «لَن» و
  * فرمول، عامل اصلی «نامفهوم بودن» بازی بود. نسخهٔ جدید با واژه‌های سادهٔ
  * «ستون آبی/سبز» و یک مثال حل‌شده نوشته شده و هماهنگ با رندر ایزومتریک
  * جدید است (contentVersion ۲).
  */
-export const BLOCK_HEIGHT_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const BLOCK_HEIGHT_META_FA: ExerciseMeta = {
+  id: 'block-height',
   nameFa: 'ارتفاع بلوک‌ها',
+  domain: 'visual-spatial',
   exerciseType: 'spatial',
+  family: 'spatial-estimation',
+  nameEn: 'Block Height',
+  keywordsFa: ['شمارش بلوک', 'بلوک پنهان', 'استنتاج فضایی'],
   effects: ['visual-spatial', 'reasoning'],
+  version: '1.0.0',
+  contentVersion: '3',
   descriptionFa:
     'در هر ستون، پشتهٔ سبز پشت پشتهٔ آبی ایستاده و پایینش پنهان است — کل بلوک‌های پیدا و پنهان را بشمار.',
   instructionsFa: [

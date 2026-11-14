@@ -1,17 +1,23 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «ترکیب واژه» — موج زبانی؛ نخستین بازی صوتی.
+ * متادیتای کامل «ترکیب واژه» — موج زبانی؛ نخستین بازی صوتی. منبع یگانه برای
+ * کاتالوگ، رجیستری و فهرست مرجع. id/version/contentVersion باید با engine
+ * یکی بماند — نگهبان: registry-invariants.test.ts.
  */
-export const WORD_BLEND_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const WORD_BLEND_META_FA: ExerciseMeta = {
+  id: 'word-blend',
   nameFa: 'ترکیب واژه',
   descriptionFa:
     'قطعات یک واژه را یکی‌یکی بشنو و واژهٔ کامل را از میان گزینه‌ها پیدا کن.',
+  domain: 'verbal-auditory',
   exerciseType: 'verbal',
+  family: 'phonemic-synthesis',
+  nameEn: 'Word Blend (Phonemic Synthesis)',
+  keywordsFa: ['ترکیب صدا', 'ادغام واج', 'ساخت واژه از قطعات'],
   effects: ['verbal-auditory', 'working-memory'],
+  version: '1.0.0',
+  contentVersion: '3',
   instructionsFa: [
     'قطعات یک واژه (مثلاً «کت» و «اب») یکی‌یکی و با فاصله ارائه می‌شود — با صدای دستگاه می‌شنوی.',
     'قطعات را در ذهنت به هم بچسبان و واژهٔ کامل را بساز.',

@@ -1,16 +1,21 @@
 import type { ExerciseMeta } from '../../../../core/registry/game-registry'
 
 /**
- * متادیتای فارسی «محاسبه × ۱۰۰» برای ثبت مرکزی — هماهنگ‌کننده این شیء را
- * در Registry با id/domain/version/contentVersion از engine ترکیب می‌کند.
+ * متادیتای کامل «محاسبه × ۱۰۰» — منبع یگانه برای کاتالوگ، رجیستری و فهرست
+ * مرجع. id/version/contentVersion باید با engine یکی بماند — نگهبان:
+ * registry-invariants.test.ts.
  */
-export const CALCULATION_100_META_FA: Pick<
-  ExerciseMeta,
-  'nameFa' | 'descriptionFa' | 'exerciseType' | 'effects' | 'instructionsFa' | 'difficultyLevels' | 'plannedTrials' | 'metricLabelsFa'
-> = {
+export const CALCULATION_100_META_FA: ExerciseMeta = {
+  id: 'calculation-100',
   nameFa: 'محاسبه × ۱۰۰',
+  domain: 'processing-speed',
   exerciseType: 'numeric',
+  family: 'arithmetic-fluency',
+  nameEn: 'Calculation × 100',
+  keywordsFa: ['حساب ذهنی', 'سرعت محاسبه', 'صد سوال'],
   effects: ['processing-speed'],
+  version: '1.0.0',
+  contentVersion: '1',
   descriptionFa:
     'به ۱۰۰ سؤال حساب کوتاه و پیوسته پاسخ بده؛ سرعت و دقت جداگانه سنجیده می‌شوند.',
   instructionsFa: [

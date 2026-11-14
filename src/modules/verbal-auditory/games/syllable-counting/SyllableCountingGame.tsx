@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
@@ -12,22 +13,17 @@ import styles from './syllable-counting.module.css'
  * نمایش جملهٔ فارسی به‌صورت درشت و وسط‌چین روی کارت تپنده؛ کاربر شمار
  * هجاها را با صفحه‌کلید عددی وارد می‌کند. بدون مهلت زمانی؛ پس از پاسخ،
  * شمار درست به‌صورت فلش کوتاه دیده می‌شود و سپس جملهٔ بعدی می‌آید
- * (e2e با waitProgressAdvance همگام است).
+ * (e2e با waitProgressAdvance همگام است). سه گارد الزامی در useTrialGuards است.
  */
 export function SyllableCountingGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as SyllableCountingTrial
   const [entry, setEntry] = useState('')
-  const submittedRef = useRef(false)
-  const flashTimerRef = useRef<number | null>(null)
   const [flash, setFlash] = useState<{ correct: boolean; expected: number } | null>(null)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   useEffect(() => {
-    submittedRef.current = false
     setEntry('')
     setFlash(null)
-    return () => {
-      if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current)
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
@@ -40,28 +36,26 @@ export function SyllableCountingGame({ ctx }: { ctx: ActiveGameContext }) {
     setEntry((current) => (current.length >= 2 ? current : current + key))
   }
 
-  const submit = async () => {
-    if (submittedRef.current || entry.length === 0) return
-    submittedRef.current = true
+  const submit = () => {
+    if (guards.isSubmitted() || entry.length === 0) return
     const value = Number.parseInt(entry, 10)
-    const result = await ctx.submit(value)
-    if (!result.accepted) {
-      // persist_failed: مدیر rollback کرده — قفل باز بماند تا تلاش مجدد
-      // ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
-      submittedRef.current = false
-      return
-    }
-    if (result.sessionCompleted) return
-    const expected = trial.syllableCount
-    setFlash({ correct: result.record.correct, expected })
-    flashTimerRef.current = window.setTimeout(() => {
-      setFlash(null)
-      try {
-        ctx.advance()
-      } catch {
-        // جلسه هم‌زمان قطع/تکمیل شده
-      }
-    }, 800)
+    void guards.submitOnce(value, {
+      onAccepted: (result) => {
+        if (result.sessionCompleted) return
+        const expected = trial.syllableCount
+        setFlash({ correct: result.record.correct, expected })
+        guards.setTrackedTimeout(() => {
+          setFlash(null)
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده
+          }
+        }, 800)
+      },
+      // پیشروی با تایمر فلش — نه بلافاصله پس از پذیرش
+      autoAdvance: false,
+    })
   }
 
   return (

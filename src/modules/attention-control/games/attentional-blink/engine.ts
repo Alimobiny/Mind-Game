@@ -76,7 +76,7 @@ export const ATTENTIONAL_BLINK_VERSION = '1.0.0'
  * ۲ = تخصیص دقیق lag (۴ جریان برای هر یک از ۲/۳/۷ — قبلاً Bernoulli بود و
  * lagها/بکت‌ها خالی می‌افتادند) + کلیدهای شرطی برای بکت‌های بدون داده.
  */
-export const ATTENTIONAL_BLINK_CONTENT_VERSION = '2'
+export const ATTENTIONAL_BLINK_CONTENT_VERSION = '3' // v3: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع جریان RSVP (§۲-۲ ممیزی)
 const TOTAL_TRIALS = 12
 const STREAM_LENGTH = 16
 

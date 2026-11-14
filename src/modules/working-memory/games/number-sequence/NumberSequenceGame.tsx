@@ -23,6 +23,14 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(null)
   const guards = useTrialGuards(ctx, trial.trialIndex)
 
+  // شروع فاز پاسخ را در مدیر علامت بزن — RT از بازشدن صفحه‌کلید سنجیده
+  // شود نه از شروع نمایش ارقام (§۲-۲ ممیزی). idempotent؛ اثر روی فاز،
+  // مسیر بازنصبِ پس از مکث (ست مستقیم 'input') را هم می‌پوشاند.
+  useEffect(() => {
+    if (phase === 'input') ctx.beginResponsePhase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   // ریست فازها با شروع هر مرحله جدید + زمان‌بندی نمایش ارقام:
   // هر رقم به‌مدت displayMsPerDigit دیده می‌شود و gapMs فاصله تا بعدی.
   // بازنصبِ پس از مکث: ارائه از زمان سپری‌شدهٔ جلسه ادامه می‌یابد نه از

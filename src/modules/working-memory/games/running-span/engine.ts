@@ -55,7 +55,7 @@ export type RunningSpanAnswer = readonly number[]
 
 export const RUNNING_SPAN_ID = 'running-span'
 export const RUNNING_SPAN_VERSION = '1.0.0'
-export const RUNNING_SPAN_CONTENT_VERSION = '1'
+export const RUNNING_SPAN_CONTENT_VERSION = '2' // v2: RT از شروع فاز پاسخ سنجیده می‌شود نه شروع نمایش جریان (§۲-۲ ممیزی)
 const TOTAL_TRIALS = 10
 const GAP_MS = 250
 

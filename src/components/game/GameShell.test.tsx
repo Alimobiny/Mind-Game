@@ -81,6 +81,8 @@ function makeRegistered(): RegisteredExercise {
       descriptionFa: 'تست پوسته مشترک',
       domain: 'working-memory',
       exerciseType: 'numeric',
+      family: 'digit-span',
+      nameEn: 'UI Fake',
       effects: ['working-memory'],
       version: '1.0.0',
       contentVersion: '1',
