@@ -95,9 +95,11 @@ export interface ProgressiveMatricesTrial extends ExerciseTrial {
 
 export const PROGRESSIVE_MATRICES_ID = 'progressive-matrices'
 export const PROGRESSIVE_MATRICES_VERSION = '1.0.0'
-export const PROGRESSIVE_MATRICES_CONTENT_VERSION = '1'
+/** ۲ = کلید شرطی meanRt (بدون داده منتشر نمی‌شود) — گام نخست بازطرح v۲ */
+export const PROGRESSIVE_MATRICES_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 12
-const OPTION_COUNT = 4
+/** ۶ گزینه (نزدیک‌تر به راون ۶-۸؛ contentVersion 2 — GAMES-AUDIT #۳۵) */
+const OPTION_COUNT = 6
 
 /** تنظیمات سطح دشواری: تعداد صفات غیرثابت + الزام عمل منطقی */
 export function configForDifficulty(difficulty: number): ProgressiveMatricesConfig {
@@ -330,8 +332,8 @@ export const progressiveMatricesDefinition: ExerciseDefinition<
       maxSimultaneousRules: maxRules,
       difficultyWeightedScore:
         weightSum === 0 ? 0 : Math.round((weightedCorrect / weightSum) * 1000) / 10,
-      meanRtMs:
-        rts.length === 0 ? 0 : Math.round(rts.reduce((a, b) => a + b, 0) / rts.length),
+      // کلید شرطی: جلسهٔ بدون زمان پاسخ ثبت‌شده «میانه = صفر» جعل نمی‌کند
+      ...(rts.length > 0 ? { meanRtMs: Math.round(rts.reduce((a, b) => a + b, 0) / rts.length) } : {}),
     }
     // دقت هر خانواده فقط وقتی آن خانواده در جلسه رخ داده باشد (الگوی صداقت متریک)
     for (const family of ['dist3', 'progression', 'logicalOp', 'positional'] as const) {

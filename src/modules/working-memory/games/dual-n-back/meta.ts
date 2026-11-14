@@ -31,5 +31,7 @@ export const DUAL_NBACK_META_FA: Pick<
     cellMisses: 'اهداف مکان ازقلم‌افتاده',
     cellFalseAlarms: 'تطبیق‌های نابجای مکان',
     cellCorrectRejections: 'خودداری‌های درستِ مکان',
+    dPrimeLetter: 'حساسیت d′ جریان حرف (loglinear)',
+    dPrimeCell: 'حساسیت d′ جریان مکان (loglinear)',
   },
 }

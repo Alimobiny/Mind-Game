@@ -46,7 +46,11 @@ export interface PasatTrial extends ExerciseTrial {
 
 export const PASAT_ID = 'pasat'
 export const PASAT_VERSION = '1.0.0'
-export const PASAT_CONTENT_VERSION = '1'
+/**
+ * ۲ = ریتم آزمونگر: ظهور رقم بعد به پاسخ کاربر وابسته نیست (پیشروی در
+ * پایان پنجره، نه بلافاصله پس از پاسخ) + متریک‌های استاندارد dyad/string.
+ */
+export const PASAT_CONTENT_VERSION = '2'
 
 const TOTAL_TRIALS = 20
 /** بازهٔ ارقام بر حسب دشواری ۱..۵ — پنجرهٔ پاسخ سخت‌تر می‌شود */
@@ -164,11 +168,38 @@ export const pasatDefinition: ExerciseDefinition<PasatConfig, PasatState, PasatT
     const answerTimes = state.results
       .filter((r) => r.correct && r.reactionTimeMs !== null)
       .map((r) => r.reactionTimeMs as number)
-    const meanAnswerTimeMs =
-      answerTimes.length > 0
-        ? Math.round(answerTimes.reduce((a, b) => a + b, 0) / answerTimes.length)
-        : 0
     const omissions = state.results.filter((r) => r.outcome === 'omission').length
+
+    // زوج‌ها (dyad): هر رقم غیرتماشا + رقم قبلش — واحد شمارش استاندارد پاسات
+    const dyads = state.results.filter((r) => r.expected !== null)
+    const dyadErrors = dyads.filter((r) => !r.correct).length
+    // خطای رشته‌ای (string): طولانی‌ترین دنبالهٔ پیوستهٔ زوج‌های خطا/بی‌پاسخ
+    let stringErrors = 0
+    let run = 0
+    for (const r of dyads) {
+      if (!r.correct) {
+        run += 1
+        if (run > stringErrors) stringErrors = run
+      } else {
+        run = 0
+      }
+    }
+    // «پیش از رقم بعد»: زوج‌هایی که پیش از بسته‌شدن پنجره پاسخی دارند
+    const answered = dyads.filter((r) => r.outcome !== 'omission').length
+
+    const metrics: Record<string, number> = {
+      correctSums: dyads.filter((r) => r.correct).length,
+      omissions,
+      dyadErrors,
+      stringErrors,
+    }
+    if (dyads.length > 0) {
+      metrics.answeredBeforeNextRate = Math.round((answered / dyads.length) * 100) / 100
+    }
+    // میانگین زمان پاسخ فقط با داده — بدون «صفرِ جعلی» (الگوی کلید شرطی)
+    if (answerTimes.length > 0) {
+      metrics.meanAnswerTimeMs = Math.round(answerTimes.reduce((a, b) => a + b, 0) / answerTimes.length)
+    }
     return {
       exerciseId: PASAT_ID,
       sessionId: state.sessionId,
@@ -177,11 +208,7 @@ export const pasatDefinition: ExerciseDefinition<PasatConfig, PasatState, PasatT
       domain: 'processing-speed',
       difficulty: state.config.difficulty,
       ...totals,
-      metrics: {
-        correctSums: state.results.filter((r) => r.expected !== null && r.correct).length,
-        omissions,
-        meanAnswerTimeMs,
-      },
+      metrics,
     }
   },
 }

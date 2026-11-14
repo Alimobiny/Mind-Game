@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import type { SimonColor, SimonTrial } from './engine'
 import styles from './simon.module.css'
@@ -9,9 +10,11 @@ import styles from './simon.module.css'
  *
  * محرک: دایرهٔ رنگی چپ/راست نقطهٔ ثابت. پاسخ: فقط بر اساس رنگ — دکمهٔ آبی
  * برای دایرهٔ آبی، دکمهٔ قرمز برای دایرهٔ قرمز؛ مکان محرک باید نادیده گرفته
- * شود. پیشروی فوری (مثل برو/نرو) و بازخورد با نشان شناور — رفتار زمانی
- * دست‌نخورده. سطح ۵: دکمه‌ها در میانهٔ بلوک جای خود را عوض می‌کنند و
- * نشان «نگاشت وارونه» این جابه‌جایی را اعلام می‌کند.
+ * شود. بازخورد با نشان شناور. سطح ۵: دکمه‌ها در میانهٔ بلوک جای خود را
+ * عوض می‌کنند و نشان «نگاشت وارونه» این جابه‌جایی را اعلام می‌کند.
+ *
+ * SOA ثابت (contentVersion 2): پاسخِ ثبت‌شده advance را جلو نمی‌اندازد —
+ * محرک بعد دقیقاً در پایان پنجره (محرک + فاصله) می‌آید (GAMES-AUDIT §۳-۲).
  */
 
 const COLOR_LABEL_FA: Record<SimonColor, string> = { blue: 'آبی', red: 'قرمز' }
@@ -25,20 +28,14 @@ export function SimonGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as SimonTrial
   const [stimulusVisible, setStimulusVisible] = useState(true)
   const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const badgeTimerRef = useRef<number | null>(null)
-  const timersRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
 
   // با هر محرک جدید ریست می‌شود (مونت/ریمانت پس از مکث هم همین‌جا می‌گذرد)
   useEffect(() => {
-    submittedRef.current = false
-    for (const t of timersRef.current) window.clearTimeout(t)
-    timersRef.current = []
-
     // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰)
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
       try {
         ctx.advance()
       } catch {
@@ -55,34 +52,14 @@ export function SimonGame({ ctx }: { ctx: ActiveGameContext }) {
     const pastHide = remaining !== null && remaining < trial.interStimulusMs
     setStimulusVisible(!pastHide)
     if (!pastHide) {
-      timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+      guards.setTrackedTimeout(() => setStimulusVisible(false), trial.stimulusMs)
     }
 
-    // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به محرک بعد
+    // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به محرک بعد (پیشرویِ خودکار
+    // در انقضا = همان نقطهٔ ثابت شبکهٔ زمانی)؛ پس از rollback ذخیره با
+    // پنجرهٔ کوتاه دوباره مسلح می‌شود
     if (remaining !== null) {
-      timersRef.current.push(
-        window.setTimeout(() => {
-          if (submittedRef.current) return
-          submittedRef.current = true
-          void ctx.submit(null).then((result) => {
-            if (!result.accepted) {
-              // persist_failed: مدیر rollback کرده — قفل باز بماند
-              submittedRef.current = false
-              return
-            }
-            if (!result.sessionCompleted) {
-              try {
-                ctx.advance()
-              } catch {
-                // جلسه هم‌زمان قطع/تکمیل شده؛ پوسته مسیر خودش را می‌رود
-              }
-            }
-          })
-        }, remaining),
-      )
-    }
-    return () => {
-      for (const t of timersRef.current) window.clearTimeout(t)
+      guards.armDeadline(() => null, remaining)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
@@ -94,19 +71,23 @@ export function SimonGame({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   const respond = (color: SimonColor) => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit(color).then((result) => {
-      if (result.accepted) flashBadge(result.record.correct)
-      if (result.accepted && !result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان متوقف/قطع/تکمیل شده
+    if (guards.isSubmitted() || ctx.paused) return
+    void guards.submitOnce(color, {
+      onAccepted: (result) => {
+        flashBadge(result.record.correct)
+        // SOA ثابت: advance در پایان پنجرهٔ پاسخ
+        if (!result.sessionCompleted) {
+          const rest = ctx.timeRemainingMs()
+          guards.setTrackedTimeout(() => {
+            try {
+              ctx.advance()
+            } catch {
+              // جلسه هم‌زمان متوقف/قطع/تکمیل شده
+            }
+          }, Math.max(rest ?? 0, 0))
         }
-      } else if (!result.accepted) {
-        submittedRef.current = false
-      }
+      },
+      autoAdvance: false,
     })
   }
 

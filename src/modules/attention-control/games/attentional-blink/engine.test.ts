@@ -38,18 +38,22 @@ describe('Attentional Blink — engine', () => {
     expect(t1.responseWindowMs).toBeNull()
   })
 
-  it('توزیع lag روی کل جلسه روی مقادیر ۱/۲/۳/۷ می‌ماند', () => {
+  it('تخصیص دقیق lag: هر یک از ۲/۳/۷ دقیقاً ۴ جریان دارد (قاطع در هر بذری)', () => {
     const config = configForDifficulty(1)
-    let state = def.createSession('a', config, SEED)
-    const lags = new Set<number>()
-    for (let i = 0; i < config.totalTrials; i += 1) {
-      const step = def.nextTrial(state)
-      lags.add(step.trial.lag)
-      state = def.submitAnswer(step.state, { t1: step.trial.t1, t2: step.trial.t2 }, 1500)
+    for (const seed of [SEED, 1, 42, 777, 123456]) {
+      let state = def.createSession('a', config, seed)
+      const counts = new Map<number, number>()
+      for (let i = 0; i < config.totalTrials; i += 1) {
+        const step = def.nextTrial(state)
+        counts.set(step.trial.lag, (counts.get(step.trial.lag) ?? 0) + 1)
+        state = def.submitAnswer(step.state, { t1: step.trial.t1, t2: step.trial.t2 }, 1500)
+      }
+      expect(counts.get(2)).toBe(4)
+      expect(counts.get(3)).toBe(4)
+      expect(counts.get(7)).toBe(4)
+      // lag 1 در تخصیص دقیق نیست — بکت غایب/تک‌موردی حذف شد
+      expect(counts.has(1)).toBe(false)
     }
-    for (const lag of lags) expect([1, 2, 3, 7]).toContain(lag)
-    // با ۱۲ مرحله و این توزیع، حداقل سه kind تأخیر باید دیده شود
-    expect(lags.size).toBeGreaterThanOrEqual(3)
   })
 
   it('پاسخ کامل درست، ناقص و بی‌پاسخ درست ارزیابی می‌شود', () => {
@@ -103,7 +107,7 @@ describe('Attentional Blink — engine', () => {
     expect(() => def.nextTrial(state)).toThrow()
   })
 
-  it('جلسهٔ بی‌نقص (هر دو هدف همیشه درست) متریک‌های ۱۰۰ می‌دهد', () => {
+  it('جلسهٔ بی‌نقص (هر دو هدف همیشه درست) متریک‌های ۱۰۰ می‌دهد؛ کلید بدون داده نیست', () => {
     const config = configForDifficulty(3)
     let state = def.createSession('a', config, SEED)
     for (let i = 0; i < config.totalTrials; i += 1) {
@@ -119,6 +123,8 @@ describe('Attentional Blink — engine', () => {
     expect(summary.metrics['t1Accuracy']).toBe(100)
     expect(summary.metrics['t2GivenT1Accuracy']).toBe(100)
     expect(summary.metrics['blinkMagnitude']).toBe(0)
-    expect(summary.metrics['lagOneSparing']).toBeLessThanOrEqual(0)
+    // با تخصیص دقیقِ فعلی جریان lag-1 نیست → کلید شرطی اصلاً منتشر نمی‌شود
+    expect('lagOneSparing' in summary.metrics).toBe(false)
+    expect(summary.contentVersion).toBe('2')
   })
 })

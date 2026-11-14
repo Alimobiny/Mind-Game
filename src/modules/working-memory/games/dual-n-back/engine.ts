@@ -10,6 +10,8 @@ import { NBACK_SHARED_LETTERS as LETTERS } from '../../shared-letters'
 import { SeededRandom } from '../../../../core/randomization/seeded-random'
 import { deriveTrialSeed } from '../../../../core/randomization/derive-seed'
 import { summarizeOutcomes } from '../../../../core/scoring/scoring'
+import { targetPositionsFor } from '../../../shared/target-quota'
+import { dPrimeLoglinear } from '../../../shared/dprime'
 
 /**
  * Dual N-Back — ان-بک دوگانه (حافظه کاری)
@@ -69,7 +71,8 @@ export interface DualNBackAnswer {
 
 export const DUAL_NBACK_ID = 'dual-n-back'
 export const DUAL_NBACK_VERSION = '1.0.0'
-export const DUAL_NBACK_CONTENT_VERSION = '1'
+/** ۲ = سهمیهٔ دقیق جایگاه هدف در هر دو جریان (نه Bernoulli) */
+export const DUAL_NBACK_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 24
 const TARGET_RATE = 0.3
 
@@ -139,7 +142,13 @@ export function dualNBackDefinitionFor(
     } else {
       const backLetter = state.letters[trialIndex - n]
       if (backLetter === undefined) throw new Error('تاریخچه حرف‌ها ناقص است')
-      isLetterTarget = rng.bool(state.config.targetRate)
+      // سهمیهٔ دقیق جایگاه‌های هدف جریان حرف (GAMES-AUDIT §۳-۱)
+      isLetterTarget = targetPositionsFor(
+        state.seed ^ 0x1e,
+        state.config.totalTrials,
+        n,
+        state.config.targetRate,
+      ).has(trialIndex)
       letter = isLetterTarget
         ? backLetter
         : rng.pick(LETTERS.filter((c) => c !== backLetter))
@@ -154,7 +163,13 @@ export function dualNBackDefinitionFor(
     } else {
       const backCell = state.cells[trialIndex - n]
       if (backCell === undefined) throw new Error('تاریخچه خانه‌ها ناقص است')
-      isCellTarget = rng.bool(state.config.targetRate)
+      // سهمیهٔ دقیق جایگاه‌های هدف جریان مکان — بذر جدا از جریان حرف
+      isCellTarget = targetPositionsFor(
+        state.seed ^ 0xce11,
+        state.config.totalTrials,
+        n,
+        state.config.targetRate,
+      ).has(trialIndex)
       if (isCellTarget) {
         cell = backCell
       } else {
@@ -281,6 +296,20 @@ export function dualNBackDefinitionFor(
         cellMisses: count('cell', 'miss'),
         cellFalseAlarms: count('cell', 'falseAlarm'),
         cellCorrectRejections: count('cell', 'correctRejection'),
+        // d′ تصحیح‌شدهٔ loglinear برای هر جریان — با نرخ‌های حدی هم متناهی
+        // می‌ماند؛ شمارش‌های خام کنارش می‌مانند (GAMES-AUDIT §۳-۲)
+        dPrimeLetter: dPrimeLoglinear(
+          count('letter', 'hit'),
+          count('letter', 'hit') + count('letter', 'miss'),
+          count('letter', 'falseAlarm'),
+          count('letter', 'falseAlarm') + count('letter', 'correctRejection'),
+        ),
+        dPrimeCell: dPrimeLoglinear(
+          count('cell', 'hit'),
+          count('cell', 'hit') + count('cell', 'miss'),
+          count('cell', 'falseAlarm'),
+          count('cell', 'falseAlarm') + count('cell', 'correctRejection'),
+        ),
       },
     }
   },

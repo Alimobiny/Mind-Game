@@ -91,4 +91,44 @@ describe('جلسهٔ کامل و خلاصه', () => {
     expect(summary.metrics).toMatchObject({ correctSums: 19, omissions: 0, meanAnswerTimeMs: 900 })
     expect(() => def.nextTrial(state)).toThrow('همه ارقام تولید شده‌اند')
   })
+
+  it('contentVersion 2 (ریتم آزمونگر) در خلاصه می‌نشیند', () => {
+    const { state } = runSession(SEED, 1, () => null)
+    expect(def.getSummary(state).contentVersion).toBe('2')
+  })
+})
+
+describe('متریک‌های استاندارد پاسات — زوج/رشته/پیش از رقم بعد', () => {
+  it('همه درست: dyadErrors=0، stringErrors=0، answeredBeforeNextRate=1', () => {
+    const { state } = runSession(SEED, 1, (t) => (t.expected === null ? null : t.expected))
+    const m = def.getSummary(state).metrics
+    expect(m.dyadErrors).toBe(0)
+    expect(m.stringErrors).toBe(0)
+    expect(m.answeredBeforeNextRate).toBe(1)
+  })
+
+  it('همه بی‌پاسخ: dyadErrors=19، stringErrors=19، نرخ=0 و میانگین زمان منتشر نمی‌شود', () => {
+    const { state } = runSession(SEED, 1, () => null)
+    const m = def.getSummary(state).metrics
+    expect(m.dyadErrors).toBe(19)
+    expect(m.stringErrors).toBe(19)
+    expect(m.answeredBeforeNextRate).toBe(0)
+    // «صفرِ جعلی» نیست — کلید بدون داده اصلاً نیست
+    expect('meanAnswerTimeMs' in m).toBe(false)
+  })
+
+  it('رشتهٔ خطا: طولانی‌ترین دنبالهٔ پیوسته + نرخ پاسخِ درستِ جزیی', () => {
+    // زوج‌های ۱و۲ و ۵ غلط، بقیه درست → stringErrors=2، dyadErrors=3
+    const { state } = runSession(SEED, 2, (t) => {
+      if (t.expected === null) return null
+      return t.trialIndex === 1 || t.trialIndex === 2 || t.trialIndex === 5
+        ? (t.expected ?? 0) + 1
+        : t.expected
+    })
+    const m = def.getSummary(state).metrics
+    expect(m.dyadErrors).toBe(3)
+    expect(m.stringErrors).toBe(2)
+    expect(m.answeredBeforeNextRate).toBe(1) // غلط ولی «پیش از رقم بعد» پاسخ داده
+    expect(m.omissions).toBe(0)
+  })
 })

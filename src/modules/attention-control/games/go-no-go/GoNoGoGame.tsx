@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import type { GoNoGoTrial } from './engine'
 import styles from './go-no-go.module.css'
@@ -10,24 +11,22 @@ import styles from './go-no-go.module.css'
  * جریان پیوسته: محرک نمایش داده می‌شود؛ کاربر کلید/ناحیه بزرگ را برای
  * محرک Go می‌زند و برای مربع (No-Go) خودداری می‌کند. با انقضای مهلت،
  * مرحله بدون پاسخ ثبت و بعدی می‌آید. منطق در engine است.
+ *
+ * SOA ثابت (contentVersion 2): پاسخِ ثبت‌شده advance را جلو نمی‌اندازد —
+ * محرک بعد دقیقاً در پایان پنجره (محرک + ISI) می‌آید؛ نرخ commission دیگر
+ * تابع سرعت خودکارِ کاربر نیست (GAMES-AUDIT §۳-۲).
  */
 export function GoNoGoGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as GoNoGoTrial
   const [stimulusVisible, setStimulusVisible] = useState(true)
   const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const badgeTimerRef = useRef<number | null>(null)
-  const deadlineRef = useRef<number | null>(null)
-  const timersRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
 
   // با هر محرک جدید ریست می‌شود. در بازنصبِ پس از مکث اگر نقطهٔ پنهان‌شدن
   // گذشته باشد (remaining از ISI کمتر) محرک از اول پنهان می‌ماند — نمایش
   // دوباره، پنجرهٔ پاسخ را عملاً طولانی‌تر از طراحی می‌کرد
   useEffect(() => {
-    submittedRef.current = false
-    for (const t of timersRef.current) window.clearTimeout(t)
-    timersRef.current = []
-
     const remaining = ctx.timeRemainingMs()
     const pastHide =
       remaining !== null && trial.responseWindowMs !== null
@@ -36,39 +35,19 @@ export function GoNoGoGame({ ctx }: { ctx: ActiveGameContext }) {
     setStimulusVisible(!pastHide)
     if (!pastHide) {
       // پنهان‌شدن محرک بعد از stimulusMs
-      timersRef.current.push(window.setTimeout(() => setStimulusVisible(false), trial.stimulusMs))
+      guards.setTrackedTimeout(() => setStimulusVisible(false), trial.stimulusMs)
     }
 
-    // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به محرک بعد
+    // انقضای مهلت پاسخ → ثبت بی‌پاسخی و رفتن به محرک بعد (پیشرویِ
+    // خودکار در انقضا = همان نقطهٔ ثابت شبکهٔ زمانی)؛ پس از rollback
+    // ذخیره با پنجرهٔ کوتاه دوباره مسلح می‌شود
     if (remaining !== null) {
-      deadlineRef.current = window.setTimeout(() => {
-        if (submittedRef.current) return
-        submittedRef.current = true
-        void ctx.submit(null).then((result) => {
-          if (!result.accepted) {
-            // persist_failed: مدیر rollback کرده — قفل باز بماند تا تلاش
-            // مجدد ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
-            submittedRef.current = false
-            return
-          }
-          if (!result.sessionCompleted) {
-            try {
-              ctx.advance()
-            } catch {
-              // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-            }
-          }
-        })
-      }, remaining)
-    }
-    return () => {
-      for (const t of timersRef.current) window.clearTimeout(t)
-      if (deadlineRef.current !== null) window.clearTimeout(deadlineRef.current)
+      guards.armDeadline(() => null, remaining)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
-  // نشان شناور نتیجهٔ تپ — پیشروی فوری بدون تغییر زمانی (الگوی محاسبه ×۲۰)
+  // نشان شناور نتیجهٔ تپ — بدون تغییر زمانی
   const flashBadge = (correct: boolean) => {
     setBadge(correct ? 'correct' : 'wrong')
     if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
@@ -76,22 +55,24 @@ export function GoNoGoGame({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   const respond = () => {
-    if (submittedRef.current || ctx.paused) return
-    submittedRef.current = true
-    void ctx.submit('tap').then((result) => {
-      if (!result.accepted) {
-        // persist_failed: مدیر rollback کرده — قفل باز بماند
-        submittedRef.current = false
-        return
-      }
-      flashBadge(result.record.correct)
-      if (!result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+    if (guards.isSubmitted() || ctx.paused) return
+    void guards.submitOnce('tap', {
+      onAccepted: (result) => {
+        flashBadge(result.record.correct)
+        // SOA ثابت: advance در پایان پنجرهٔ پاسخ — پاسخ سریع محرک بعد را
+        // زودتر نمی‌آورد؛ ISI حداقلی تا پایان پنجره رعایت می‌شود
+        if (!result.sessionCompleted) {
+          const rest = ctx.timeRemainingMs()
+          guards.setTrackedTimeout(() => {
+            try {
+              ctx.advance()
+            } catch {
+              // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+            }
+          }, Math.max(rest ?? 0, 0))
         }
-      }
+      },
+      autoAdvance: false,
     })
   }
 

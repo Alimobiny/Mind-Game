@@ -88,7 +88,8 @@ export type PatternCompletionAnswer = number | null
 
 export const PATTERN_COMPLETION_ID = 'pattern-completion'
 export const PATTERN_COMPLETION_VERSION = '1.0.0'
-export const PATTERN_COMPLETION_CONTENT_VERSION = '1'
+/** ۲ = تمایز محتوایی سطح ۵: فقط دو خانوادهٔ سخت‌تر + حواس‌پرتی دوی ویژگی */
+export const PATTERN_COMPLETION_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 12
 const OPTION_COUNT = 4
 const EMPTY_CELL_INDEX = 8
@@ -104,10 +105,16 @@ export function configForDifficulty(difficulty: number): PatternCompletionConfig
     throw new RangeError('دشواری باید بین ۱ تا ۵ باشد')
   }
   const familyCount = Math.min(difficulty, PATTERN_RULE_FAMILIES.length)
+  // سطح ۵ دیگر با سطح ۴ هم‌ارز نیست: فقط دو خانوادهٔ سخت‌تر (شکل‌درردیف و
+  // چرخش‌گونه) + همان حواس‌پرتی دوی‌ویژگی — گام دشواری واقعی (GAMES-AUDIT جدول #۳۳)
+  const allowedFamilies =
+    difficulty === 5
+      ? PATTERN_RULE_FAMILIES.slice(2)
+      : PATTERN_RULE_FAMILIES.slice(0, familyCount)
   return {
     difficulty,
     totalTrials: TOTAL_TRIALS,
-    allowedFamilies: PATTERN_RULE_FAMILIES.slice(0, familyCount),
+    allowedFamilies,
     distractorAttributeDiffs: difficulty >= 4 ? 2 : 1,
   }
 }

@@ -416,6 +416,7 @@ const nBack: RegisteredExercise = {
       misses: 'اهداف ازقلم‌افتاده (miss)',
       falseAlarms: 'تطبیق‌های نابجا (false alarm)',
       correctRejections: 'خودداری‌های درست',
+      dPrime: 'حساسیت d′ (loglinear)',
     },
   },
 }

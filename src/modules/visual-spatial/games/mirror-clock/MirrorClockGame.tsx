@@ -10,6 +10,7 @@ import {
   type TimeOption,
 } from './engine'
 import styles from './mirror-clock.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * ساعت آینه‌ای — UI
@@ -218,7 +219,7 @@ export function MirrorClockGame({ ctx }: { ctx: ActiveGameContext }) {
           <p
             className={`${gameStyles.feedback} ${flash === 'correct' ? gameStyles.feedbackCorrect : gameStyles.feedbackIncorrect}`}
             data-testid="mc-feedback"
-            data-correct={flash === 'correct' ? 'true' : 'false'}
+            data-correct={e2e(flash === 'correct' ? 'true' : 'false')}
           >
             {flash === 'correct'
               ? 'درست ✓'
@@ -236,7 +237,7 @@ export function MirrorClockGame({ ctx }: { ctx: ActiveGameContext }) {
             type="button"
             className={styles.optionButton}
             data-testid="mc-option"
-            data-correct={option.hour === trial.hour && option.minute === trial.minute ? 'true' : 'false'}
+            data-correct={e2e(option.hour === trial.hour && option.minute === trial.minute ? 'true' : 'false')}
             onClick={() => answer(option)}
             disabled={locked || ctx.paused}
           >

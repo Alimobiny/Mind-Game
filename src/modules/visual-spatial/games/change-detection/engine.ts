@@ -49,8 +49,10 @@ export type CdColor = (typeof CD_PALETTE)[number]
 
 export interface ChangeDetectionConfig extends ExerciseConfig {
   readonly totalTrials: number
-  /** تعداد مربع‌های آرایه */
+  /** تعداد مربع‌های آرایه — سطح پایه؛ در جلسه با اندازه‌های مجاور مخلوط می‌شود */
   readonly arraySize: number
+  /** اندازه‌های آرایهٔ جلسه (محتوای v۲: مخلوط برای منحنی k) */
+  readonly arraySizes: readonly number[]
   /** مدت نمایش آرایهٔ نمونه (ms) */
   readonly displayMs: number
   /** فاصلهٔ خالی بین نمونه و آزمون (ms) */
@@ -81,7 +83,11 @@ export type ChangeDetectionAnswer = 'changed' | 'unchanged'
 
 export const CHANGE_DETECTION_ID = 'change-detection'
 export const CHANGE_DETECTION_VERSION = '1.0.0'
-export const CHANGE_DETECTION_CONTENT_VERSION = '1'
+/**
+ * ۲ = مخلوط‌کردن اندازهٔ آرایه داخل جلسه + میانگین‌گیری k به تفکیک اندازه
+ * (به‌جای N̄×نرخ pooled — GAMES-AUDIT §۳-۲)
+ */
+export const CHANGE_DETECTION_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 16
 
 /** اندازهٔ آرایه و فاصلهٔ خالی با دشواری بالا می‌روند: ۲→۸ مربع، ۹۰۰→۱۵۰۰ms */
@@ -90,13 +96,34 @@ export function configForDifficulty(difficulty: number): ChangeDetectionConfig {
     throw new RangeError('دشواری باید بین ۱ تا ۵ باشد')
   }
   const arraySize = [2, 3, 4, 6, 8][difficulty - 1] as number
+  // v۲: جلسه اندازهٔ پایه را با مجاورها می‌میکسد (کف ۲، سقف ۸ خانه شبکهٔ ۳×۳)
+  const arraySizes = Array.from(
+    new Set([Math.max(2, arraySize - 1), arraySize, Math.min(8, arraySize + 1)]),
+  ).sort((a, b) => a - b)
   return {
     difficulty,
     totalTrials: TOTAL_TRIALS,
     arraySize,
+    arraySizes,
     displayMs: 500,
     blankMs: 900 + (difficulty - 1) * 150,
   }
+}
+
+/** برنامهٔ قطعیِ اندازه‌های جلسه — توازن بین اندازه‌ها با بُرِ بذر سشن */
+function arraySizeScheduleFor(seed: number, config: ChangeDetectionConfig): readonly number[] {
+  const rng = new SeededRandom(seed ^ 0xcd5)
+  const schedule: number[] = []
+  for (let i = 0; i < config.totalTrials; i += 1) {
+    schedule.push(config.arraySizes[i % config.arraySizes.length] as number)
+  }
+  for (let i = schedule.length - 1; i > 0; i -= 1) {
+    const j = rng.int(0, i)
+    const tmp = schedule[i] as number
+    schedule[i] = schedule[j] as number
+    schedule[j] = tmp
+  }
+  return schedule
 }
 
 export const changeDetectionDefinition: ExerciseDefinition<
@@ -120,7 +147,8 @@ export const changeDetectionDefinition: ExerciseDefinition<
     }
     const trialIndex = state.nextTrialIndex
     const rng = new SeededRandom(deriveTrialSeed(state.seed, trialIndex))
-    const { arraySize } = state.config
+    // v۲: اندازهٔ این مرحله از برنامهٔ مخلوطِ جلسه — نه ثابت سطح
+    const arraySize = arraySizeScheduleFor(state.seed, state.config)[trialIndex] as number
     const positions = [...rng.sample([0, 1, 2, 3, 4, 5, 6, 7, 8], arraySize)].sort((a, b) => a - b)
     const colors = rng.sample(CD_PALETTE, arraySize)
     const changed = rng.bool(0.5)
@@ -198,9 +226,20 @@ export const changeDetectionDefinition: ExerciseDefinition<
     if (changedTrials.length > 0 && unchangedTrials.length > 0) {
       const meanArraySize =
         state.results.reduce((sum, r) => sum + stimOf(r).arraySize, 0) / state.results.length
-      // ظرفیت حافظهٔ دیداری با تصحیح حدس: k = N × (درستی − زنگ خطر)
-      const k = meanArraySize * ((metrics['hitRate'] as number) - (metrics['falseAlarmRate'] as number)) / 100
-      metrics['kEstimate'] = Math.round(k * 10) / 10
+      // ظرفیت حافظهٔ دیداری با تصحیح حدس — v۲: k به تفکیک اندازهٔ آرایه
+      // محاسبه و سپس میانگین می‌شود (N̄×نرخ pooled با جلسهٔ مخلوط نادرست بود)
+      const kBySize: number[] = []
+      for (const size of new Set(state.results.map((r) => stimOf(r).arraySize))) {
+        const changedOfSize = changedTrials.filter((r) => stimOf(r).arraySize === size)
+        const unchangedOfSize = unchangedTrials.filter((r) => stimOf(r).arraySize === size)
+        if (changedOfSize.length === 0 || unchangedOfSize.length === 0) continue
+        const hit = accuracyPercent(changedOfSize.filter(saidChanged).length, changedOfSize.length)
+        const fa = accuracyPercent(unchangedOfSize.filter(saidChanged).length, unchangedOfSize.length)
+        kBySize.push(size * (hit - fa) / 100)
+      }
+      if (kBySize.length > 0) {
+        metrics['kEstimate'] = Math.round((kBySize.reduce((a, b) => a + b, 0) / kBySize.length) * 10) / 10
+      }
       metrics['meanArraySize'] = Math.round(meanArraySize * 10) / 10
     }
     return {

@@ -1,16 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
+import { SeededRandom } from '../../../../core/randomization/seeded-random'
+import { scheduleCadence } from '../../../shared/presentation-resume'
 import type { AttentionalBlinkTrial } from './engine'
 import styles from './attentional-blink.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * Attentional Blink — UI
  *
  * فازهای هر مرحله: جریان سریع حروف (هر آیتم itemMs) → انتخاب دو هدف از
  * جدول حروف (اول هدف روشن‌آبی، بعد هدف سبز) → فلش بازخورد کوتاه →
- * مرحلهٔ بعد. زمان‌بندی کاملاً تایمری و مونت‌محور است؛ با مکث/ریمانت،
- * جریان از ابتدا دوباره پخش می‌شود (پاسخ ثبت‌شده از دست نمی‌رود).
+ * مرحلهٔ بعد. بازنصبِ پس از مکث (PAUSED=unmount): جریان از زمانِ
+ * سپری‌شدهٔ جلسه ادامه می‌یابد نه از ابتدا — بازپخش کل جریان RSVP،
+ * دوبار-دیدن اهداف و بایاس صعودی بود (GAMES-AUDIT §۲-۱).
  */
 
 /** نمایش ثابت پیش از شروع جریان (ms) */
@@ -24,26 +29,13 @@ export function AttentionalBlinkGame({ ctx }: { ctx: ActiveGameContext }) {
   const [itemIndex, setItemIndex] = useState(-1)
   const [picks, setPicks] = useState<string[]>([])
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(null)
-  const timeoutsRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
-  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
-  const currentTrialRef = useRef(trial.trialIndex)
-  currentTrialRef.current = trial.trialIndex
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
-  // ریست با شروع هر جریان جدید + زمان‌بندی RSVP: آیتم i در [i×itemMs)
+  // ریست با شروع هر جریان جدید + زمان‌بندی RSVP: آیتم i در [FIXATION + i×itemMs)
   useEffect(() => {
-    submittedRef.current = false
-    setPhase('stream')
-    setItemIndex(-1)
-    setPicks([])
-    setWasCorrect(null)
-    for (const t of timeoutsRef.current) window.clearTimeout(t)
-    timeoutsRef.current = []
-
     // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰)
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
       try {
         ctx.advance()
       } catch {
@@ -52,28 +44,52 @@ export function AttentionalBlinkGame({ ctx }: { ctx: ActiveGameContext }) {
       return
     }
 
-    const timers: number[] = [window.setTimeout(() => setItemIndex(0), FIXATION_MS)]
-    trial.stream.forEach((_, i) => {
-      if (i > 0) timers.push(window.setTimeout(() => setItemIndex(i), FIXATION_MS + i * trial.itemMs))
-    })
-    timers.push(
-      window.setTimeout(
-        () => setPhase('recall'),
-        FIXATION_MS + trial.stream.length * trial.itemMs,
-      ),
+    const interrupted = ctx.trialPresentation.wasInterrupted()
+    const elapsedMs = interrupted ? ctx.trialElapsedMs() : 0
+    const saved = interrupted ? ctx.trialPresentation.get<string[]>('picks') : undefined
+    setPicks(saved ?? [])
+    setWasCorrect(null)
+    setItemIndex(-1)
+
+    const totalMs = FIXATION_MS + trial.stream.length * trial.itemMs
+    const timers = scheduleCadence(
+      trial.stream.map((_, i) => ({
+        startAt: FIXATION_MS + i * trial.itemMs,
+        displayMs: trial.itemMs,
+        onShow: () => setItemIndex(i),
+        onHide: () => undefined,
+      })),
+      totalMs,
+      () => {
+        setItemIndex(-1)
+        setPhase('recall')
+      },
+      elapsedMs,
     )
-    timeoutsRef.current = timers
-    return () => {
-      for (const t of timeoutsRef.current) window.clearTimeout(t)
+    if (elapsedMs >= totalMs) {
+      // جریان تمام شده بود — مستقیم به بازیابی
+      setItemIndex(-1)
+      setPhase('recall')
+    } else {
+      setPhase('stream')
     }
+    for (const t of timers) guards.trackTimeoutId(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
-  // جدول بازیابی — حروف جریان به ترتیب تصادفی (ترتیب اصلی لو نمی‌رود)
+  // جدول بازیابی — حروف جریان به ترتیب تصادفیِ «قطعی» از بذرِ مرحله
+  // (ترتیب اصلی لو نمی‌رود؛ پیش‌تر Math.random بود و قطعیت قرارداد را می‌شکست)
   const gridLetters = useMemo(() => {
     const letters = trial.stream.map((item) => item.letter)
+    let hash = 0x811c9dc5
+    const key = `${trial.trialIndex}:${letters.join('')}`
+    for (let i = 0; i < key.length; i += 1) {
+      hash ^= key.charCodeAt(i)
+      hash = Math.imul(hash, 0x01000193) >>> 0
+    }
+    const rng = new SeededRandom(hash)
     for (let i = letters.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1))
+      const j = rng.int(0, i)
       const tmp = letters[i] as string
       letters[i] = letters[j] as string
       letters[j] = tmp
@@ -84,44 +100,37 @@ export function AttentionalBlinkGame({ ctx }: { ctx: ActiveGameContext }) {
 
   const pick = (letter: string) => {
     if (phase !== 'recall' || picks.length >= 2 || picks.includes(letter)) return
-    setPicks((current) => [...current, letter])
+    const next = [...picks, letter]
+    // نجات انتخاب‌ها برای بازنصبِ مکث
+    ctx.trialPresentation.set('picks', next)
+    setPicks(next)
   }
 
-  const submit = async () => {
-    if (submittedRef.current || phase !== 'recall' || picks.length !== 2) return
-    submittedRef.current = true
+  const submit = () => {
+    if (phase !== 'recall' || picks.length !== 2) return
     const [t1, t2] = picks as [string, string]
-    const result = await ctx.submit({ t1, t2 })
-    if (!result.accepted) {
-      submittedRef.current = false
-      return
-    }
-    if (result.sessionCompleted) {
-      setWasCorrect(result.record.correct)
-      setPhase('feedback')
-      return
-    }
-    setWasCorrect(result.record.correct)
-    setPhase('feedback')
-    // تایمر پیشروی با گارد کهنگی: اگر مکثِ وسط پنجرهٔ IDB ریمانت ساخته
-    // باشد، فیکس ریس pause خودش پیشروی کرده و این تایمر کهنه بی‌اثر می‌ماند
-    timeoutsRef.current.push(
-      window.setTimeout(() => {
-        if (currentTrialRef.current !== trial.trialIndex) return
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده
-        }
-      }, FEEDBACK_MS),
-    )
+    void guards.submitOnce({ t1, t2 }, {
+      onAccepted: (result) => {
+        setWasCorrect(result.record.correct)
+        setPhase('feedback')
+        // تایمر پیشروی — ردیابی‌شده؛ در تغییر مرحله/unmount پاک می‌شود
+        guards.setTrackedTimeout(() => {
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده
+          }
+        }, FEEDBACK_MS)
+      },
+      autoAdvance: false,
+    })
   }
 
   if (phase === 'stream') {
     const item = itemIndex >= 0 ? trial.stream[itemIndex] : null
     return (
       <>
-        <div className={styles.streamStage} data-testid="ab-stream" data-lag={trial.lag}>
+        <div className={styles.streamStage} data-testid="ab-stream" data-lag={e2e(trial.lag)}>
           {item === null ? (
             <span className={styles.fixation}>+</span>
           ) : (
@@ -153,9 +162,9 @@ export function AttentionalBlinkGame({ ctx }: { ctx: ActiveGameContext }) {
       <div
         className={styles.recallBox}
         data-testid="ab-recall"
-        data-t1={trial.t1}
-        data-t2={trial.t2}
-        data-lag={trial.lag}
+        data-t1={e2e(trial.t1)}
+        data-t2={e2e(trial.t2)}
+        data-lag={e2e(trial.lag)}
       >
         <div className={styles.pickRow} aria-label="هدف‌های انتخاب‌شده">
           <span className={`${styles.pickChip} ${styles.pickT1}`}>

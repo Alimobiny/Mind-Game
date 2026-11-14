@@ -180,4 +180,21 @@ describe('جلسهٔ کامل', () => {
     expect(summary.accuracy).toBe(100)
     expect(() => def.nextTrial(state)).toThrow('همه محرک‌ها تولید شده‌اند')
   })
+  it('سهمیهٔ دقیق جایگاه هدف در هر دو جریان: هر جلسه ~۷ هدف (قاطع)', () => {
+    // totalTrials=24 → round(0.3×24)=7 برای حرف و ۷ برای مکان
+    for (const seed of [3, 88, 4242]) {
+      const config = configForDifficulty(2)
+      let state = def.createSession('a', config, seed)
+      let letters = 0
+      let cells = 0
+      for (let i = 0; i < config.totalTrials; i++) {
+        const step = def.nextTrial(state)
+        if (step.trial.isLetterTarget) letters += 1
+        if (step.trial.isCellTarget) cells += 1
+        state = step.state
+      }
+      expect(letters).toBe(7)
+      expect(cells).toBe(7)
+    }
+  })
 })

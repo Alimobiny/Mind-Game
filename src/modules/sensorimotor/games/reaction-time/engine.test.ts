@@ -144,13 +144,14 @@ describe('زمان واکنش — engine', () => {
     expect(summary.metrics['medianReactionTimeMs']).toBe(150)
     expect(summary.metrics['meanReactionTimeMs']).toBe(150)
 
-    // جلسهٔ کاملاً کند: هیچ پاسخ درستی نیست → آمار صفر
+    // جلسهٔ کاملاً کند: هیچ پاسخ درستی نیست → کلیدهای زمانی اصلاً نیستند (کلید شرطی)
     const allSlow = runSession(config, (trial): TestAnswer => ({ given: null, rt: trial.responseWindowMs ?? 0 }))
     const slowSummary = def.getSummary(allSlow)
     expect(slowSummary.correctTrials).toBe(0)
-    expect(slowSummary.metrics['medianReactionTimeMs']).toBe(0)
-    expect(slowSummary.metrics['bestReactionTimeMs']).toBe(0)
-    expect(slowSummary.metrics['meanReactionTimeMs']).toBe(0)
+    expect('medianReactionTimeMs' in slowSummary.metrics).toBe(false)
+    expect('bestReactionTimeMs' in slowSummary.metrics).toBe(false)
+    expect('meanReactionTimeMs' in slowSummary.metrics).toBe(false)
+
     expect(slowSummary.metrics['tooSlowErrors']).toBe(10)
   })
 

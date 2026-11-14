@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
+import { scheduleCadence } from '../../../shared/presentation-resume'
 import type { WordMemoryTrial } from './engine'
 import styles from './word-memory.module.css'
 
@@ -19,37 +21,22 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as WordMemoryTrial
   const studyCount = trial.studyWords.length
   const [phase, setPhase] = useState<Phase>('study')
-  const [shownWord, setShownWord] = useState<string | null>(trial.studyWords[0] ?? null)
+  const [shownWord, setShownWord] = useState<string | null>(null)
   const [wordIndex, setWordIndex] = useState(0)
   const [selected, setSelected] = useState<string[]>([])
   const [wasCorrect, setWasCorrect] = useState(false)
-  const timeoutsRef = useRef<number[]>([])
-  // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
-  const submittedRef = useRef(false)
-  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
-  const currentTrialRef = useRef(trial.trialIndex)
-  currentTrialRef.current = trial.trialIndex
-
-  const clearTimers = useCallback(() => {
-    for (const t of timeoutsRef.current) window.clearTimeout(t)
-    timeoutsRef.current = []
-  }, [])
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // ریست فازها با شروع هر مرحله جدید + زمان‌بندی نمایش واژه‌ها:
-  // هر واژه به‌مدت displayMsPerWord دیده می‌شود و gapMs فاصله تا بعدی
+  // هر واژه به‌مدت displayMsPerWord دیده می‌شود و gapMs فاصله تا بعدی.
+  // بازنصبِ پس از مکث (PAUSED=unmount): مطالعه از زمانِ سپری‌شدهٔ جلسه
+  // ادامه می‌یابد نه از صفر — بازپخش فهرست واژه‌ها، دوبار-دیدن محرک و
+  // بایاس صعودی بود (GAMES-AUDIT §۲-۱)
   useEffect(() => {
-    submittedRef.current = false
-    setPhase('study')
-    setShownWord(trial.studyWords[0] ?? null)
-    setWordIndex(0)
-    setSelected([])
-    setWasCorrect(false)
-    clearTimers()
     // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰): پاسخِ
     // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
       try {
         ctx.advance()
       } catch {
@@ -57,63 +44,75 @@ export function WordMemoryGame({ ctx }: { ctx: ActiveGameContext }) {
       }
       return
     }
+
+    const interrupted = ctx.trialPresentation.wasInterrupted()
+    const elapsedMs = interrupted ? ctx.trialElapsedMs() : 0
+    const saved = interrupted ? ctx.trialPresentation.get<string[]>('selected') : undefined
+    setSelected(saved ?? [])
+    setWasCorrect(false)
+    setShownWord(null)
+    setWordIndex(0)
+
     const { displayMsPerWord: display, gapMs: gap } = trial
-    const timers: number[] = []
-    trial.studyWords.forEach((word, i) => {
-      const startAt = i * (display + gap)
-      timers.push(
-        window.setTimeout(() => {
+    const totalMs = trial.studyWords.length * (display + gap)
+    const finishStudy = () => {
+      setShownWord(null)
+      setPhase('recall')
+    }
+    const timers = scheduleCadence(
+      trial.studyWords.map((word, i) => ({
+        startAt: i * (display + gap),
+        displayMs: display,
+        onShow: () => {
           setWordIndex(i)
           setShownWord(word)
-        }, startAt),
-      )
-      timers.push(window.setTimeout(() => setShownWord(null), startAt + display))
-    })
-    // پایان نمایش همه واژه‌ها → فاز بازخوانی
-    timers.push(
-      window.setTimeout(() => setPhase('recall'), trial.studyWords.length * (display + gap)),
+        },
+        onHide: () => setShownWord((current) => (current === word ? null : current)),
+      })),
+      totalMs,
+      finishStudy,
+      elapsedMs,
     )
-    timeoutsRef.current = timers
-    return clearTimers
-    // trial.trialIndex دقیقاً با شروع مرحله جدید تغییر می‌کند
+    if (elapsedMs >= totalMs) {
+      // مطالعه تمام شده بود — مستقیم به بازخوانی
+      setPhase('recall')
+    } else {
+      setPhase('study')
+    }
+    for (const t of timers) guards.trackTimeoutId(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trial.trialIndex, clearTimers])
+  }, [trial.trialIndex])
 
   const toggleWord = (word: string) => {
     if (phase !== 'recall' || ctx.paused) return
-    setSelected((current) =>
-      current.includes(word)
-        ? current.filter((w) => w !== word)
-        : current.length >= studyCount
-          ? current
-          : [...current, word],
-    )
+    const next = selected.includes(word)
+      ? selected.filter((w) => w !== word)
+      : selected.length >= studyCount
+        ? selected
+        : [...selected, word]
+    // نجات انتخاب‌ها برای بازنصبِ مکث
+    ctx.trialPresentation.set('selected', next)
+    setSelected(next)
   }
 
-  const submit = async () => {
-    if (submittedRef.current || phase !== 'recall' || ctx.paused || selected.length !== studyCount) return
-    submittedRef.current = true
-    const result = await ctx.submit(selected)
-    if (!result.accepted) {
-      submittedRef.current = false
-      return
-    }
-    // آخرین پاسخ جلسه را کامل کرد → advanceی برای مرحله بعدی وجود ندارد
-    if (result.sessionCompleted) return
-    setWasCorrect(result.record.correct)
-    setPhase('feedback')
-    // بازخورد کوتاه رنگی، سپس مرحله بعد — با گارد کهنگی (ریمانتِ پس از
-    // مکث خودش پیشروی کرده) و مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
-    timeoutsRef.current.push(
-      window.setTimeout(() => {
-        if (currentTrialRef.current !== trial.trialIndex) return
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده
-        }
-      }, 1300),
-    )
+  const submit = () => {
+    if (phase !== 'recall' || ctx.paused || selected.length !== studyCount) return
+    void guards.submitOnce(selected, {
+      onAccepted: (result) => {
+        setWasCorrect(result.record.correct)
+        setPhase('feedback')
+        // بازخورد کوتاه رنگی، سپس مرحله بعد — تایمر ردیابی‌شده + مهار خطای
+        // جلسهٔ هم‌زمان قطع/تکمیل
+        guards.setTrackedTimeout(() => {
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده
+          }
+        }, 1300)
+      },
+      autoAdvance: false,
+    })
   }
 
   if (phase === 'study') {

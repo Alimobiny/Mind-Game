@@ -9,6 +9,7 @@ import {
   type TaskSwitchingTrial,
 } from './engine'
 import styles from './task-switching.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * جابه‌جایی تکلیف — UI
@@ -234,7 +235,7 @@ export function TaskSwitchingGame({ ctx }: { ctx: ActiveGameContext }) {
           <p
             className={`${styles.flash} ${flash.correct ? styles.flashCorrect : styles.flashIncorrect}`}
             data-testid="ts-feedback"
-            data-correct={flash.correct ? 'true' : 'false'}
+            data-correct={e2e(flash.correct ? 'true' : 'false')}
             data-omission={flash.omission ? 'true' : 'false'}
           >
             {flash.correct

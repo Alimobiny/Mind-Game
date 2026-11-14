@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
+import { scheduleCadence } from '../../../shared/presentation-resume'
 import type { SpatialSequenceTrial } from './engine'
 import styles from './spatial-sequence.module.css'
 
@@ -20,33 +22,17 @@ export function SpatialSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
   const [shownPosition, setShownPosition] = useState<number | null>(null)
   const [entered, setEntered] = useState<number[]>([])
   const [wasCorrect, setWasCorrect] = useState(false)
-  const trialKey = `${trial.trialIndex}`
-  const timeoutsRef = useRef<number[]>([])
-  // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
-  const submittedRef = useRef(false)
-  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
-  const currentTrialRef = useRef(trial.trialIndex)
-  currentTrialRef.current = trial.trialIndex
-
-  const clearTimers = useCallback(() => {
-    for (const t of timeoutsRef.current) window.clearTimeout(t)
-    timeoutsRef.current = []
-  }, [])
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // ریست فازها با شروع هر مرحله جدید + زمان‌بندی نمایش تک‌به‌تک:
-  // هر خانه به‌مدت displayMsPerCell روشن است و gapMs فاصله تا بعدی
+  // هر خانه به‌مدت displayMsPerCell روشن است و gapMs فاصله تا بعدی.
+  // بازنصبِ پس از مکث: ارائه از زمان سپری‌شدهٔ جلسه ادامه می‌یابد نه از
+  // صفر — بازپخش توالی، دوبار-دیدن محرک و بایاس صعودی بود (GAMES-AUDIT §۲-۱)
   useEffect(() => {
-    submittedRef.current = false
-    setPhase('showing')
-    setShownPosition(trial.sequence.length > 0 ? 0 : null)
-    setEntered([])
-    setWasCorrect(false)
-    clearTimers()
     // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰): پاسخِ
     // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
       try {
         ctx.advance()
       } catch {
@@ -54,60 +40,73 @@ export function SpatialSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
       }
       return
     }
+
+    const interrupted = ctx.trialPresentation.wasInterrupted()
+    const elapsedMs = interrupted ? ctx.trialElapsedMs() : 0
+    const saved = interrupted ? ctx.trialPresentation.get<number[]>('entered') : undefined
+    setEntered(saved ?? [])
+    setWasCorrect(false)
+    setShownPosition(null)
+
     const { displayMsPerCell: display, gapMs: gap } = trial
-    const timers: number[] = []
-    trial.sequence.forEach((_, i) => {
-      const startAt = i * (display + gap)
-      timers.push(window.setTimeout(() => setShownPosition(i), startAt))
-      timers.push(window.setTimeout(() => setShownPosition(null), startAt + display))
-    })
-    // پایان نمایش همه خانه‌ها → فاز بازتولید
-    timers.push(
-      window.setTimeout(() => {
-        setShownPosition(null)
-        setPhase('recall')
-      }, trial.sequence.length * (display + gap)),
+    const totalMs = trial.sequence.length * (display + gap)
+    const finishShowing = () => {
+      setShownPosition(null)
+      setPhase('recall')
+    }
+    const timers = scheduleCadence(
+      trial.sequence.map((_, i) => ({
+        startAt: i * (display + gap),
+        displayMs: display,
+        onShow: () => setShownPosition(i),
+        onHide: () => setShownPosition((current) => (current === i ? null : current)),
+      })),
+      totalMs,
+      finishShowing,
+      elapsedMs,
     )
-    timeoutsRef.current = timers
-    return clearTimers
-    // trialKey تغییر می‌کند دقیقاً وقتی مرحله جدید شروع می‌شود
+    if (elapsedMs >= totalMs) {
+      // ارائهٔ تمام‌شده — scheduleCadence خودش finishShowing زد؛ فاز را هم بنشان
+      setPhase('recall')
+    } else {
+      setPhase('showing')
+    }
+    for (const t of timers) guards.trackTimeoutId(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trialKey, clearTimers])
+  }, [trial.trialIndex])
 
   const pressCell = (index: number) => {
     if (phase !== 'recall') return
-    setEntered((current) => {
-      // توالی هدف خانه تکراری ندارد؛ لمس خانه تکراری نادیده گرفته می‌شود
-      if (current.length >= trial.sequence.length || current.includes(index)) return current
-      return [...current, index]
-    })
+    // توالی هدف خانه تکراری ندارد؛ لمس خانه تکراری نادیده گرفته می‌شود
+    if (entered.length >= trial.sequence.length || entered.includes(index)) return
+    const next = [...entered, index]
+    // نجات ورودی برای بازنصبِ مکث
+    ctx.trialPresentation.set('entered', next)
+    setEntered(next)
   }
 
-  const clearEntered = () => setEntered([])
+  const clearEntered = () => {
+    ctx.trialPresentation.set('entered', [])
+    setEntered([])
+  }
 
-  const submit = async () => {
-    if (submittedRef.current || phase !== 'recall' || entered.length !== trial.sequence.length) return
-    submittedRef.current = true
-    const result = await ctx.submit(entered)
-    if (!result.accepted) {
-      submittedRef.current = false
-      return
-    }
-    // آخرین پاسخ جلسه را کامل کرد → advanceی برای مرحله بعدی وجود ندارد
-    if (result.sessionCompleted) return
-    setWasCorrect(result.record.correct)
-    setPhase('feedback')
-    // تایمر پیشروی: ردیابی‌شده + گارد کهنگی + مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
-    timeoutsRef.current.push(
-      window.setTimeout(() => {
-        if (currentTrialRef.current !== trial.trialIndex) return
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده
-        }
-      }, 1400),
-    )
+  const submit = () => {
+    if (phase !== 'recall' || entered.length !== trial.sequence.length) return
+    void guards.submitOnce(entered, {
+      onAccepted: (result) => {
+        setWasCorrect(result.record.correct)
+        setPhase('feedback')
+        // تایمر پیشروی: ردیابی‌شده + مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
+        guards.setTrackedTimeout(() => {
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده
+          }
+        }, 1400)
+      },
+      autoAdvance: false,
+    })
   }
 
   const total = trial.gridSize * trial.gridSize
@@ -177,7 +176,7 @@ export function SpatialSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
             <button
               type="button"
               className={gameStyles.primaryButton}
-              onClick={() => void submit()}
+              onClick={submit}
               disabled={entered.length !== trial.sequence.length}
               data-testid="spatial-confirm"
             >

@@ -87,7 +87,8 @@ export type RuleDiscoveryAnswer = number | null
 
 export const RULE_DISCOVERY_CARD_SORTING_ID = 'rule-discovery-card-sorting'
 export const RULE_DISCOVERY_CARD_SORTING_VERSION = '1.0.0'
-export const RULE_DISCOVERY_CARD_SORTING_CONTENT_VERSION = '1'
+/** ۲ = چرخهٔ قاعدهٔ تصادفیِ متمایز (نه (i+1)%len قطعیِ یادپذیر) */
+export const RULE_DISCOVERY_CARD_SORTING_CONTENT_VERSION = '2'
 
 /** تعداد مراحل در همهٔ سطوح ثابت (قرارداد plannedTrials کاتالوگ) */
 const TRIAL_COUNT = 36
@@ -129,11 +130,17 @@ export function correctPileFor(card: CardStimulus, rule: SortDimension): number 
   return card.count
 }
 
-/** بُعد بعدی در چرخهٔ ابعاد فعال */
-function nextRule(dimensions: readonly SortDimension[], current: SortDimension): SortDimension {
-  const index = dimensions.indexOf(current)
-  const next = dimensions[(index + 1) % dimensions.length]
-  return next as SortDimension
+/**
+ * بُعد بعدی — تصادفیِ «متمایز» با بذر مرحله (استاندارد WCST؛ چرخهٔ قطعی
+ * (i+1)%len یادگرفتنی بود و پس از اولین سوییچ قابل پیش‌بینی — GAMES-AUDIT §۳-۱)
+ */
+function nextRule(
+  dimensions: readonly SortDimension[],
+  current: SortDimension,
+  rng: SeededRandom,
+): SortDimension {
+  const others = dimensions.filter((d) => d !== current)
+  return others.length === 0 ? current : rng.pick(others)
 }
 
 export const ruleDiscoveryCardSortingDefinition: ExerciseDefinition<
@@ -215,7 +222,8 @@ export const ruleDiscoveryCardSortingDefinition: ExerciseDefinition<
         categoriesCompleted += 1
         if (firstCategoryTrial === null) firstCategoryTrial = trial.trialIndex + 1
         previousRule = activeRule
-        activeRule = nextRule(state.config.dimensions, activeRule)
+        const switchRng = new SeededRandom(deriveTrialSeed(state.seed, trial.trialIndex) ^ 0x5c57)
+        activeRule = nextRule(state.config.dimensions, activeRule, switchRng)
         correctStreak = 0
       }
     } else {

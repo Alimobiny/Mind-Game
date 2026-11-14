@@ -25,9 +25,10 @@ describe('Change Detection — engine', () => {
     expect(def.nextTrial(s1).trial).toEqual(def.nextTrial(s2).trial)
 
     const trial = def.nextTrial(s1).trial
-    expect(trial.positions.length).toBe(config.arraySize)
-    expect(new Set(trial.positions).size).toBe(config.arraySize)
-    expect(new Set(trial.colors).size).toBe(config.arraySize)
+    // v۲: اندازهٔ مرحله از برنامهٔ مخلوط جلسه می‌آید (یکی از arraySizes)
+    expect(config.arraySizes).toContain(trial.positions.length)
+    expect(new Set(trial.positions).size).toBe(trial.positions.length)
+    expect(new Set(trial.colors).size).toBe(trial.positions.length)
     expect(trial.positions).toEqual([...trial.positions].sort((a, b) => a - b))
     if (trial.changed) {
       expect(trial.changedIndex).not.toBeNull()
@@ -102,9 +103,12 @@ describe('Change Detection — engine', () => {
     expect(summary.totalTrials).toBe(16)
     expect(summary.metrics['hitRate']).toBe(100)
     expect(summary.metrics['falseAlarmRate']).toBe(0)
-    // همه‌درست → k = اندازهٔ آرایهٔ میانگین = ۴
-    expect(summary.metrics['kEstimate']).toBe(4)
-    expect(summary.metrics['meanArraySize']).toBe(4)
+    // همه‌درست → k هر اندازه = خود اندازه؛ میانگین k روی بازهٔ اندازه‌هاست
+    expect(summary.metrics['kEstimate']).toBeGreaterThanOrEqual(3)
+    expect(summary.metrics['kEstimate']).toBeLessThanOrEqual(5)
+    // v۲: جلسه اندازه‌های مجاور را می‌میکسد؛ میانگین روی بازهٔ مجاز است
+    expect(summary.metrics['meanArraySize']).toBeGreaterThanOrEqual(3)
+    expect(summary.metrics['meanArraySize']).toBeLessThanOrEqual(5)
     expect(() => def.nextTrial(state)).toThrow()
   })
 

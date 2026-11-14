@@ -12,6 +12,12 @@ export interface TrialEventRecord extends RecordedTrial {
   readonly exerciseVersion: string
   /** epoch milliseconds */
   readonly createdAt: number
+  /**
+   * مرحله در میانهٔ اجرا مکث را تجربه کرده (unmount صحنه و بازگشت) —
+   * بازپخش/تمرین ذهنی در مکث ممکن بوده؛ برای تحلیل اعتبار قابل فیلتر است.
+   * غایب = تجربه نکرده (پیش‌فرض قدیمی‌ داده‌ها).
+   */
+  readonly contaminated?: boolean
 }
 
 export function toTrialEventRecord(
@@ -20,6 +26,7 @@ export function toTrialEventRecord(
   exerciseVersion: string,
   trial: RecordedTrial,
   createdAt: number,
+  contaminated = false,
 ): TrialEventRecord {
   return {
     ...trial,
@@ -28,6 +35,7 @@ export function toTrialEventRecord(
     difficulty,
     exerciseVersion,
     createdAt,
+    ...(contaminated ? { contaminated: true } : {}),
   }
 }
 

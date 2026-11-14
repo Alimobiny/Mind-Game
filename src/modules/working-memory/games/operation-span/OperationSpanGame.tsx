@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { OperationSpanTrial } from './engine'
 import styles from './operation-span.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * دهانهٔ عملیاتی — UI
@@ -12,8 +14,11 @@ import styles from './operation-span.module.css'
  * زوج بعدی … → بازیابی ترتیبی از جدول. دکمه‌های قضاوت فقط claim در ref ثبت
  * می‌کنند؛ تنها submitِ فاز بازیابی (یا انقضای مهلت کل دسته) کل پاسخ را با
  * همهٔ قضاوت‌ها و زمان‌ها می‌فرستد — قرارداد یک-submit-per-trial موتور.
- * هر سه گارد الزامی: قفل submittedRef · advance فقط تا قبل از sessionCompleted
- * · همهٔ تایمرها در ref با پاک‌سازی.
+ * هر سه گارد الزامی در useTrialGuards است.
+ *
+ * مکث (PAUSED=unmount): پیشرفت دسته (فاز + قضاوت‌ها + انتخاب‌ها) در
+ * trialPresentation نجات داده می‌شود و بازنصب از همان نقطه ادامه می‌یابد —
+ * پیش‌تر کل دسته از صفر شروع و قضاوت‌های کاربر پاک می‌شد (GAMES-AUDIT §۲-۱).
  */
 
 type Phase =
@@ -21,6 +26,14 @@ type Phase =
   | { readonly kind: 'feedback'; readonly itemIndex: number; readonly judgment: boolean | null; readonly wasCorrect: boolean }
   | { readonly kind: 'word'; readonly itemIndex: number }
   | { readonly kind: 'recall' }
+
+/** پیشرفت نجات‌یافتهٔ دسته برای بازنصبِ پس از مکث */
+interface SetProgress {
+  readonly phase: Phase
+  readonly judgments: readonly (boolean | null)[]
+  readonly rts: readonly (number | null)[]
+  readonly selected: readonly string[]
+}
 
 export function OperationSpanGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as OperationSpanTrial
@@ -31,9 +44,7 @@ export function OperationSpanGame({ ctx }: { ctx: ActiveGameContext }) {
   selectedRef.current = selected
   /** تایمرهای فاز — در هر گذار فاز پاک می‌شوند */
   const timersRef = useRef<number[]>([])
-  /** تایمر مهلت کل دسته — تا پایان مرحله زنده می‌ماند */
-  const deadlineRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const judgmentsRef = useRef<(boolean | null)[]>([])
   const rtsRef = useRef<(number | null)[]>([])
   const phaseStartRef = useRef(0)
@@ -43,49 +54,50 @@ export function OperationSpanGame({ ctx }: { ctx: ActiveGameContext }) {
     timersRef.current = []
   }
 
+  /** نجات پیشرفت دسته — در هر گذار فاز/قضاوت/انتخاب */
+  const saveProgress = (currentPhase: Phase) => {
+    ctx.trialPresentation.set('progress', {
+      phase: currentPhase,
+      judgments: [...judgmentsRef.current],
+      rts: [...rtsRef.current],
+      selected: [...selectedRef.current],
+    } satisfies SetProgress)
+  }
+
   useEffect(() => {
-    submittedRef.current = false
-    setPhase({ kind: 'math', itemIndex: 0 })
-    setSelected([])
-    judgmentsRef.current = trial.set.items.map(() => null)
-    rtsRef.current = trial.set.items.map(() => null)
+    // بازنصبِ پس از مکث: ادامه از پیشرفتِ نجات‌یافته؛ فازِ قطع‌شده از ابتدای
+    // همان فاز ادامه می‌یابد (تمدیدِ کرانی یک فاز — رویداد خام contaminated است)
+    const interrupted = ctx.trialPresentation.wasInterrupted()
+    const saved = interrupted ? ctx.trialPresentation.get<SetProgress>('progress') : undefined
+    if (saved && saved.phase) {
+      setPhase(saved.phase)
+      setSelected(saved.selected)
+      judgmentsRef.current = [...saved.judgments]
+      rtsRef.current = [...saved.rts]
+    } else {
+      setPhase({ kind: 'math', itemIndex: 0 })
+      setSelected([])
+      judgmentsRef.current = trial.set.items.map(() => null)
+      rtsRef.current = trial.set.items.map(() => null)
+    }
     phaseStartRef.current = performance.now()
     clearPhaseTimers()
-    for (const t of deadlineRef.current) window.clearTimeout(t)
-    deadlineRef.current = []
 
-    // انقضای مهلت کل دسته → یک submit با هرچه تا حالا جمع شده
+    // انقضای مهلت کل دسته → یک submit با هرچه تا حالا جمع شده؛ مهلت با
+    // زمانِ pause-aware باقی‌مانده مسلح می‌شود و پس از rollback دوباره بسته می‌شود
     const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
-      deadlineRef.current.push(
-        window.setTimeout(() => {
-          if (submittedRef.current) return
-          submittedRef.current = true
-          const anyResponse =
-            judgmentsRef.current.some((j) => j !== null) || selectedRef.current.length > 0
-          void ctx.submit(
-            anyResponse
-              ? {
-                  processingJudgments: judgmentsRef.current,
-                  processingRtMs: rtsRef.current,
-                  recalled: selectedRef.current,
-                }
-              : null,
-          ).then((result) => {
-            if (result.accepted && !result.sessionCompleted) {
-              try {
-                ctx.advance()
-              } catch {
-                // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-              }
+      guards.armDeadline(() => {
+        const anyResponse =
+          judgmentsRef.current.some((j) => j !== null) || selectedRef.current.length > 0
+        return anyResponse
+          ? {
+              processingJudgments: judgmentsRef.current,
+              processingRtMs: rtsRef.current,
+              recalled: selectedRef.current,
             }
-          })
-        }, remaining),
-      )
-    }
-    return () => {
-      clearPhaseTimers()
-      for (const t of deadlineRef.current) window.clearTimeout(t)
+          : null
+      }, remaining)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
@@ -93,6 +105,7 @@ export function OperationSpanGame({ ctx }: { ctx: ActiveGameContext }) {
   useEffect(() => {
     phaseStartRef.current = performance.now()
     clearPhaseTimers()
+    saveProgress(phase)
     if (phase.kind === 'math') {
       // بی‌پاسخی زوج محاسبه → فلش «بی‌پاسخ» و ادامهٔ ریتم دسته
       const itemIndex = phase.itemIndex
@@ -134,51 +147,45 @@ export function OperationSpanGame({ ctx }: { ctx: ActiveGameContext }) {
 
   /** قضاوت زوج محاسبه — فقط claim؛ ثبت نهایی با submitِ دسته */
   const judge = (value: boolean) => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (phase.kind !== 'math') return
     const item = trial.set.items[phase.itemIndex]
     if (!item) return
     judgmentsRef.current[phase.itemIndex] = value
     rtsRef.current[phase.itemIndex] = Math.round(performance.now() - phaseStartRef.current)
-    setPhase({
+    const next: Phase = {
       kind: 'feedback',
       itemIndex: phase.itemIndex,
       judgment: value,
       wasCorrect: value === item.problem.isTrue,
-    })
+    }
+    saveProgress(next)
+    setPhase(next)
   }
 
   const toggleChoice = (word: string) => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (phase.kind !== 'recall') return
-    setSelected((current) =>
-      current.includes(word) ? current.filter((w) => w !== word) : [...current, word],
-    )
+    const next = selected.includes(word) ? selected.filter((w) => w !== word) : [...selected, word]
+    selectedRef.current = next
+    setSelected(next)
+    saveProgress(phase)
   }
 
   const clearSelection = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
+    selectedRef.current = []
     setSelected([])
+    saveProgress(phase)
   }
 
   const submitSet = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (selected.length !== trial.set.items.length) return
-    submittedRef.current = true
-    void ctx.submit({
+    void guards.submitOnce({
       processingJudgments: judgmentsRef.current,
       processingRtMs: rtsRef.current,
       recalled: selected,
-    }).then((result) => {
-      if (result.accepted && !result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان تمام/قطع شده — بی‌اثر
-        }
-      } else if (!result.accepted) {
-        submittedRef.current = false
-      }
     })
   }
 
@@ -241,7 +248,7 @@ function MathArea({
     <div
       className={styles.processingArea}
       data-testid="ospan-math"
-      data-math-true={problem.isTrue ? 'true' : 'false'}
+      data-math-true={e2e(problem.isTrue ? 'true' : 'false')}
       data-item-index={phase.itemIndex}
     >
       <p className={gameStyles.hint}>آیا این معادله درست است؟</p>
@@ -264,7 +271,7 @@ function WordArea({ trial, itemIndex }: { trial: OperationSpanTrial; itemIndex: 
   const item = trial.set.items[itemIndex]
   if (!item) return null
   return (
-    <div className={styles.memoryArea} data-testid="ospan-word" data-word={item.word} data-item-index={itemIndex}>
+    <div className={styles.memoryArea} data-testid="ospan-word" data-word={e2e(item.word)} data-item-index={itemIndex}>
       <p className={gameStyles.hint}>این واژه را به خاطر بسپار</p>
       <div className={gameStyles.bigNumber}>{item.word}</div>
     </div>
@@ -290,8 +297,8 @@ function RecallArea({
     <div
       className={styles.recallArea}
       data-testid="ospan-recall"
-      data-expected-order={trial.set.expectedRecall.join(',')}
-      data-reverse={trial.set.reverseRecall ? 'true' : 'false'}
+      data-expected-order={e2e(trial.set.expectedRecall.join(','))}
+      data-reverse={e2e(trial.set.reverseRecall ? 'true' : 'false')}
     >
       <p className={gameStyles.hint}>
         {trial.set.reverseRecall
@@ -318,7 +325,7 @@ function RecallArea({
               type="button"
               className={`${styles.choiceButton} ${isSelected ? styles.choiceSelected : ''}`}
               data-testid="ospan-choice"
-              data-word={word}
+              data-word={e2e(word)}
               onClick={() => onToggle(word)}
             >
               {word}

@@ -88,6 +88,8 @@ export class ExerciseSessionManager {
   private currentTrialAnswered = false
   /** زمان نمایش محرک جاری به ساعت تایمر (برای RT و مهلت پاسخ) */
   private trialShownAtMs = 0
+  /** pauseCount ماشین هنگام تولید مرحلهٔ جاری — مبنای پرچم contaminated */
+  private pauseCountAtTrialStart = 0
   private lastOutcome: RecordedTrial | null = null
   private summary: ExerciseSummary | null = null
   private readonly listeners = new Set<() => void>()
@@ -217,7 +219,24 @@ export class ExerciseSessionManager {
     this.currentTrial = trial
     this.currentTrialAnswered = false
     this.trialShownAtMs = this.timer.now()
+    this.pauseCountAtTrialStart = this.machine.pauseCount
     return trial
+  }
+
+  /**
+   * زمان سپری‌شده از نمایش محرک جاری به «ساعت جلسه» (pause-aware —
+   * زمان مکث شمرده نمی‌شود). برخلاف timeRemainingMs برای بازی‌های بدون
+   * responseWindowMs هم کار می‌کند؛ مبنای ادامهٔ ارائه از همان نقطه پس
+   * از بازنصبِ مکث (PAUSED=unmount) است.
+   */
+  trialElapsedMs(): number {
+    if (this.currentTrial === null) return 0
+    return Math.max(0, this.timer.now() - this.trialShownAtMs)
+  }
+
+  /** آیا مرحلهٔ جاری از زمان تولیدش مکثی را تجربه کرده؟ */
+  private isCurrentTrialContaminated(): boolean {
+    return this.machine.pauseCount > this.pauseCountAtTrialStart
   }
 
   /**
@@ -252,6 +271,7 @@ export class ExerciseSessionManager {
           this.definition.version,
           record,
           this.wallClock(),
+          this.isCurrentTrialContaminated(),
         ),
       )
     } catch (err) {

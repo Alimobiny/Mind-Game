@@ -55,7 +55,8 @@ export type ReactionTimeAnswer = 'tap' | null
 
 export const REACTION_TIME_ID = 'reaction-time'
 export const REACTION_TIME_VERSION = '1.0.0'
-export const REACTION_TIME_CONTENT_VERSION = '1'
+/** ۲ = کلیدهای شرطی: متریک زمانی بدون پاسخ درست منتشر نمی‌شود (نه «صفرِ جعلی») */
+export const REACTION_TIME_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 10
 
 /** بازه jitter تأخیر محرک بر اساس سطح دشواری ۱..۵ */
@@ -179,8 +180,7 @@ export const reactionTimeDefinition: ExerciseDefinition<
     const correctRts = state.results
       .filter((r) => r.correct && r.reactionTimeMs !== null)
       .map((r) => r.reactionTimeMs as number)
-    const best = correctRts.length > 0 ? Math.min(...correctRts) : 0
-    const mean = correctRts.length > 0 ? Math.round(correctRts.reduce((s, v) => s + v, 0) / correctRts.length) : 0
+    const medianRt = median(correctRts)
     return {
       exerciseId: REACTION_TIME_ID,
       sessionId: state.sessionId,
@@ -190,9 +190,12 @@ export const reactionTimeDefinition: ExerciseDefinition<
       difficulty: state.config.difficulty,
       ...totals,
       metrics: {
-        medianReactionTimeMs: Math.round(median(correctRts) ?? 0),
-        bestReactionTimeMs: best,
-        meanReactionTimeMs: mean,
+        // کلیدهای شرطی: جلسهٔ بدون هیچ پاسخ درست هیچ‌کدام را «صفر» جعل نمی‌کند
+        ...(medianRt !== null ? { medianReactionTimeMs: Math.round(medianRt) } : {}),
+        ...(correctRts.length > 0 ? { bestReactionTimeMs: Math.min(...correctRts) } : {}),
+        ...(correctRts.length > 0
+          ? { meanReactionTimeMs: Math.round(correctRts.reduce((s, v) => s + v, 0) / correctRts.length) }
+          : {}),
         // در این بازی incorrect فقط از ضربهٔ پیش از محرک رخ می‌دهد
         anticipationErrors: countOutcome(state.results, 'incorrect'),
         tooSlowErrors: countOutcome(state.results, 'omission'),

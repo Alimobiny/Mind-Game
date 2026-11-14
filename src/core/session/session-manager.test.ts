@@ -282,6 +282,56 @@ describe('ExerciseSessionManager — integration با بازی آزمایشی', 
     expect(manager.timeRemainingMs()).toBe(400)
   })
 
+  it('trialElapsedMs برای بازی‌های بدون مهلت هم کار می‌کند و مکث را حساب نمی‌کند', async () => {
+    const { manager, clock } = await createManager()
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    // مرحله ۰ (بدون responseWindowMs): زمان سپری‌شده در دسترس است
+    clock.tick(300)
+    expect(manager.trialElapsedMs()).toBe(300)
+
+    manager.pause()
+    clock.tick(5000) // tab مخفی — به ساعت جلسه اضافه نمی‌شود
+    manager.resume()
+    expect(manager.trialElapsedMs()).toBe(300)
+  })
+
+  it('مکث میان اجرای مرحله، رویداد خام را contaminated علامت می‌زند؛ بدون مکث علامت نمی‌گیرد', async () => {
+    const { manager, trials, clock } = await createManager()
+    await manager.start()
+    manager.beginCountdown()
+    manager.beginActive()
+
+    const eventsOf = async (index: number) => {
+      const all = await trials.listBySession(manager.getSnapshot().sessionId as string)
+      return all.find((e) => e.trialIndex === index)
+    }
+
+    // مرحله ۰ بدون مکث → بدون پرچم
+    const r0 = await manager.submitAnswer(0)
+    expect(r0.accepted).toBe(true)
+    expect((await eventsOf(0))?.contaminated).toBeUndefined()
+
+    manager.advanceTrial()
+    // مرحله ۱ با مکث میان اجرا → پرچم contaminated
+    clock.tick(100)
+    manager.pause()
+    clock.tick(2000)
+    manager.resume()
+    clock.tick(100)
+    const r1 = await manager.submitAnswer(1)
+    expect(r1.accepted).toBe(true)
+    expect((await eventsOf(1))?.contaminated).toBe(true)
+
+    // مرحله بعدی پس از آنِ مکث دوباره پاک است (پرچم فقط همان مرحله را می‌گیرد)
+    manager.advanceTrial()
+    const r2 = await manager.submitAnswer(2)
+    expect(r2.accepted && r2.sessionCompleted).toBe(true)
+    expect((await eventsOf(2))?.contaminated).toBeUndefined()
+  })
+
   it('settings آخرین دشواری را ذخیره می‌کند', async () => {
     const { manager, settings } = await createManager()
     await manager.start()

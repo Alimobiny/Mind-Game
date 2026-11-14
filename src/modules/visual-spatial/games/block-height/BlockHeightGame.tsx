@@ -5,6 +5,7 @@ import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import type { BlockHeightTrial } from './engine'
 import styles from './block-height.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * Block Height — UI (رندر ایزومتریک)
@@ -317,7 +318,7 @@ export function BlockHeightGame({ ctx }: { ctx: ActiveGameContext }) {
               flash.correct ? gameStyles.feedbackCorrect : gameStyles.feedbackIncorrect
             }`}
             data-testid="bh-feedback"
-            data-correct={flash.correct ? 'true' : 'false'}
+            data-correct={e2e(flash.correct ? 'true' : 'false')}
           >
             {flash.correct
               ? 'درست ✓'

@@ -4,6 +4,7 @@ import gameStyles from '../../../../components/game/game.module.css'
 import type { CardStimulus, RuleDiscoveryTrial } from './engine'
 import { REF_CARDS } from './engine'
 import styles from './rule-discovery-card-sorting.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * کارت‌بندی قاعده — UI
@@ -119,8 +120,8 @@ export function RuleDiscoveryCardSortingGame({ ctx }: { ctx: ActiveGameContext }
       <div
         className={styles.board}
         data-testid="wcs-board"
-        data-expected={trial.correctPile}
-        data-active-rule={trial.activeRule}
+        data-expected={e2e(trial.correctPile)}
+        data-active-rule={e2e(trial.activeRule)}
         data-card={`${trial.card.color}-${trial.card.shape}-${trial.card.count}`}
       >
         <div className={styles.currentCardArea}>

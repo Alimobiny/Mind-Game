@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { MemoriseGridTrial } from './engine'
@@ -16,26 +17,13 @@ export function MemoriseGridGame({ ctx }: { ctx: ActiveGameContext }) {
   const [phase, setPhase] = useState<'memorise' | 'recall' | 'feedback'>('memorise')
   const [selected, setSelected] = useState<number[]>([])
   const [wasCorrect, setWasCorrect] = useState(false)
-  const timerRef = useRef<number | null>(null)
-  // تایمر پیشرویِ پس از بازخورد — جدا از تایمر فاز حفظ تا هر دو پاک شوند
-  const advanceTimerRef = useRef<number | null>(null)
-  // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
-  const submittedRef = useRef(false)
-  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشروی
-  const currentTrialRef = useRef(trial.trialIndex)
-  currentTrialRef.current = trial.trialIndex
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   useEffect(() => {
-    submittedRef.current = false
-    setPhase('memorise')
-    setSelected([])
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-    if (advanceTimerRef.current !== null) window.clearTimeout(advanceTimerRef.current)
     // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰): پاسخِ
     // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
       try {
         ctx.advance()
       } catch {
@@ -43,46 +31,57 @@ export function MemoriseGridGame({ ctx }: { ctx: ActiveGameContext }) {
       }
       return
     }
-    timerRef.current = window.setTimeout(() => setPhase('recall'), trial.memoriseMs)
-    return () => {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-      if (advanceTimerRef.current !== null) window.clearTimeout(advanceTimerRef.current)
+
+    // بازنصبِ پس از مکث (PAUSED=unmount): ارائه از زمانِ سپری‌شدهٔ سشن
+    // ادامه می‌یابد نه از صفر — بازپخش الگو، دوبار-دیده‌شدن محرک و بایاس
+    // صعودی بود (GAMES-AUDIT §۲-۱). رویداد خام از سمت مدیر contaminated
+    // علامت خورده است؛ انتخاب‌های نجات‌یافته هم برمی‌گردند.
+    const interrupted = ctx.trialPresentation.wasInterrupted()
+    const elapsed = ctx.trialElapsedMs()
+    const savedSelection = interrupted ? ctx.trialPresentation.get<number[]>('selected') : undefined
+
+    if (interrupted && elapsed >= trial.memoriseMs) {
+      // فاز حفظ پیش از مکث تمام شده بود — مستقیم به بازیابی
+      setPhase('recall')
+      setSelected(savedSelection ?? [])
+      return
     }
+    setPhase('memorise')
+    setSelected(savedSelection ?? [])
+    const remainingMs = interrupted ? Math.max(0, trial.memoriseMs - elapsed) : trial.memoriseMs
+    guards.setTrackedTimeout(() => setPhase('recall'), remainingMs)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
   const toggleCell = (index: number) => {
     if (phase !== 'recall') return
-    setSelected((current) =>
-      current.includes(index)
-        ? current.filter((c) => c !== index)
-        : current.length >= trial.activeCells.length
-          ? current
-          : [...current, index],
-    )
+    const next = selected.includes(index)
+      ? selected.filter((c) => c !== index)
+      : selected.length >= trial.activeCells.length
+        ? selected
+        : [...selected, index]
+    // نجات انتخاب برای بازنصبِ مکث — نوشتن در همان تعامل، نه افکت
+    ctx.trialPresentation.set('selected', next)
+    setSelected(next)
   }
 
-  const submit = async () => {
-    if (submittedRef.current || selected.length !== trial.activeCells.length) return
-    submittedRef.current = true
-    const result = await ctx.submit(selected)
-    if (!result.accepted) {
-      submittedRef.current = false
-      return
-    }
-    // آخرین پاسخ جلسه را کامل کرد → advanceی برای مرحله بعدی وجود ندارد
-    if (result.sessionCompleted) return
-    setWasCorrect(result.record.correct)
-    setPhase('feedback')
-    // تایمر پیشروی: ردیابی‌شده + گارد کهنگی + مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
-    advanceTimerRef.current = window.setTimeout(() => {
-      if (currentTrialRef.current !== trial.trialIndex) return
-      try {
-        ctx.advance()
-      } catch {
-        // جلسه هم‌زمان قطع/تکمیل شده
-      }
-    }, 1400)
+  const submit = () => {
+    if (selected.length !== trial.activeCells.length) return
+    void guards.submitOnce(selected, {
+      onAccepted: (result) => {
+        setWasCorrect(result.record.correct)
+        setPhase('feedback')
+        // تایمر پیشروی پس از بازخورد — ردیابی‌شده؛ در تغییر مرحله/unmount پاک می‌شود
+        guards.setTrackedTimeout(() => {
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده
+          }
+        }, 1400)
+      },
+      autoAdvance: false,
+    })
   }
 
   const total = trial.gridSize * trial.gridSize
@@ -132,7 +131,7 @@ export function MemoriseGridGame({ ctx }: { ctx: ActiveGameContext }) {
           <button
             type="button"
             className={gameStyles.primaryButton}
-            onClick={() => void submit()}
+            onClick={submit}
             disabled={selected.length !== trial.activeCells.length}
           >
             تأیید

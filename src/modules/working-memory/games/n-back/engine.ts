@@ -12,6 +12,8 @@ export { NBACK_LETTERS }
 import { SeededRandom } from '../../../../core/randomization/seeded-random'
 import { deriveTrialSeed } from '../../../../core/randomization/derive-seed'
 import { countOutcome, summarizeOutcomes } from '../../../../core/scoring/scoring'
+import { targetPositionsFor } from '../../../shared/target-quota'
+import { dPrimeLoglinear } from '../../../shared/dprime'
 
 /**
  * N-Back — حافظه کاری
@@ -67,7 +69,8 @@ export type NBackAnswer = 'match' | null
 
 export const NBACK_ID = 'n-back'
 export const NBACK_VERSION = '1.0.0'
-export const NBACK_CONTENT_VERSION = '1'
+/** ۲ = سهمیهٔ دقیق جایگاه هدف (نه Bernoulli) — شمار هدف هر جلسه پایدار است */
+export const NBACK_CONTENT_VERSION = '2'
 export const NBACK_TOTAL_TRIALS = 25
 const TOTAL_TRIALS = NBACK_TOTAL_TRIALS
 const TARGET_RATE = 0.3
@@ -134,7 +137,13 @@ export const nBackDefinition: ExerciseDefinition<NBackConfig, NBackState, NBackT
       if (backLetter === undefined) {
         throw new Error('تاریخچه حرف‌ها برای مقایسه N-قبل ناقص است')
       }
-      isTarget = rng.bool(state.config.targetRate)
+      // سهمیهٔ دقیق جایگاه‌های هدف — جلسهٔ بدون/کم‌هدف ناممکن (GAMES-AUDIT §۳-۱)
+      isTarget = targetPositionsFor(
+        state.seed ^ 0x6b,
+        state.config.totalTrials,
+        n,
+        state.config.targetRate,
+      ).has(trialIndex)
       if (isTarget) {
         letter = backLetter
       } else {
@@ -227,6 +236,8 @@ export const nBackDefinition: ExerciseDefinition<NBackConfig, NBackState, NBackT
       (r.stimulus as { isTarget?: boolean } | null)?.isTarget === true
     // درست‌های تطبیقی (hit) و درست‌های خودداری (correct rejection) جدا می‌شوند
     const hits = state.results.filter((r) => isTargetOf(r) && r.outcome === 'correct').length
+    const falseAlarms = countOutcome(state.results, 'commission')
+    const misses = countOutcome(state.results, 'omission')
     const correctRejections = state.results.filter((r) => !isTargetOf(r) && r.outcome === 'correct').length
     return {
       exerciseId: NBACK_ID,
@@ -238,9 +249,12 @@ export const nBackDefinition: ExerciseDefinition<NBackConfig, NBackState, NBackT
       ...totals,
       metrics: {
         hits,
-        misses: countOutcome(state.results, 'omission'),
-        falseAlarms: countOutcome(state.results, 'commission'),
+        misses,
+        falseAlarms,
         correctRejections,
+        // d′ با تصحیح loglinear — با N کوچک و نرخ‌های حدی هم متناهی می‌ماند
+        // (شمارش‌های خام بالای آن می‌مانند؛ GAMES-AUDIT §۳-۲)
+        dPrime: dPrimeLoglinear(hits, hits + misses, falseAlarms, falseAlarms + correctRejections),
       },
     }
   },

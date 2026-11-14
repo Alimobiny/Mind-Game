@@ -81,7 +81,8 @@ export interface TaskSwitchingState extends ExerciseState<TaskSwitchingConfig> {
 
 export const TASK_SWITCHING_ID = 'task-switching'
 export const TASK_SWITCHING_VERSION = '1.0.0'
-export const TASK_SWITCHING_CONTENT_VERSION = '1'
+/** ۲ = کلیدهای شرطی: متریک زمانی بدون داده منتشر نمی‌شود (نه «صفرِ جعلی») */
+export const TASK_SWITCHING_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 40
 
 /** برچسب فارسی هر بُعد — متن نشانهٔ بالای صفحه */
@@ -338,14 +339,14 @@ export const taskSwitchingDefinition: ExerciseDefinition<
       difficulty: state.config.difficulty,
       ...totals,
       metrics: {
-        rtRepeatMs: Math.round(medianRepeat ?? 0),
-        rtSwitchMs: Math.round(medianSwitch ?? 0),
-        // هزینهٔ جابه‌جایی = میانه RT جابه‌جایی − میانه RT تکراری (هر دو درست‌پاسخ)
-        // اگر یکی از زیرمجموعه‌ها پاسخ درست نداشته باشد، هزینه تعریف‌شده نیست → 0
-        switchCostMs:
-          medianRepeat !== null && medianSwitch !== null
-            ? Math.round(medianSwitch - medianRepeat)
-            : 0,
+        // کلیدهای شرطی: زیرمجموعه بدون پاسخ درست، متریک زمانی منتشر نمی‌کند
+        ...(medianRepeat !== null ? { rtRepeatMs: Math.round(medianRepeat) } : {}),
+        ...(medianSwitch !== null ? { rtSwitchMs: Math.round(medianSwitch) } : {}),
+        // هزینهٔ جابه‌جایی = میانه RT جابه‌جایی − میانه RT تکراری (هر دو درست‌پاسخ)؛
+        // اگر یکی از زیرمجموعه‌ها پاسخ درست نداشته باشد، هزینه تعریف‌شده نیست
+        ...(medianRepeat !== null && medianSwitch !== null
+          ? { switchCostMs: Math.round(medianSwitch - medianRepeat) }
+          : {}),
         switchAccuracy: accuracyPercent(
           switchResults.filter((r) => r.correct).length,
           switchResults.length,

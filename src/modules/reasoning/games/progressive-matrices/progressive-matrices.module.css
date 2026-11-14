@@ -72,10 +72,10 @@
   display: block;
 }
 
-/* گزینه‌ها: موبایل ۲×۲؛ هدف لمسی ≥ ۵۶px */
+/* گزینه‌ها: موبایل ۳×۲ (شش گزینهٔ نسخهٔ محتوایی ۲)؛ هدف لمسی ≥ ۵۶px */
 .options {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
   width: min(80vw, 320px);
 }

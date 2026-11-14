@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { SpeakerGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import { createSpeechController, resolvePresentationMode } from '../../audio/speech'
+import { scheduleCadence } from '../../../shared/presentation-resume'
 import type { AudioRecallTrial } from './engine'
 import styles from './audio-recall.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * یادآوری شنیداری — UI
@@ -14,7 +17,7 @@ import styles from './audio-recall.module.css'
  * (SpeechSynthesis محلی) و در جبرانِ نمایشی، واژه فلاش می‌شود؛ ریتم پیشروی
  * در هر دو حالت تایمری و یکسان است تا رفتار قابل پیش‌بینی بماند.
  * فاز بازیابی: لمس گزینه‌ها به همان ترتیب شنیدن/دیدن. یک submit در پایان —
- * قرارداد یک-submit-per-trial؛ هر سه گارد الزامی رعایت شده است.
+ * قرارداد یک-submit-per-trial؛ هر سه گارد الزامی در useTrialGuards است.
  */
 
 type Phase = 'study' | 'recall'
@@ -24,8 +27,7 @@ export function AudioRecallGame({ ctx }: { ctx: ActiveGameContext }) {
   const [phase, setPhase] = useState<Phase>('study')
   const [itemIndex, setItemIndex] = useState(0)
   const [selected, setSelected] = useState<readonly string[]>([])
-  const timersRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // کنترلر گفتار یک‌بار ساخته می‌شود؛ در unmount لغو می‌شود
   const speechRef = useRef<ReturnType<typeof createSpeechController> | null>(null)
@@ -39,66 +41,70 @@ export function AudioRecallGame({ ctx }: { ctx: ActiveGameContext }) {
     return () => speech.cancel()
   }, [speech])
 
+  // فاز ارائه: اسلاتِ هر واژه wordSlotMs است. بازنصبِ پس از مکث
+  // (PAUSED=unmount): اسلات‌های گذشته بازپخش نمی‌شوند؛ فقط اسلاتِ
+  // در-جریان (واژهٔ بریده‌شده) از ماندهٔ زمانش ادامه می‌یابد و انتخاب‌های
+  // نجات‌یافته برمی‌گردند (GAMES-AUDIT §۲-۱)
   useEffect(() => {
-    submittedRef.current = false
-    setPhase('study')
+    const interrupted = ctx.trialPresentation.wasInterrupted()
+    const elapsedMs = interrupted ? ctx.trialElapsedMs() : 0
+    const saved = interrupted ? ctx.trialPresentation.get<readonly string[]>('selected') : undefined
+    setSelected(saved ?? [])
     setItemIndex(0)
-    setSelected([])
-    for (const t of timersRef.current) window.clearTimeout(t)
-    timersRef.current = []
+
+    const totalMs = trial.studyWords.length * trial.wordSlotMs
+    const finishStudy = () => {
+      speech.cancel()
+      // گذر کوتاه به بازیابی — همان مکث ۴۰۰msی نسخهٔ پیشین
+      guards.setTrackedTimeout(() => setPhase('recall'), 400)
+    }
+    const timers = scheduleCadence(
+      trial.studyWords.map((word, i) => ({
+        startAt: i * trial.wordSlotMs,
+        displayMs: trial.wordSlotMs,
+        onShow: () => {
+          setItemIndex(i)
+          if (mode === 'speech') speech.speak(word, { rate: 0.9 })
+        },
+        onHide: () => undefined,
+      })),
+      totalMs,
+      finishStudy,
+      elapsedMs,
+    )
+    if (elapsedMs >= totalMs) {
+      // ارائه تمام شده بود — مستقیم به بازیابی
+      speech.cancel()
+      setPhase('recall')
+    } else {
+      setPhase('study')
+    }
+    for (const t of timers) guards.trackTimeoutId(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
-  // فاز ارائه: واژهٔ جاری + تایمرِ رفتن به بعدی (یا بازیابی)
-  useEffect(() => {
-    if (phase !== 'study') return
-    const word = trial.studyWords[itemIndex]
-    if (word === undefined) {
-      // همهٔ واژه‌ها ارائه شد → گذر کوتاه به بازیابی
-      const t = window.setTimeout(() => setPhase('recall'), 400)
-      timersRef.current.push(t)
-      return
-    }
-    if (mode === 'speech') {
-      speech.speak(word, { rate: 0.9 })
-    }
-    const timer = window.setTimeout(() => setItemIndex((i) => i + 1), trial.wordSlotMs)
-    timersRef.current.push(timer)
-    return () => window.clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, itemIndex, trial.trialIndex])
-
   const toggleWord = (word: string) => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (phase !== 'recall') return
-    setSelected((current) =>
-      current.includes(word) ? current.filter((w) => w !== word) : [...current, word],
-    )
+    const next = selected.includes(word) ? selected.filter((w) => w !== word) : [...selected, word]
+    // نجات انتخاب‌ها برای بازنصبِ مکث
+    ctx.trialPresentation.set('selected', next)
+    setSelected(next)
   }
 
   const clearSelection = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
+    ctx.trialPresentation.set('selected', [])
     setSelected([])
   }
 
   const complete = selected.length === trial.studyWords.length
 
   const submit = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (!complete) return
-    submittedRef.current = true
     speech.cancel()
-    void ctx.submit(selected).then((result) => {
-      if (result.accepted && !result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان تمام/قطع شده — بی‌اثر
-        }
-      } else if (!result.accepted) {
-        submittedRef.current = false
-      }
-    })
+    void guards.submitOnce(selected)
   }
 
   const currentWord = trial.studyWords[itemIndex]
@@ -109,7 +115,7 @@ export function AudioRecallGame({ ctx }: { ctx: ActiveGameContext }) {
         <div
           className={styles.studyArea}
           data-testid="ar-study"
-          data-word={currentWord ?? ''}
+          data-word={e2e(currentWord ?? '')}
           data-item-index={itemIndex}
         >
           <p className={gameStyles.hint}>
@@ -131,7 +137,7 @@ export function AudioRecallGame({ ctx }: { ctx: ActiveGameContext }) {
         <div
           className={styles.recallArea}
           data-testid="ar-recall"
-          data-expected-order={trial.studyWords.join(',')}
+          data-expected-order={e2e(trial.studyWords.join(','))}
         >
           <p className={gameStyles.hint}>
             واژه‌ها را به همان ترتیب که {mode === 'speech' ? 'شنیدی' : 'دیدی'} انتخاب کن
@@ -156,7 +162,7 @@ export function AudioRecallGame({ ctx }: { ctx: ActiveGameContext }) {
                   type="button"
                   className={`${styles.optionButton} ${order !== -1 ? styles.optionSelected : ''}`}
                   data-testid="ar-option"
-                  data-word={word}
+                  data-word={e2e(word)}
                   onClick={() => toggleWord(word)}
                 >
                   {order !== -1 ? <span className={styles.optionOrder}>{toFaDigits(order + 1)}</span> : null}

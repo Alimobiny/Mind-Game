@@ -160,6 +160,24 @@ describe('N-Back — engine', () => {
     expect(summary.medianReactionTimeMs).not.toBeNull()
   })
 
+  it('سهمیهٔ دقیق جایگاه هدف: هر جلسه دقیقاً ۸ هدف دارد (قاطع در هر بذری)', () => {
+    // round(0.3 × 25) = 8 — جلسهٔ بدون/کم‌هدف دیگر ممکن نیست
+    for (const seed of [7, 101, 555, 90210]) {
+      const config = configForDifficulty(2)
+      let state = def.createSession('a', config, seed)
+      let targets = 0
+      for (let i = 0; i < config.totalTrials; i++) {
+        const step = def.nextTrial(state)
+        if (step.trial.isTarget) {
+          targets += 1
+          expect(step.trial.letter).toBe(state.letters[step.trial.trialIndex - config.n])
+        }
+        state = step.state
+      }
+      expect(targets).toBe(8)
+    }
+  })
+
   it('nextTrial پس از اتمام ۲۵ محرک خطا می‌دهد', () => {
     const config = configForDifficulty(1)
     let state = def.createSession('a', config, SEED)

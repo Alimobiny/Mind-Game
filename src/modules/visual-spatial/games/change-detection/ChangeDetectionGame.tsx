@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import type { CdColor, ChangeDetectionTrial } from './engine'
 import styles from './change-detection.module.css'
@@ -10,8 +11,11 @@ import styles from './change-detection.module.css'
  * فازهای هر مرحله: نمایش آرایهٔ نمونه (displayMs) → صفحهٔ خالی (blankMs) →
  * آرایهٔ آزمون + دوداوری بی‌مهلت → فلش بازخورد (~۷۰۰ms) → مرحلهٔ بعد.
  * در بازخورد، خانهٔ تغییرکرده (اگر بوده) با حلقهٔ سبز آشکار می‌شود.
- * تایمرها از روز اول با الگوهای سخت‌گیرانه: ردیابی + گارد کهنگی +
- * فیکس ریس pause (الگوی محاسبه ×۲۰).
+ *
+ * بازنصبِ پس از مکث (PAUSED=unmount): پرش مستقیم به فاز آزمون — نمونه
+ * دیگر نمایش داده نمی‌شود (بازپخش نمونه، k را با دیدن دوبارهٔ آرایه
+ * صعودی-بایاس می‌کرد؛ GAMES-AUDIT §۲-۱/§۴-۱) و رویداد خام از سمت مدیر
+ * contaminated علامت می‌خورد.
  */
 
 /** نگاشت کلید پالت به CSS — موتور فقط کلید می‌شناسد */
@@ -35,29 +39,14 @@ export function ChangeDetectionGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as ChangeDetectionTrial
   const [phase, setPhase] = useState<'sample' | 'blank' | 'test' | 'feedback'>('sample')
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(null)
-  const timeoutsRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
-  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
-  const currentTrialRef = useRef(trial.trialIndex)
-  currentTrialRef.current = trial.trialIndex
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
-  const clearTimers = () => {
-    for (const t of timeoutsRef.current) window.clearTimeout(t)
-    timeoutsRef.current = []
-  }
-
-  // ریست با شروع هر مرحله + زمان‌بندی نمونه→خالی→آزمون (مونت‌محور؛ با
-  // مکث/ریمانت، مرحله از ابتدا دوباره پخش می‌شود)
+  // ریست با شروع هر مرحله + زمان‌بندی نمونه→خالی→آزمون. مکث = پرش به آزمون
   useEffect(() => {
-    submittedRef.current = false
-    setPhase('sample')
-    setWasCorrect(null)
-    clearTimers()
     // رفع ریس pause بین پذیرش پاسخ و advance: پاسخِ ثبت‌شدهٔ بدون پیشروی
     // را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
       try {
         ctx.advance()
       } catch {
@@ -65,43 +54,36 @@ export function ChangeDetectionGame({ ctx }: { ctx: ActiveGameContext }) {
       }
       return
     }
-    timeoutsRef.current.push(window.setTimeout(() => setPhase('blank'), trial.displayMs))
-    timeoutsRef.current.push(
-      window.setTimeout(() => setPhase('test'), trial.displayMs + trial.blankMs),
-    )
-    return clearTimers
+
+    setWasCorrect(null)
+    if (ctx.trialPresentation.wasInterrupted()) {
+      // بازنصبِ پس از مکث: مستقیم آرایهٔ آزمون — بدون بازپخش نمونه
+      setPhase('test')
+      return
+    }
+    setPhase('sample')
+    guards.setTrackedTimeout(() => setPhase('blank'), trial.displayMs)
+    guards.setTrackedTimeout(() => setPhase('test'), trial.displayMs + trial.blankMs)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
-  useEffect(
-    () => () => {
-      for (const t of timeoutsRef.current) window.clearTimeout(t)
-    },
-    [],
-  )
-
-  const answer = async (verdict: 'changed' | 'unchanged') => {
-    if (submittedRef.current || phase !== 'test' || ctx.paused) return
-    submittedRef.current = true
-    const result = await ctx.submit(verdict)
-    if (!result.accepted) {
-      submittedRef.current = false
-      return
-    }
-    setWasCorrect(result.record.correct)
-    setPhase('feedback')
-    if (result.sessionCompleted) return
-    // تایمر پیشروی با گارد کهنگی + مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
-    timeoutsRef.current.push(
-      window.setTimeout(() => {
-        if (currentTrialRef.current !== trial.trialIndex) return
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده
-        }
-      }, FEEDBACK_MS),
-    )
+  const answer = (verdict: 'changed' | 'unchanged') => {
+    if (guards.isSubmitted() || phase !== 'test' || ctx.paused) return
+    void guards.submitOnce(verdict, {
+      onAccepted: (result) => {
+        setWasCorrect(result.record.correct)
+        setPhase('feedback')
+        // تایمر پیشروی — ردیابی‌شده؛ در تغییر مرحله/unmount پاک می‌شود
+        guards.setTrackedTimeout(() => {
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده
+          }
+        }, FEEDBACK_MS)
+      },
+      autoAdvance: false,
+    })
   }
 
   // آرایهٔ آزمون: رنگ نمونه با تغییرِ احتمالی

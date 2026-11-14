@@ -8,6 +8,7 @@ import {
   type MissingOperatorTrial,
 } from './engine'
 import styles from './missing-operator.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /** نمایش نتیجه برای فلش کوتاه پیش از مرحلهٔ بعد */
 interface FlashState {
@@ -102,7 +103,7 @@ export function MissingOperatorGame({ ctx }: { ctx: ActiveGameContext }) {
         {toFaDigits(puzzle.a)}{' '}
         <bdi className={styles.missing}>
           {flash !== null ? (
-            <span key="solved" className={styles.solvedOp} data-correct={flash.correct ? 'true' : 'false'}>
+            <span key="solved" className={styles.solvedOp} data-correct={e2e(flash.correct ? 'true' : 'false')}>
               {flash.solution === '-' ? '−' : flash.solution}
             </span>
           ) : (

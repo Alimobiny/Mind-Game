@@ -47,7 +47,8 @@ export type GoNoGoAnswer = 'tap' | null
 
 export const GO_NO_GO_ID = 'go-no-go'
 export const GO_NO_GO_VERSION = '1.0.0'
-export const GO_NO_GO_CONTENT_VERSION = '1'
+/** ۲ = SOA ثابت (پیشروی در پایان پنجره، نه بلافاصله پس از پاسخ) + کلید شرطی medianGo */
+export const GO_NO_GO_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 40
 
 /** تنظیمات سطح دشواری: پنجره محرک و فاصله کوتاه‌تر می‌شوند */
@@ -167,9 +168,10 @@ export const goNoGoDefinition: ExerciseDefinition<GoNoGoConfig, GoNoGoState, GoN
       metrics: {
         commissionErrors: countOutcome(state.results, 'commission'),
         omissionErrors: countOutcome(state.results, 'omission'),
-        medianGoReactionTimeMs: Math.round(median(goRts) ?? 0),
         goTrials,
         nogoTrials: totals.totalTrials - goTrials,
+        // کلید شرطی: جلسهٔ بدون هیچ Go درست نباید «میانه = صفر» جعل کند
+        ...(goRts.length > 0 ? { medianGoReactionTimeMs: Math.round(median(goRts) as number) } : {}),
       },
     }
   },

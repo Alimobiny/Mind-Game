@@ -123,13 +123,14 @@ describe('Pattern Completion — engine', () => {
       'color-progression',
     ])
     expect(configForDifficulty(3).allowedFamilies).toEqual(PATTERN_RULE_FAMILIES.slice(0, 3))
-    // سطح ۴ و ۵ → هر چهار خانواده + حواس‌پرتی‌های دوترفتی (سخت‌تر)
+    // سطح ۴ → هر چهار خانواده + حواس‌پرتی‌های دوترفتی (سخت‌تر)؛
+    // سطح ۵ → فقط دو خانوادهٔ سخت‌تر (تمایز محتوایی با سطح ۴)
     expect(configForDifficulty(4).allowedFamilies).toEqual(PATTERN_RULE_FAMILIES)
     expect(configForDifficulty(4).distractorAttributeDiffs).toBe(2)
     expect(configForDifficulty(5)).toEqual({
       difficulty: 5,
       totalTrials: 12,
-      allowedFamilies: PATTERN_RULE_FAMILIES,
+      allowedFamilies: PATTERN_RULE_FAMILIES.slice(2),
       distractorAttributeDiffs: 2,
     })
     // همه سطوح: ۱۲ مرحله و بازی غیرزمانی (پنجره پاسخ در مرحله ذخیره می‌شود)
@@ -178,8 +179,11 @@ describe('Pattern Completion — engine', () => {
         expect(attributeDiff(option, trial.answer)).toBe(config.distractorAttributeDiffs)
       }
     }
-    // در سطح ۵ هر چهار خانواده باید دیده شوند (تنوع قاعده)
-    expect(new Set(trials.map((t) => t.family)).size).toBe(PATTERN_RULE_FAMILIES.length)
+    // در سطح ۵ فقط دو خانوادهٔ سخت‌تر دیده می‌شوند (تمایز محتوایی سطح ۵)
+    const l5Families = new Set(trials.map((t) => t.family))
+    expect(l5Families.size).toBe(2)
+    expect(l5Families.has('rotation-like')).toBe(true)
+    expect(l5Families.has('shape-per-row')).toBe(true)
   })
 
   it('در سطح ۱ هر حواس‌پرتی دقیقاً در ۱ ویژگی با پاسخ فرق دارد', () => {
@@ -300,8 +304,8 @@ describe('Pattern Completion — engine', () => {
     expect(summary.medianReactionTimeMs).toBe(700)
     // امتیاز وزن‌دار: ۱۲ پاسخ درست × سطح ۵
     expect(summary.metrics['difficultyWeightedScore']).toBe(60)
-    // در سطح ۵ هر چهار خانواده دیده شده است
-    expect(summary.metrics['ruleFamilyVariety']).toBe(4)
+    // در سطح ۵ فقط دو خانوادهٔ سخت‌تر دیده می‌شود (تمایز محتوایی سطح ۵)
+    expect(summary.metrics['ruleFamilyVariety']).toBe(2)
   })
 
   it('امتیاز وزن‌دار و تنوع خانواده با نتایج مخلوط درست محاسبه می‌شود', () => {

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { ReadingAloudTrial } from './engine'
 import styles from './reading-aloud.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * بلندخوانی — UI
@@ -11,11 +13,22 @@ import styles from './reading-aloud.module.css'
  * ماشین فاز درون‌مرحله‌ای: نمایش متن → خواندن (زمان‌سنج خودتنظیم، بدون
  * میکروفون) → سؤال‌های فهم (متن پنهان است تا حافظه سنجیده شود) → یک submit
  * با زمان خواندن و همهٔ پاسخ‌ها — قرارداد یک-submit-per-trial.
- * هر سه گارد الزامی رعایت شده است (قفل submittedRef · advance فقط تا قبل
- * از sessionCompleted · همهٔ تایمرها در ref با پاک‌سازی).
+ * هر سه گارد الزامی در useTrialGuards است.
+ *
+ * مکث (PAUSED=unmount): فاز + زمان خوانده‌شده + پاسخ‌ها در
+ * trialPresentation نجات داده می‌شوند و بازنصب از همان نقطه ادامه می‌یابد —
+ * پیش‌تر همه‌چیز پاک و کاربر از idle شروع می‌کرد (ازدست‌رفتن داده، GAMES-AUDIT §۲-۱).
  */
 
 type Phase = 'idle' | 'reading' | 'questions'
+
+/** پیشرفت نجات‌یافتهٔ مرحله برای بازنصبِ پس از مکث */
+interface ReadingProgress {
+  readonly phase: Phase
+  /** زمان خواندن تا لحظهٔ مکث (ms) — مکثِ خودِ کاربر؛ سشن عملاً pause بود */
+  readonly readingMs: number
+  readonly answers: readonly (number | null)[]
+}
 
 export function ReadingAloudGame({ ctx }: { ctx: ActiveGameContext }) {
   const trial = ctx.trial as ReadingAloudTrial
@@ -24,71 +37,97 @@ export function ReadingAloudGame({ ctx }: { ctx: ActiveGameContext }) {
   const [answers, setAnswers] = useState<readonly (number | null)[]>(
     trial.questions.map(() => null),
   )
-  const timersRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
+  /** زنجیرهٔ زمان‌سنج خواندن — جدا از تایمرهای گارد چون interval است */
+  const intervalRef = useRef<number | null>(null)
   const readStartRef = useRef(0)
   const readingMsRef = useRef(0)
 
+  const stopTicker = () => {
+    if (intervalRef.current !== null) window.clearInterval(intervalRef.current)
+    intervalRef.current = null
+  }
+
+  useEffect(() => stopTicker, [])
+
+  const saveProgress = (currentPhase: Phase, currentReadingMs: number, currentAnswers: readonly (number | null)[]) => {
+    ctx.trialPresentation.set('progress', {
+      phase: currentPhase,
+      readingMs: currentReadingMs,
+      answers: [...currentAnswers],
+    } satisfies ReadingProgress)
+  }
+
+  // ریست با شروع هر مرحله — یا بازگردانی از پیشرفتِ نجات‌یافتهٔ مکث
   useEffect(() => {
-    submittedRef.current = false
+    const interrupted = ctx.trialPresentation.wasInterrupted()
+    const saved = interrupted ? ctx.trialPresentation.get<ReadingProgress>('progress') : undefined
+    stopTicker()
+    if (saved && saved.phase === 'reading') {
+      // مکث وسط خواندن: زمان‌سنج از همان ثانیه ادامه می‌یابد (زمان مکث
+      // در readingMs نمی‌نشیند — خواندنِ پس از مکث تازه شمارش می‌شود)
+      readingMsRef.current = saved.readingMs
+      readStartRef.current = performance.now()
+      setElapsedSec(Math.floor(saved.readingMs / 1000))
+      setAnswers(saved.answers ?? trial.questions.map(() => null))
+      setPhase('reading')
+      intervalRef.current = window.setInterval(() => {
+        setElapsedSec(
+          Math.floor((readingMsRef.current + (performance.now() - readStartRef.current)) / 1000),
+        )
+      }, 1000)
+      return
+    }
+    if (saved && saved.phase === 'questions') {
+      readingMsRef.current = saved.readingMs
+      setElapsedSec(Math.floor(saved.readingMs / 1000))
+      setAnswers(saved.answers ?? trial.questions.map(() => null))
+      setPhase('questions')
+      return
+    }
+    readingMsRef.current = 0
     setPhase('idle')
     setElapsedSec(0)
     setAnswers(trial.questions.map(() => null))
-    for (const t of timersRef.current) window.clearInterval(t)
-    timersRef.current = []
-    return () => {
-      for (const t of timersRef.current) window.clearInterval(t)
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
 
   const startReading = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     readStartRef.current = performance.now()
+    readingMsRef.current = 0
     setPhase('reading')
-    timersRef.current.push(
-      window.setInterval(() => {
-        setElapsedSec(Math.round((performance.now() - readStartRef.current) / 1000))
-      }, 1000),
-    )
+    saveProgress('reading', 0, trial.questions.map(() => null))
+    intervalRef.current = window.setInterval(() => {
+      setElapsedSec(
+        Math.floor((readingMsRef.current + (performance.now() - readStartRef.current)) / 1000),
+      )
+    }, 1000)
   }
 
   const finishReading = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (phase !== 'reading') return
-    for (const t of timersRef.current) window.clearInterval(t)
-    timersRef.current = []
-    readingMsRef.current = Math.round(performance.now() - readStartRef.current)
+    stopTicker()
+    readingMsRef.current = Math.round(readingMsRef.current + (performance.now() - readStartRef.current))
     setPhase('questions')
+    saveProgress('questions', readingMsRef.current, trial.questions.map(() => null))
   }
 
   const choose = (questionIndex: number, choiceIndex: number) => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (phase !== 'questions') return
-    setAnswers((current) =>
-      current.map((a, i) => (i === questionIndex ? choiceIndex : a)),
-    )
+    const next = answers.map((a, i) => (i === questionIndex ? choiceIndex : a))
+    setAnswers(next)
+    saveProgress('questions', readingMsRef.current, next)
   }
 
   const allAnswered = answers.every((a) => a !== null)
 
   const submit = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (phase !== 'questions' || !allAnswered) return
-    submittedRef.current = true
-    void ctx
-      .submit({ readingMs: readingMsRef.current, answers })
-      .then((result) => {
-        if (result.accepted && !result.sessionCompleted) {
-          try {
-            ctx.advance()
-          } catch {
-            // جلسه هم‌زمان تمام/قطع شده — بی‌اثر
-          }
-        } else if (!result.accepted) {
-          submittedRef.current = false
-        }
-      })
+    void guards.submitOnce({ readingMs: readingMsRef.current, answers })
   }
 
   return (
@@ -140,7 +179,7 @@ export function ReadingAloudGame({ ctx }: { ctx: ActiveGameContext }) {
                       data-testid="ra-option"
                       data-q-index={qi}
                       data-index={ci}
-                      data-correct={ci === question.correctIndex ? 'true' : 'false'}
+                      data-correct={e2e(ci === question.correctIndex ? 'true' : 'false')}
                       onClick={() => choose(qi, ci)}
                     >
                       {choice}

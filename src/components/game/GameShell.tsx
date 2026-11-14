@@ -21,6 +21,21 @@ import { CloseGlyph } from '../icons/UiGlyphs'
 import { toFaDigits } from '../../utils/format'
 import styles from './game.module.css'
 
+/**
+ * حالت ارائهٔ مرحلهٔ جاری که در چرخهٔ عمر کامپوننت بازی نمی‌میرد.
+ * مکث (PAUSED) صحنهٔ بازی را unmount می‌کند؛ این ذخیره به بازی اجازه
+ * می‌دهد فاز/انتخاب‌ها/موقعیت ارائه را نجات دهد و در بازنصب از همان
+ * نقطه ادامه دهد — نه بازپخش محرک از صفر (آلودگی replay).
+ * با advance به مرحلهٔ بعد به‌طور تنبل پاک می‌شود.
+ */
+export interface TrialPresentationStore {
+  /** دادهٔ ذخیره‌شدهٔ بازی برای مرحلهٔ جاری؛ undefined = داده‌ای نیست (بار اول) */
+  get: <T>(key: string) => T | undefined
+  set: <T>(key: string, value: T) => void
+  /** مرحلهٔ جاری مکث را تجربه کرده (unmount و بازگشت) */
+  wasInterrupted: () => boolean
+}
+
 /** API‌ای که کامپوننت هر بازی هنگام اجرای ACTIVE دریافت می‌کند */
 export interface ActiveGameContext {
   readonly trial: ExerciseTrial
@@ -31,6 +46,13 @@ export interface ActiveGameContext {
   readonly lastOutcome: RecordedTrial | null
   /** مهلت باقی‌مانده مرحله جاری (ms) یا null */
   timeRemainingMs: () => number | null
+  /**
+   * زمان سپری‌شده از نمایش محرک به «ساعت جلسه» (pause-aware) — برای
+   * همهٔ بازی‌ها حتی بدون responseWindowMs؛ مبنای ادامهٔ ارائه پس از مکث
+   */
+  trialElapsedMs: () => number
+  /** حالت ارائهٔ نجات‌یافته برای مکث/بازنصب — بخش «TrialPresentationStore» */
+  readonly trialPresentation: TrialPresentationStore
   /** توقف/ادامه — بازی‌های زمان‌بندی‌شده باید تایمرهای خود را با آن همگام کنند */
   pause: () => void
   readonly paused: boolean
@@ -269,6 +291,42 @@ export function GameShell({
     return () => window.clearTimeout(timer)
   }, [phase, countdown, manager, visibilityTick])
 
+  // ذخیرهٔ حالت ارائهٔ مرحله — بیرون از چرخهٔ عمر کامپوننت بازی (مکث=unmount).
+  // تنبل با تغییر trialIndex همگام می‌شود؛ شناسهٔ توابع برای کل عمر GameShell پایدار
+  const presentationStoreRef = useRef<{
+    trialIndex: number
+    data: Map<string, unknown>
+    interrupted: boolean
+  }>({ trialIndex: -1, data: new Map(), interrupted: false })
+  const syncPresentationStore = useCallback(() => {
+    const store = presentationStoreRef.current
+    const currentTrialIndex = manager.getSnapshot().currentTrial?.trialIndex ?? -1
+    if (store.trialIndex !== currentTrialIndex) {
+      store.trialIndex = currentTrialIndex
+      store.data = new Map()
+      store.interrupted = false
+    }
+    return store
+  }, [manager])
+  const trialPresentation = useMemo<TrialPresentationStore>(
+    () => ({
+      get: <T,>(key: string): T | undefined => syncPresentationStore().data.get(key) as T | undefined,
+      set: <T,>(key: string, value: T): void => {
+        syncPresentationStore().data.set(key, value)
+      },
+      wasInterrupted: (): boolean => syncPresentationStore().interrupted,
+    }),
+    [syncPresentationStore],
+  )
+
+  // مکث میان اجرای مرحله = وقفه در ارائه — بازی‌ها برای تصمیم بازپخش/ادامه می‌خوانند
+  useEffect(() => {
+    if (phase !== 'PAUSED') return
+    const store = presentationStoreRef.current
+    const currentTrialIndex = manager.getSnapshot().currentTrial?.trialIndex ?? -1
+    if (store.trialIndex === currentTrialIndex) store.interrupted = true
+  }, [phase, manager])
+
   const ctx = useMemo<ActiveGameContext | null>(() => {
     if (phase !== 'ACTIVE' || snapshot.currentTrial === null) return null
     return {
@@ -278,10 +336,12 @@ export function GameShell({
       advance: () => manager.advanceTrial(),
       lastOutcome: snapshot.lastOutcome,
       timeRemainingMs: () => manager.timeRemainingMs(),
+      trialElapsedMs: () => manager.trialElapsedMs(),
+      trialPresentation,
       pause: () => manager.pause(),
       paused: snapshot.machine.phase === 'PAUSED',
     }
-  }, [phase, snapshot.currentTrial, snapshot.answeredTrials, snapshot.lastOutcome, snapshot.machine.phase, manager])
+  }, [phase, snapshot.currentTrial, snapshot.answeredTrials, snapshot.lastOutcome, snapshot.machine.phase, manager, trialPresentation])
 
   // تعداد مراحل واقعی جلسه: config موتور اگر totalTrials داشته باشد (برای
   // بازی‌هایی که تعداد مرحله به سطح وابسته است — مثل حافظهٔ انجمنی که در

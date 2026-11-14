@@ -78,7 +78,8 @@ export type MentalRotationAnswer = MentalRotationVerdict | null
 
 export const MENTAL_ROTATION_ID = 'mental-rotation'
 export const MENTAL_ROTATION_VERSION = '1.0.0'
-export const MENTAL_ROTATION_CONTENT_VERSION = '1'
+/** ۲ = stratification: توازن دقیق same/mirror (۸/۸) و باند زاویه هم‌اندازه */
+export const MENTAL_ROTATION_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 16
 /** سقف تلاش برای تولید شکل نامتقارن — عملاً هرگز پر نمی‌شود */
 const MAX_GENERATION_ATTEMPTS = 60
@@ -220,6 +221,40 @@ export function generateAsymmetricPolyomino(rng: SeededRandom, blocks: number): 
 
 // ---------- تعریف تمرین ----------
 
+/** بُرِ قطعیِ توازن same/mirror — دقیقاً نصف جلسه آینه‌ای */
+function balancedMirrorSchedule(seed: number, totalTrials: number): readonly boolean[] {
+  const rng = new SeededRandom(seed ^ 0x9e5)
+  const schedule: boolean[] = []
+  for (let i = 0; i < totalTrials; i += 1) schedule.push(i % 2 === 1)
+  for (let i = schedule.length - 1; i > 0; i -= 1) {
+    const j = rng.int(0, i)
+    const tmp = schedule[i] as boolean
+    schedule[i] = schedule[j] as boolean
+    schedule[j] = tmp
+  }
+  return schedule
+}
+
+/** بُرِ قطعیِ باندهای زاویه — هر باند به یک اندازه نمایندگی دارد */
+function balancedAngleSchedule(
+  seed: number,
+  angles: readonly RotationAngle[],
+  totalTrials: number,
+): readonly RotationAngle[] {
+  const rng = new SeededRandom(seed ^ 0x49a)
+  const schedule: RotationAngle[] = []
+  for (let i = 0; i < totalTrials; i += 1) {
+    schedule.push(angles[i % angles.length] as RotationAngle)
+  }
+  for (let i = schedule.length - 1; i > 0; i -= 1) {
+    const j = rng.int(0, i)
+    const tmp = schedule[i] as RotationAngle
+    schedule[i] = schedule[j] as RotationAngle
+    schedule[j] = tmp
+  }
+  return schedule
+}
+
 export const mentalRotationDefinition: ExerciseDefinition<
   MentalRotationConfig,
   MentalRotationState,
@@ -242,8 +277,10 @@ export const mentalRotationDefinition: ExerciseDefinition<
     const trialIndex = state.nextTrialIndex
     const rng = new SeededRandom(deriveTrialSeed(state.seed, trialIndex))
     const reference = generateAsymmetricPolyomino(rng, state.config.blocks)
-    const isMirror = rng.bool()
-    const rotationDegrees = rng.pick(state.config.allowedAngles)
+    // stratification: توازن دقیق same/mirror و باند زاویه — نه Binomial(16)
+    // و باندهای ناهم‌اندازه (GAMES-AUDIT §۳-۱)؛ برنامه‌ها با بذر جلسه بُر می‌خورند
+    const isMirror = balancedMirrorSchedule(state.seed, state.config.totalTrials)[trialIndex] as boolean
+    const rotationDegrees = balancedAngleSchedule(state.seed, state.config.allowedAngles, state.config.totalTrials)[trialIndex] as RotationAngle
     // آینه‌ای‌ها هم چرخیده عرضه می‌شوند (چون تقارن آینه‌ای صرف با زاویهٔ
     // صفر ممکن است خیلی بدیهی باشد) — بازتاب اول، سپس چرخش
     const base = isMirror ? mirrorPolyomino(reference) : reference

@@ -153,8 +153,8 @@ describe('Stroop — engine', () => {
     const summary = def.getSummary(state)
     expect(summary.metrics['congruentAccuracy']).toBe(100)
     expect(summary.metrics['incongruentAccuracy']).toBe(0)
-    // زیرمجموعه «ناهم‌خوان درست» خالی است → هزینه استروپ ۰
-    expect(summary.metrics['stroopCostMs']).toBe(0)
+    // زیرمجموعه «ناهم‌خوان درست» خالی است → کلید هزینهٔ استروپ اصلاً نیست (کلید شرطی)
+    expect('stroopCostMs' in summary.metrics).toBe(false)
   })
 
   it('nextTrial پس از اتمام ۲۰ مرحله خطا می‌دهد', () => {

@@ -4,6 +4,7 @@ import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { PmCell, ProgressiveMatricesTrial } from './engine'
 import styles from './progressive-matrices.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /** کلید رنگ → رنگ CSS برای ترسیم شکل‌ها */
 const CELL_CSS_COLORS: Readonly<Record<PmCell['color'], string>> = {
@@ -132,7 +133,7 @@ export function ProgressiveMatricesGame({ ctx }: { ctx: ActiveGameContext }) {
             className={styles.optionButton}
             data-testid="pm-option"
             data-index={index}
-            data-correct={index === trial.correctIndex ? 'true' : 'false'}
+            data-correct={e2e(index === trial.correctIndex ? 'true' : 'false')}
             onClick={() => choose(index)}
             disabled={ctx.paused}
             aria-label={`گزینه ${toFaDigits(index + 1)}: ${toFaDigits(option.count)} ${COLORS_FA[option.color]}`}

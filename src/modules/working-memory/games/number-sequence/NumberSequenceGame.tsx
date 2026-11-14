@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
+import { scheduleCadence } from '../../../shared/presentation-resume'
 import type { NumberSequenceTrial } from './engine'
 import styles from './number-sequence.module.css'
 
@@ -19,34 +21,17 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
   const [shownDigit, setShownDigit] = useState<number | null>(null)
   const [entered, setEntered] = useState<number[]>([])
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(null)
-  const trialKey = `${trial.trialIndex}`
-  const timeoutsRef = useRef<number[]>([])
-  // قفل پاسخِ ثبت‌شده — دوبل‌تپ روی «تأیید» نباید advance دومی بزند
-  // (advance روی مرحله پاسخ‌داده‌نشده استثنای مهارنشده می‌دهد)
-  const submittedRef = useRef(false)
-  // آینهٔ رندرِ مرحلهٔ جاری — گارد کهنگی تایمر پیشرویِ پس از بازخورد
-  const currentTrialRef = useRef(trial.trialIndex)
-  currentTrialRef.current = trial.trialIndex
-
-  const clearTimers = useCallback(() => {
-    for (const t of timeoutsRef.current) window.clearTimeout(t)
-    timeoutsRef.current = []
-  }, [])
+  const guards = useTrialGuards(ctx, trial.trialIndex)
 
   // ریست فازها با شروع هر مرحله جدید + زمان‌بندی نمایش ارقام:
-  // هر رقم به‌مدت displayMsPerDigit دیده می‌شود و gapMs فاصله تا بعدی
+  // هر رقم به‌مدت displayMsPerDigit دیده می‌شود و gapMs فاصله تا بعدی.
+  // بازنصبِ پس از مکث: ارائه از زمان سپری‌شدهٔ جلسه ادامه می‌یابد نه از
+  // صفر — بازپخش ارقام، دوبار-دیده‌شدن محرک و بایاس صعودی بود (GAMES-AUDIT §۲-۱)
   useEffect(() => {
-    submittedRef.current = false
-    setPhase('showing')
-    setShownDigit(trial.digits[0] ?? null)
-    setEntered([])
-    setWasCorrect(null)
-    clearTimers()
     // رفع ریس pause بین پذیرش پاسخ و advance (الگوی محاسبه ×۲۰): پاسخِ
     // ثبت‌شدهٔ بدون پیشروی را در بازنصب بلافاصله جلو ببر تا جلسه قفل نماند
     const outcome = ctx.lastOutcome
     if (outcome !== null && outcome.trialIndex === trial.trialIndex) {
-      submittedRef.current = true
       try {
         ctx.advance()
       } catch {
@@ -54,58 +39,74 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
       }
       return
     }
+
+    const interrupted = ctx.trialPresentation.wasInterrupted()
+    const elapsedMs = interrupted ? ctx.trialElapsedMs() : 0
+    const saved = interrupted ? ctx.trialPresentation.get<number[]>('entered') : undefined
+    setEntered(saved ?? [])
+    setWasCorrect(null)
+    setShownDigit(null)
+
     const { displayMsPerDigit: display, gapMs: gap } = trial
-    const timers: number[] = []
-    trial.digits.forEach((digit, i) => {
-      const startAt = i * (display + gap)
-      timers.push(window.setTimeout(() => setShownDigit(digit), startAt))
-      timers.push(window.setTimeout(() => setShownDigit(null), startAt + display))
-    })
-    // پایان نمایش همه ارقام → فاز ورود
-    timers.push(
-      window.setTimeout(() => setPhase('input'), trial.digits.length * (display + gap)),
+    const totalMs = trial.digits.length * (display + gap)
+    const finishShowing = () => {
+      setShownDigit(null)
+      setPhase('input')
+    }
+    const timers = scheduleCadence(
+      trial.digits.map((digit, i) => ({
+        startAt: i * (display + gap),
+        displayMs: display,
+        onShow: () => setShownDigit(digit),
+        onHide: () => setShownDigit((current) => (current === digit ? null : current)),
+      })),
+      totalMs,
+      finishShowing,
+      elapsedMs,
     )
-    timeoutsRef.current = timers
-    return clearTimers
-    // trialKey تغییر می‌کند دقیقاً وقتی مرحله جدید شروع می‌شود
+    if (elapsedMs >= totalMs) {
+      // ارائهٔ تمام‌شده — scheduleCadence خودش finishShowing زد؛ فاز را هم بنشان
+      setPhase('input')
+    } else {
+      setPhase('showing')
+    }
+    for (const t of timers) guards.trackTimeoutId(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trialKey, clearTimers])
+  }, [trial.trialIndex])
 
   const pressDigit = (digit: number) => {
     if (phase !== 'input') return
-    setEntered((current) => {
-      if (current.length >= trial.digits.length) return current
-      return [...current, digit]
-    })
+    if (entered.length >= trial.digits.length) return
+    const next = [...entered, digit]
+    // نجات ورودی برای بازنصبِ مکث
+    ctx.trialPresentation.set('entered', next)
+    setEntered(next)
   }
 
-  const undo = () => setEntered((current) => current.slice(0, -1))
+  const undo = () => {
+    const next = entered.slice(0, -1)
+    ctx.trialPresentation.set('entered', next)
+    setEntered(next)
+  }
 
-  const submit = async () => {
-    if (submittedRef.current || phase !== 'input' || entered.length !== trial.digits.length) return
-    submittedRef.current = true
-    const result = await ctx.submit(entered)
-    if (!result.accepted) {
-      submittedRef.current = false
-      return
-    }
-    // آخرین پاسخ جلسه را کامل کرد → advanceی برای مرحله بعدی وجود ندارد
-    // (advance روی جلسه تمام‌شده خطای «در فاز COMPLETED مجاز نیست» می‌دهد)
-    if (result.sessionCompleted) return
-    setWasCorrect(result.record.correct)
-    setPhase('feedback')
-    // تایمر پیشروی: ردیابی‌شده (پاک‌شدن با unmount/مرحلهٔ جدید) + گارد کهنگی
-    // (ریمانتِ پس از مکث خودش پیشروی کرده) + مهار خطای جلسهٔ هم‌زمان قطع/تکمیل
-    timeoutsRef.current.push(
-      window.setTimeout(() => {
-        if (currentTrialRef.current !== trial.trialIndex) return
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان قطع/تکمیل شده
-        }
-      }, 850),
-    )
+  const submit = () => {
+    if (phase !== 'input' || entered.length !== trial.digits.length) return
+    void guards.submitOnce(entered, {
+      onAccepted: (result) => {
+        setWasCorrect(result.record.correct)
+        setPhase('feedback')
+        // تایمر پیشروی: ردیابی‌شده (پاک‌شدن با unmount/مرحلهٔ جدید) + مهار
+        // خطای جلسهٔ هم‌زمان قطع/تکمیل
+        guards.setTrackedTimeout(() => {
+          try {
+            ctx.advance()
+          } catch {
+            // جلسه هم‌زمان قطع/تکمیل شده
+          }
+        }, 850)
+      },
+      autoAdvance: false,
+    })
   }
 
   if (phase === 'showing') {
@@ -152,7 +153,7 @@ export function NumberSequenceGame({ ctx }: { ctx: ActiveGameContext }) {
           <button
             type="button"
             className={`${gameStyles.key} ${gameStyles.keyWide}`}
-            onClick={() => void submit()}
+            onClick={submit}
             disabled={entered.length !== trial.digits.length}
           >
             تأیید

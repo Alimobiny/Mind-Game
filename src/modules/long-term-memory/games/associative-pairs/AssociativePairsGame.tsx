@@ -4,6 +4,7 @@ import gameStyles from '../../../../components/game/game.module.css'
 import { SwapGlyph } from '../../../../components/icons/UiGlyphs'
 import type { AssociativePairsTrial } from './engine'
 import styles from './associative-pairs.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * حافظهٔ انجمنی — UI
@@ -138,7 +139,7 @@ export function AssociativePairsGame({ ctx }: { ctx: ActiveGameContext }) {
             className={styles.choiceButton}
             data-testid="ap-option"
             data-index={index}
-            data-correct={index === trial.item.correctIndex ? 'true' : 'false'}
+            data-correct={e2e(index === trial.item.correctIndex ? 'true' : 'false')}
             onClick={() => choose(index)}
           >
             {word}

@@ -3,6 +3,7 @@ import type { ActiveGameContext } from '../../../../components/game/GameShell'
 import gameStyles from '../../../../components/game/game.module.css'
 import type { MentalRotationTrial, MentalRotationVerdict, Polyomino } from './engine'
 import styles from './mental-rotation.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * Mental Rotation — UI
@@ -67,7 +68,7 @@ function FigureArt({
       className={styles.figure}
       viewBox={`0 0 ${span} ${span}`}
       data-testid={testId}
-      data-same={same === undefined ? undefined : same ? 'true' : 'false'}
+      data-same={e2e(same === undefined ? undefined : same ? 'true' : 'false')}
       focusable="false"
       aria-hidden="true"
     >
@@ -221,7 +222,7 @@ export function MentalRotationGame({ ctx }: { ctx: ActiveGameContext }) {
           <p
             className={`${styles.flash} ${flash.correct ? styles.flashCorrect : styles.flashIncorrect}`}
             data-testid="mr-feedback"
-            data-correct={flash.correct ? 'true' : 'false'}
+            data-correct={e2e(flash.correct ? 'true' : 'false')}
           >
             {flash.correct
               ? 'درست ✓'

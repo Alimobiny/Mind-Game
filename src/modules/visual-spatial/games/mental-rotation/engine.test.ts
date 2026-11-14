@@ -318,4 +318,21 @@ describe('Mental Rotation — engine', () => {
     expect(summary.metrics['accuracyLowAngleBand']).toBe(100)
     expect(summary.metrics['accuracyHighAngleBand']).toBeUndefined()
   })
+  it('stratification: دقیقاً ۸ آینه‌ای/۸ یکسان و باندهای زاویه هم‌اندازه (قاطع)', () => {
+    for (const seed of [5, 61, 999]) {
+      const config = configForDifficulty(3) // ۴ باند زاویه
+      let state = def.createSession('a', config, seed)
+      let mirrors = 0
+      const angleCounts = new Map<number, number>()
+      for (let i = 0; i < config.totalTrials; i += 1) {
+        const step = def.nextTrial(state)
+        if (step.trial.isMirror) mirrors += 1
+        angleCounts.set(step.trial.rotationDegrees, (angleCounts.get(step.trial.rotationDegrees) ?? 0) + 1)
+        state = step.state
+      }
+      expect(mirrors).toBe(8)
+      expect(angleCounts.size).toBe(4)
+      for (const count of angleCounts.values()) expect(count).toBe(4)
+    }
+  })
 })

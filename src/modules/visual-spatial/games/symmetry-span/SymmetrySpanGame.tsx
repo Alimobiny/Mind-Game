@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { toFaDigits } from '../../../../utils/format'
 import type { SymmetrySpanTrial } from './engine'
 import { SYMSPAN_GRID_SIZE } from './engine'
 import styles from './symmetry-span.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * دهانهٔ تقارن — UI
@@ -13,7 +15,11 @@ import styles from './symmetry-span.module.css'
  * خانهٔ هدف در شبکهٔ ۴×۴ → زوج بعدی … → بازیابی ترتیبی با لمس خانه‌ها.
  * دکمه‌های قضاوت فقط claim در ref ثبت می‌کنند؛ تنها submitِ فاز بازیابی (یا
  * انقضای مهلت کل دسته) کل پاسخ را می‌فرستد — قرارداد یک-submit-per-trial.
- * هر سه گارد الزامی رعایت شده است.
+ * هر سه گارد الزامی در useTrialGuards است.
+ *
+ * مکث (PAUSED=unmount): پیشرفت دسته (فاز + قضاوت‌ها + انتخاب‌ها) در
+ * trialPresentation نجات داده می‌شود و بازنصب از همان نقطه ادامه می‌یابد —
+ * پیش‌تر کل دسته از صفر شروع و قضاوت‌های کاربر پاک می‌شد (GAMES-AUDIT §۲-۱).
  */
 
 type Phase =
@@ -21,6 +27,14 @@ type Phase =
   | { readonly kind: 'feedback'; readonly itemIndex: number; readonly judgment: boolean | null; readonly wasCorrect: boolean }
   | { readonly kind: 'cell'; readonly itemIndex: number }
   | { readonly kind: 'recall' }
+
+/** پیشرفت نجات‌یافتهٔ دسته برای بازنصبِ پس از مکث */
+interface SetProgress {
+  readonly phase: Phase
+  readonly judgments: readonly (boolean | null)[]
+  readonly rts: readonly (number | null)[]
+  readonly selected: readonly number[]
+}
 
 const CELLS = Array.from({ length: SYMSPAN_GRID_SIZE * SYMSPAN_GRID_SIZE }, (_, i) => i)
 
@@ -32,8 +46,7 @@ export function SymmetrySpanGame({ ctx }: { ctx: ActiveGameContext }) {
   const selectedRef = useRef<readonly number[]>([])
   selectedRef.current = selected
   const timersRef = useRef<number[]>([])
-  const deadlineRef = useRef<number[]>([])
-  const submittedRef = useRef(false)
+  const guards = useTrialGuards(ctx, trial.trialIndex)
   const judgmentsRef = useRef<(boolean | null)[]>([])
   const rtsRef = useRef<(number | null)[]>([])
   const phaseStartRef = useRef(0)
@@ -43,55 +56,50 @@ export function SymmetrySpanGame({ ctx }: { ctx: ActiveGameContext }) {
     timersRef.current = []
   }
 
+  /** نجات پیشرفت دسته — در هر گذار فاز/قضاوت/انتخاب */
+  const saveProgress = (currentPhase: Phase) => {
+    ctx.trialPresentation.set('progress', {
+      phase: currentPhase,
+      judgments: [...judgmentsRef.current],
+      rts: [...rtsRef.current],
+      selected: [...selectedRef.current],
+    } satisfies SetProgress)
+  }
+
   useEffect(() => {
-    submittedRef.current = false
-    setPhase({ kind: 'pattern', itemIndex: 0 })
-    setSelected([])
-    judgmentsRef.current = trial.set.items.map(() => null)
-    rtsRef.current = trial.set.items.map(() => null)
+    // بازنصبِ پس از مکث: ادامه از پیشرفتِ نجات‌یافته؛ فازِ قطع‌شده از ابتدای
+    // همان فاز ادامه می‌یابد (تمدیدِ کرانی یک فاز — رویداد خام contaminated است)
+    const interrupted = ctx.trialPresentation.wasInterrupted()
+    const saved = interrupted ? ctx.trialPresentation.get<SetProgress>('progress') : undefined
+    if (saved && saved.phase) {
+      setPhase(saved.phase)
+      setSelected(saved.selected)
+      judgmentsRef.current = [...saved.judgments]
+      rtsRef.current = [...saved.rts]
+    } else {
+      setPhase({ kind: 'pattern', itemIndex: 0 })
+      setSelected([])
+      judgmentsRef.current = trial.set.items.map(() => null)
+      rtsRef.current = trial.set.items.map(() => null)
+    }
     phaseStartRef.current = performance.now()
     clearPhaseTimers()
-    for (const t of deadlineRef.current) window.clearTimeout(t)
-    deadlineRef.current = []
 
-    // انقضای مهلت کل دسته → یک submit با هرچه تا حالا جمع شده
+    // انقضای مهلت کل دسته → یک submit با هرچه تا حالا جمع شده؛ پس از
+    // rollback ذخیره با پنجرهٔ کوتاه دوباره مسلح می‌شود (useTrialGuards)
     const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
-      deadlineRef.current.push(
-        window.setTimeout(() => {
-          if (submittedRef.current) return
-          submittedRef.current = true
-          const anyResponse =
-            judgmentsRef.current.some((j) => j !== null) || selectedRef.current.length > 0
-          void ctx.submit(
-            anyResponse
-              ? {
-                  processingJudgments: judgmentsRef.current,
-                  processingRtMs: rtsRef.current,
-                  recalled: selectedRef.current,
-                }
-              : null,
-          ).then((result) => {
-            if (!result.accepted) {
-              // persist_failed: مدیر rollback کرده — قفل باز بماند (مسیر
-              // submitSet همین را دارد؛ مسیر مهلت هم باید داشته باشد)
-              submittedRef.current = false
-              return
+      guards.armDeadline(() => {
+        const anyResponse =
+          judgmentsRef.current.some((j) => j !== null) || selectedRef.current.length > 0
+        return anyResponse
+          ? {
+              processingJudgments: judgmentsRef.current,
+              processingRtMs: rtsRef.current,
+              recalled: selectedRef.current,
             }
-            if (!result.sessionCompleted) {
-              try {
-                ctx.advance()
-              } catch {
-                // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-              }
-            }
-          })
-        }, remaining),
-      )
-    }
-    return () => {
-      clearPhaseTimers()
-      for (const t of deadlineRef.current) window.clearTimeout(t)
+          : null
+      }, remaining)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
@@ -99,6 +107,7 @@ export function SymmetrySpanGame({ ctx }: { ctx: ActiveGameContext }) {
   useEffect(() => {
     phaseStartRef.current = performance.now()
     clearPhaseTimers()
+    saveProgress(phase)
     if (phase.kind === 'pattern') {
       const itemIndex = phase.itemIndex
       timersRef.current.push(
@@ -132,51 +141,45 @@ export function SymmetrySpanGame({ ctx }: { ctx: ActiveGameContext }) {
   }, [phase, trial.trialIndex])
 
   const judge = (value: boolean) => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (phase.kind !== 'pattern') return
     const item = trial.set.items[phase.itemIndex]
     if (!item) return
     judgmentsRef.current[phase.itemIndex] = value
     rtsRef.current[phase.itemIndex] = Math.round(performance.now() - phaseStartRef.current)
-    setPhase({
+    const next: Phase = {
       kind: 'feedback',
       itemIndex: phase.itemIndex,
       judgment: value,
       wasCorrect: value === item.pattern.isSymmetric,
-    })
+    }
+    saveProgress(next)
+    setPhase(next)
   }
 
   const tapCell = (cell: number) => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (phase.kind !== 'recall') return
-    setSelected((current) =>
-      current.includes(cell) ? current.filter((c) => c !== cell) : [...current, cell],
-    )
+    const next = selected.includes(cell) ? selected.filter((c) => c !== cell) : [...selected, cell]
+    selectedRef.current = next
+    setSelected(next)
+    saveProgress(phase)
   }
 
   const clearSelection = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
+    selectedRef.current = []
     setSelected([])
+    saveProgress(phase)
   }
 
   const submitSet = () => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (selected.length !== trial.set.items.length) return
-    submittedRef.current = true
-    void ctx.submit({
+    void guards.submitOnce({
       processingJudgments: judgmentsRef.current,
       processingRtMs: rtsRef.current,
       recalled: selected,
-    }).then((result) => {
-      if (result.accepted && !result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان تمام/قطع شده — بی‌اثر
-        }
-      } else if (!result.accepted) {
-        submittedRef.current = false
-      }
     })
   }
 
@@ -294,8 +297,8 @@ function RecallArea({
     <div
       className={styles.phaseArea}
       data-testid="symspan-recall"
-      data-expected-order={trial.set.expectedRecall.join(',')}
-      data-reverse={trial.set.reverseRecall ? 'true' : 'false'}
+      data-expected-order={e2e(trial.set.expectedRecall.join(','))}
+      data-reverse={e2e(trial.set.reverseRecall ? 'true' : 'false')}
     >
       <p className={gameStyles.hint}>
         {trial.set.reverseRecall

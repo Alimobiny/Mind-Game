@@ -72,17 +72,35 @@ export interface AttentionalBlinkAnswer {
 
 export const ATTENTIONAL_BLINK_ID = 'attentional-blink'
 export const ATTENTIONAL_BLINK_VERSION = '1.0.0'
-export const ATTENTIONAL_BLINK_CONTENT_VERSION = '1'
+/**
+ * ۲ = تخصیص دقیق lag (۴ جریان برای هر یک از ۲/۳/۷ — قبلاً Bernoulli بود و
+ * lagها/بکت‌ها خالی می‌افتادند) + کلیدهای شرطی برای بکت‌های بدون داده.
+ */
+export const ATTENTIONAL_BLINK_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 12
 const STREAM_LENGTH = 16
 
-/** توزیع تأخیرها — تمرکز روی ۲ و ۳ و ۷ مطابق سند پژوهش */
-const LAG_WEIGHTS: readonly (readonly [number, number])[] = [
-  [1, 0.1],
-  [2, 0.3],
-  [3, 0.3],
-  [7, 0.3],
-]
+/**
+ * برنامهٔ تأخیرهای جلسه — تخصیص دقیق به‌جای نمونه‌گیری Bernoulli:
+ * ۱۲ جریان = ۴ جریان برای هر lag از {۲,۳,۷}؛ بکت‌های blinkMagnitude
+ * همیشه ≥۴ نمونه دارند و «lag غایب» دیگر ممکن نیست (GAMES-AUDIT §۳-۱).
+ * lag 1 حذف شد: با وزن ۰٫۱ در ۲۸٪ جلسات غایب بود و بکتِ ~۱تایی فقط نویز
+ * داشت — lagOneSparing اکنون کلید شرطی است (با داده منتشر می‌شود).
+ */
+const LAG_SCHEDULE: readonly number[] = [2, 2, 2, 2, 3, 3, 3, 3, 7, 7, 7, 7]
+
+/** بُر قطعیِ برنامهٔ lag با بذر جلسه — ترتیب جریان‌ها ولی تضمین سهمیه‌ها */
+function lagScheduleFor(sessionSeed: number): readonly number[] {
+  const rng = new SeededRandom(sessionSeed ^ 0xab1e)
+  const schedule = [...LAG_SCHEDULE]
+  for (let i = schedule.length - 1; i > 0; i -= 1) {
+    const j = rng.int(0, i)
+    const tmp = schedule[i] as number
+    schedule[i] = schedule[j]
+    schedule[j] = tmp
+  }
+  return schedule
+}
 
 /** تنظیمات سطح دشواری: سرعت جریان از ۸ تا ~۱۲ آیتم بر ثانیه */
 export function configForDifficulty(difficulty: number): AttentionalBlinkConfig {
@@ -122,7 +140,7 @@ export const attentionalBlinkDefinition: ExerciseDefinition<
     const letters = rng.sample(LETTER_POOL, state.config.streamLength)
     // هدف اول نه خیلی زود (پایداری توجه) و نه خیلی دیر (خستگی)
     const t1Index = rng.int(3, 5)
-    const lag = rng.pickWeighted(LAG_WEIGHTS)
+    const lag = lagScheduleFor(state.seed)[trialIndex] as number
     const t2Index = t1Index + lag
     const t1 = letters[t1Index] as string
     const t2 = letters[t2Index] as string
@@ -179,7 +197,6 @@ export const attentionalBlinkDefinition: ExerciseDefinition<
     const t2Overall = accuracyPercent(state.results.filter(t2Ok).length, state.results.length)
 
     const t2GivenT1 = t1Hits.filter(t2Ok)
-    const t2GivenT1Accuracy = accuracyPercent(t2GivenT1.length, t1Hits.length)
 
     const rateAt = (lag: number) => {
       const bucket = t1Hits.filter((r) => lagOf(r) === lag)
@@ -191,6 +208,23 @@ export const attentionalBlinkDefinition: ExerciseDefinition<
     const lag23 = t1Hits.filter((r) => lagOf(r) === 2 || lagOf(r) === 3)
     const lag23Rate = accuracyPercent(lag23.filter(t2Ok).length, lag23.length)
 
+    // کلیدهای شرطی: بکت بدون داده اصلاً منتشر نمی‌شود (نه «صفرِ جعلی»)
+    const metrics: Record<string, number> = {
+      t1Accuracy,
+      t2Accuracy: t2Overall,
+    }
+    if (t1Hits.length > 0) {
+      metrics.t2GivenT1Accuracy = accuracyPercent(t2GivenT1.length, t1Hits.length)
+    }
+    // اندازهٔ پلک: تشخیص هدف دوم در تأخیر ۷ منهای تأخیر ۳ (نقطهٔ اوج پلک)
+    if (lag3.count > 0 && lag7.count > 0) {
+      metrics.blinkMagnitude = lag7.rate - lag3.rate
+    }
+    // سهیم‌شدن تأخیر ۱: برتری تأخیر ۱ بر میانگین تأخیرهای ۲ و ۳ — فقط
+    // وقتی جریان lag-1 وجود دارد (با تخصیص دقیقِ فعلی نیست؛ محافظه‌کارانه)
+    if (lag1.count > 0 && lag23.length > 0) {
+      metrics.lagOneSparing = lag1.rate - lag23Rate
+    }
     return {
       exerciseId: ATTENTIONAL_BLINK_ID,
       sessionId: state.sessionId,
@@ -199,15 +233,7 @@ export const attentionalBlinkDefinition: ExerciseDefinition<
       domain: 'attention-control',
       difficulty: state.config.difficulty,
       ...totals,
-      metrics: {
-        t1Accuracy,
-        t2Accuracy: t2Overall,
-        t2GivenT1Accuracy,
-        // اندازهٔ پلک: تشخیص هدف دوم در تأخیر ۷ منهای تأخیر ۳ (نقطهٔ اوج پلک)
-        blinkMagnitude: lag3.count > 0 && lag7.count > 0 ? lag7.rate - lag3.rate : 0,
-        // سهیم‌شدن تأخیر ۱: برتری تأخیر ۱ بر میانگین تأخیرهای ۲ و ۳
-        lagOneSparing: lag1.count > 0 ? lag1.rate - lag23Rate : 0,
-      },
+      metrics,
     }
   },
 }

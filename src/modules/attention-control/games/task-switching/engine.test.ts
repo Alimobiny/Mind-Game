@@ -238,9 +238,9 @@ describe('Task-Switching — engine', () => {
     const summary = def.getSummary(state)
     expect(summary.metrics['repeatAccuracy']).toBe(100)
     expect(summary.metrics['switchAccuracy']).toBe(0)
-    // هیچ پاسخ درستی در مراحل جابه‌جایی نیست → هزینهٔ جابه‌جایی تعریف‌شده نیست → 0
-    expect(summary.metrics['switchCostMs']).toBe(0)
-    expect(summary.metrics['rtSwitchMs']).toBe(0)
+    // هیچ پاسخ درستی در مراحل جابه‌جایی نیست → کلیدهای زمانی اصلاً نیستند (کلید شرطی)
+    expect('switchCostMs' in summary.metrics).toBe(false)
+    expect('rtSwitchMs' in summary.metrics).toBe(false)
     expect(summary.accuracy).toBe(80) // ۳۲ درست از ۴۰
   })
 
@@ -284,7 +284,8 @@ describe('Task-Switching — engine', () => {
     }
     const summary2 = def.getSummary(stateNoSwitchCorrect)
     expect(summary2.metrics['rtRepeatMs']).toBe(500)
-    expect(summary2.metrics['rtSwitchMs']).toBe(0)
-    expect(summary2.metrics['switchCostMs']).toBe(0)
+    // زیرمجموعهٔ جابه‌جایی بدون پاسخ درست → کلیدهایش اصلاً نیستند (کلید شرطی)
+    expect('rtSwitchMs' in summary2.metrics).toBe(false)
+    expect('switchCostMs' in summary2.metrics).toBe(false)
   })
 })

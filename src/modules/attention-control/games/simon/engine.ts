@@ -61,7 +61,8 @@ export type SimonAnswer = SimonColor | null
 
 export const SIMON_ID = 'simon-task'
 export const SIMON_VERSION = '1.0.0'
-export const SIMON_CONTENT_VERSION = '1'
+/** ۲ = SOA ثابت (پیشروی در پایان پنجره، نه بلافاصله پس از پاسخ) */
+export const SIMON_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 40
 
 /** نگاشت پایهٔ رنگ → سمت دکمه (فیزیکی، مستقل از RTL) */

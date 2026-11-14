@@ -24,6 +24,9 @@ export const PASAT_META_FA: Pick<
   metricLabelsFa: {
     correctSums: 'جمع‌های درست',
     omissions: 'مراحل بی‌پاسخ',
+    dyadErrors: 'خطای زوج‌ها (n+n)',
+    stringErrors: 'طولانی‌ترین رشتهٔ خطا',
+    answeredBeforeNextRate: 'نرخ پاسخ پیش از رقم بعد',
     meanAnswerTimeMs: 'میانگین زمان پاسخ درست (میلی‌ثانیه)',
   },
 }

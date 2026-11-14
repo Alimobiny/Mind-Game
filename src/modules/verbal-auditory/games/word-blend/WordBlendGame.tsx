@@ -6,6 +6,7 @@ import { toFaDigits } from '../../../../utils/format'
 import { createSpeechController, resolvePresentationMode } from '../../audio/speech'
 import type { WordBlendTrial } from './engine'
 import styles from './word-blend.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * ترکیب واژه — UI (نخستین بازی روی زیرساخت صدای محلی)
@@ -112,7 +113,7 @@ export function WordBlendGame({ ctx }: { ctx: ActiveGameContext }) {
           </p>
         </div>
       ) : (
-        <div className={styles.chooseArea} data-testid="wb-choices" data-correct-index={trial.correctIndex}>
+        <div className={styles.chooseArea} data-testid="wb-choices" data-correct-index={e2e(trial.correctIndex)}>
           <p className={gameStyles.hint}>واژهٔ ساخته‌شده از این قطعات کدام است؟</p>
           <div className={styles.choiceGrid} role="group" aria-label="گزینه‌ها">
             {trial.choices.map((word, index) => (
@@ -122,7 +123,7 @@ export function WordBlendGame({ ctx }: { ctx: ActiveGameContext }) {
                 className={styles.choiceButton}
                 data-testid="wb-option"
                 data-index={index}
-                data-correct={index === trial.correctIndex ? 'true' : 'false'}
+                data-correct={e2e(index === trial.correctIndex ? 'true' : 'false')}
                 onClick={() => choose(index)}
               >
                 {word}

@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveGameContext } from '../../../../components/game/GameShell'
+import { useTrialGuards } from '../../../../components/game/useTrialGuards'
 import gameStyles from '../../../../components/game/game.module.css'
 import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import type { PasatTrial } from './engine'
 import styles from './pasat.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * PASAT — UI
  *
  * رقم برای digitDisplayMs دیده می‌شود و محو؛ کاربر باید جمع «رقم جدید + رقم
  * قبل» را با کیپد وارد و تأیید کند — پیش از ظهور رقم بعد (پنجره = interval).
- * ثبت پاسخ یا انقضای مهلت، مرحله را تمام و رقم بعد را می‌آورد. سه گارد
- * الزامی: submittedRef · advance فقط تا قبل از sessionCompleted · تایمرها
- * در timersRef با پاک‌سازی.
+ *
+ * ریتم آزمونگر (contentVersion 2): پاسخِ ثبت‌شده ریتم را جلو نمی‌اندازد —
+ * رقم بعد دقیقاً در پایان پنجرهٔ ثابت ظاهر می‌شود (پیشروی تأخیری تا انقضای
+ * پنجره)؛ پاسخ پس از ظهور رقم بعد دیگر پذیرفته نمی‌شود (پنجره بسته است).
+ * سه گارد الزامی در useTrialGuards است.
  */
 const FA = '۰۱۲۳۴۵۶۷۸۹'
 const MAX_ENTRY_DIGITS = 2
@@ -23,43 +27,23 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
   const [digitVisible, setDigitVisible] = useState(true)
   const [entry, setEntry] = useState('')
   const [badge, setBadge] = useState<'correct' | 'wrong' | null>(null)
-  const timersRef = useRef<number[]>([])
-  // تایمر نشان شناور جدا از timersRef — پاک‌سازی per-trial آن را می‌کشت
-  // و نشان تا کل رقم بعدی چسبیده می‌ماند
+  const guards = useTrialGuards(ctx, trial.trialIndex)
+  // تایمر نشان شناور جدا از تایمرهای ردیابی‌شده — پاک‌سازی per-trial آن را
+  // می‌کشت و نشان تا کل رقم بعدی چسبیده می‌ماند
   const badgeTimerRef = useRef<number | null>(null)
-  const submittedRef = useRef(false)
 
   useEffect(() => {
-    submittedRef.current = false
     setEntry('')
     setDigitVisible(true)
-    for (const t of timersRef.current) window.clearTimeout(t)
-    timersRef.current = []
 
     // محو شدن رقم پس از digitDisplayMs (فاصلهٔ فکری تا رقم بعد)
-    timersRef.current.push(window.setTimeout(() => setDigitVisible(false), trial.digitDisplayMs))
+    guards.setTrackedTimeout(() => setDigitVisible(false), trial.digitDisplayMs)
 
-    // انقضای پنجرهٔ پاسخ → بی‌پاسخ و رقم بعد
+    // انقضای پنجرهٔ پاسخ → بی‌پاسخ و رقم بعد (پیشروی خودکار useTrialGuards)؛
+    // پس از rollback ذخیره با پنجرهٔ کوتاه دوباره مسلح می‌شود
     const remaining = ctx.timeRemainingMs()
     if (remaining !== null) {
-      timersRef.current.push(
-        window.setTimeout(() => {
-          if (submittedRef.current) return
-          submittedRef.current = true
-          void ctx.submit(null).then((result) => {
-            if (result.accepted && !result.sessionCompleted) {
-              try {
-                ctx.advance()
-              } catch {
-                // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
-              }
-            }
-          })
-        }, remaining),
-      )
-    }
-    return () => {
-      for (const t of timersRef.current) window.clearTimeout(t)
+      guards.armDeadline(() => null, remaining)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trial.trialIndex])
@@ -73,7 +57,7 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
   )
 
   const press = (key: string) => {
-    if (submittedRef.current || ctx.paused) return
+    if (guards.isSubmitted() || ctx.paused) return
     if (key === 'back') {
       setEntry((current) => current.slice(0, -1))
       return
@@ -82,27 +66,29 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
   }
 
   const submit = () => {
-    if (submittedRef.current || ctx.paused || entry.length === 0) return
-    submittedRef.current = true
+    if (guards.isSubmitted() || ctx.paused || entry.length === 0) return
     const value = Number.parseInt(entry, 10)
-    void ctx.submit(value).then((result) => {
-      if (result.accepted) {
-        // نشان کوتاهٔ نتیجه روی رقم/فاصلهٔ بعدی می‌ماند (۹۰۰ms تایمر خودش)؛
-        // پیشروی بلافاصله پس از پذیرش پاسخ است (پاسخ سریع ریتم را جلو
-        // می‌اندازد — طراحی فعلی، برخلاف پاسات استاندارد با فاصلهٔ ثابت)
+    void guards.submitOnce(value, {
+      onAccepted: (result) => {
+        // نشان کوتاهٔ نتیجه روی رقم/فاصلهٔ بعدی می‌ماند (۹۰۰ms تایمر خودش)
         setBadge(result.record.correct ? 'correct' : 'wrong')
         if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
         badgeTimerRef.current = window.setTimeout(() => setBadge(null), 900)
-      }
-      if (result.accepted && !result.sessionCompleted) {
-        try {
-          ctx.advance()
-        } catch {
-          // جلسه هم‌زمان تمام/قطع شده — بی‌اثر
+        // پیشرویِ تأخیری تا پایان پنجره — پاسخ سریع ریتم را جلو نمی‌اندازد؛
+        // رقم بعد در همان نقطهٔ ثابتِ شبکهٔ زمانی می‌آید
+        const rest = ctx.timeRemainingMs()
+        if (rest !== null && rest > 0) {
+          guards.setTrackedTimeout(() => {
+            try {
+              ctx.advance()
+            } catch {
+              // جلسه هم‌زمان قطع/تکمیل شده — بی‌اثر
+            }
+          }, rest)
         }
-      } else if (!result.accepted) {
-        submittedRef.current = false
-      }
+      },
+      // جلسه با آخرین پاسخ کامل شد → صفحهٔ نتایج بی‌درنگ (بدون انتظار پنجره)
+      autoAdvance: false,
     })
   }
 
@@ -121,7 +107,7 @@ export function PasatGame({ ctx }: { ctx: ActiveGameContext }) {
         className={styles.digitArea}
         data-testid="pasat-display"
         data-digit={trial.digit}
-        data-expected={trial.expected ?? ''}
+        data-expected={e2e(trial.expected ?? '')}
       >
         {digitVisible ? (
           <span key={trial.trialIndex} className={`${gameStyles.bigNumber} ${styles.digitPop}`}>

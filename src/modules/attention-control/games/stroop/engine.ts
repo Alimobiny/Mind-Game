@@ -63,7 +63,8 @@ export type StroopAnswer = StroopColorKey | null
 
 export const STROOP_ID = 'stroop'
 export const STROOP_VERSION = '1.0.0'
-export const STROOP_CONTENT_VERSION = '1'
+/** ۲ = کلیدهای شرطی: متریک زمانی بدون داده منتشر نمی‌شود (نه «صفرِ جعلی») */
+export const STROOP_CONTENT_VERSION = '2'
 const TOTAL_TRIALS = 20
 
 /** نسبت هم‌خوانی و پنجره پاسخ برای دشواری ۱..۵ — آرایه تا مقادیر دقیق بمانند */
@@ -182,13 +183,17 @@ export const stroopDefinition: ExerciseDefinition<StroopConfig, StroopState, Str
       difficulty: state.config.difficulty,
       ...totals,
       metrics: {
-        congruentAccuracy: accuracyPercent(congruent.filter((r) => r.correct).length, congruent.length),
-        incongruentAccuracy: accuracyPercent(incongruent.filter((r) => r.correct).length, incongruent.length),
-        // هزینه استروپ: میانه RT ناهم‌خوان منهای میانه RT هم‌خوان (فقط پاسخ‌های درست)
-        stroopCostMs:
-          medianCongruent !== null && medianIncongruent !== null
-            ? Math.round(medianIncongruent - medianCongruent)
-            : 0,
+        ...(congruent.length > 0
+          ? { congruentAccuracy: accuracyPercent(congruent.filter((r) => r.correct).length, congruent.length) }
+          : {}),
+        ...(incongruent.length > 0
+          ? { incongruentAccuracy: accuracyPercent(incongruent.filter((r) => r.correct).length, incongruent.length) }
+          : {}),
+        // هزینه استروپ: میانه RT ناهم‌خوان منهای میانه RT هم‌خوان (فقط پاسخ‌های
+        // درست) — هر دو میانه موجود نباشد کلید اصلاً منتشر نمی‌شود
+        ...(medianCongruent !== null && medianIncongruent !== null
+          ? { stroopCostMs: Math.round(medianIncongruent - medianCongruent) }
+          : {}),
       },
     }
   },

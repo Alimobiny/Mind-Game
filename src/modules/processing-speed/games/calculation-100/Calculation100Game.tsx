@@ -5,6 +5,7 @@ import { BackspaceGlyph } from '../../../../components/icons/UiGlyphs'
 import { toFaDigits } from '../../../../utils/format'
 import type { Calculation100Trial } from './engine'
 import styles from './calculation100.module.css'
+import { e2e } from '../../../../utils/e2e'
 
 /**
  * Calculation × 100 — UI
@@ -180,7 +181,7 @@ export function Calculation100Game({ ctx }: { ctx: ActiveGameContext }) {
           <p
             className={`${styles.flash} ${flash.correct ? styles.flashCorrect : styles.flashIncorrect}`}
             data-testid="calc100-feedback"
-            data-correct={flash.correct ? 'true' : 'false'}
+            data-correct={e2e(flash.correct ? 'true' : 'false')}
           >
             {flash.correct ? 'درست ✓' : `پاسخ درست: ${toFaDigits(flash.expected)}`}
           </p>

@@ -86,7 +86,7 @@ function generateSession(seed: number, difficulty: number): ProgressiveMatricesT
 describe('Progressive Matrices — مولد قاعده‌محور', () => {
   it('دشواری ۱..۵ پذیرفته و بیرون از بازه خطا می‌دهد', () => {
     expect(configForDifficulty(1).totalTrials).toBe(12)
-    expect(configForDifficulty(5).optionCount).toBe(4)
+    expect(configForDifficulty(5).optionCount).toBe(6) // ۶ گزینه از نسخهٔ محتوایی ۲
     expect(() => configForDifficulty(6)).toThrow(RangeError)
   })
 
