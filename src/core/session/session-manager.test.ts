@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import type { RecordedTrial } from '../types'
+import type { RecordedTrial, SessionRecord } from '../types'
 import { summarizeOutcomes } from '../scoring/scoring'
 import { SessionTimer } from '../timer/session-timer'
 import {
@@ -295,6 +295,41 @@ describe('ExerciseSessionManager — integration با بازی آزمایشی', 
     const { manager } = await createManager()
     await manager.start()
     await expect(manager.start()).rejects.toThrow()
+  })
+
+  it('فراخوانی دوبارهٔ start در پنجرهٔ await رد می‌شود (قفل in-flight — StrictMode)', async () => {
+    // PREPARE پس از persist زده می‌شود؛ در پنجرهٔ await فاز هنوز IDLE است.
+    // الگوی دوباراجرای افکت (dev) قبلاً دو رکورد جلسه می‌ساخت (رگرسیون qa-refresh)
+    const { manager, sessions } = await createManager()
+    const created: string[] = []
+    const originalCreate = sessions.create.bind(sessions)
+    sessions.create = async (record: SessionRecord) => {
+      created.push(record.id)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      return originalCreate(record)
+    }
+    const second = manager.start()
+    await expect(manager.start()).rejects.toThrow('جلسه قبلاً شروع شده است')
+    await second
+    expect(created, 'فقط یک رکورد ساخته شود').toHaveLength(1)
+    expect(manager.getSnapshot().machine.phase).toBe('READY')
+  })
+
+  it('شکست ذخیره‌سازی در start: فاز در IDLE می‌ماند و جلسهٔ شفاف ساخته نمی‌شود', async () => {
+    const { manager, sessions } = await createManager()
+    const originalCreate = sessions.create.bind(sessions)
+    sessions.create = async () => {
+      throw new Error('QuotaExceededError')
+    }
+    await expect(manager.start()).rejects.toThrow('QuotaExceededError')
+    // فاز به READY نرفته — کارت خطای GameShell (که فقط در IDLE رندر می‌شود)
+    // نمایش داده می‌شود و مسیر تلاش مجدد باز است
+    expect(manager.getSnapshot().machine.phase).toBe('IDLE')
+
+    // پس از رفع خطا، تلاش مجدد start موفق است
+    sessions.create = originalCreate
+    await manager.start()
+    expect(manager.getSnapshot().machine.phase).toBe('READY')
   })
 
   it('snapshot با subscribe اعلان تغییر می‌گیرد', async () => {

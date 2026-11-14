@@ -28,7 +28,7 @@ function fullSession(
 
 const perfectAnswer = (t: ReadingAloudTrial) => ({
   readingMs: 30_000,
-  answers: t.passage.questions.map((q) => q.correctIndex),
+  answers: t.questions.map((q) => q.correctIndex),
 })
 
 describe('بانک محتوا', () => {
@@ -90,6 +90,37 @@ describe('طرح جلسه', () => {
   })
 })
 
+describe('بُر زدن گزینه‌ها (contentVersion 2)', () => {
+  it('گزینهٔ درست همیشه در جایگاه نخست نیست — روی بذرهای مختلف جابه‌جا می‌شود', () => {
+    // در v1 همهٔ ۳۰ سؤال بانک correctIndex=0 داشتند و بُری انجام نمی‌شد:
+    // انتخاب همیشگی گزینهٔ اول دقت فهم ۱۰۰٪ می‌داد (سوگیری سیستماتیک)
+    const positions = new Set<number>()
+    for (let seed = 1; seed <= 24; seed += 1) {
+      const config = configForDifficulty(1)
+      const state = def.createSession('s', config, seed)
+      const next = def.nextTrial(state)
+      for (const q of next.trial.questions) positions.add(q.correctIndex)
+    }
+    expect(positions.size).toBeGreaterThan(1)
+  })
+
+  it('بُر قطعی است؛ همان گزینه‌ها و همان متن پاسخ درست حفظ می‌شود', () => {
+    const config = configForDifficulty(3)
+    const a = def.nextTrial(def.createSession('s', config, 7))
+    const b = def.nextTrial(def.createSession('s', config, 7))
+    for (let qi = 0; qi < a.trial.questions.length; qi += 1) {
+      const shuffled = a.trial.questions[qi] as { choices: readonly string[]; correctIndex: number }
+      const bank = (a.trial.passage.questions[qi] as { choices: readonly string[]; correctIndex: number })
+      const again = b.trial.questions[qi] as { choices: readonly string[]; correctIndex: number }
+      expect(shuffled.choices).toEqual(again.choices)
+      expect(shuffled.correctIndex).toBe(again.correctIndex)
+      // همان مجموعه گزینه‌ها و همان متنِ پاسخ درست بانک
+      expect([...shuffled.choices].sort()).toEqual([...bank.choices].sort())
+      expect(shuffled.choices[shuffled.correctIndex]).toBe(bank.choices[bank.correctIndex])
+    }
+  })
+})
+
 describe('امتیازدهی و خلاصه', () => {
   it('فهم کامل + ۳۰ ثانیه خواندن → دقت ۱۰۰ و wpm متناسب', () => {
     const { state } = fullSession(2, perfectAnswer)
@@ -107,7 +138,7 @@ describe('امتیازدهی و خلاصه', () => {
 
   it('یک پاسخ غلط در یک سؤال → فهم ۷۵٪ (۵ از ۶ سؤال) ولی آن مرحله incorrect', () => {
     const { state } = fullSession(1, (t) => {
-      const answers = t.passage.questions.map((q) => q.correctIndex)
+      const answers = t.questions.map((q) => q.correctIndex)
       if (t.trialIndex === 0) answers[0] = (answers[0] as number) + 1 === 4 ? 0 : (answers[0] as number) + 1
       return { readingMs: 25_000, answers }
     })

@@ -85,7 +85,13 @@ export function DualNBackGame({
               ? { letterClaimed: c.letterClaimed, cellClaimed: c.cellClaimed, letterRtMs: c.letterRtMs, cellRtMs: c.cellRtMs }
               : null,
           ).then((result) => {
-            if (result.accepted && !result.sessionCompleted) {
+            if (!result.accepted) {
+              // persist_failed: مدیر rollback کرده — قفل باز بماند تا
+              // پاسخ/انقضای بعدی ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
+              submittedRef.current = false
+              return
+            }
+            if (!result.sessionCompleted) {
               try {
                 ctx.advance()
               } catch {

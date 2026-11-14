@@ -91,7 +91,7 @@ export type SymmetrySpanAnswer = ComplexSpanSetAnswer<number> | null
 
 export const SYMMETRY_SPAN_ID = 'symmetry-span'
 export const SYMMETRY_SPAN_VERSION = '1.0.0'
-export const SYMMETRY_SPAN_CONTENT_VERSION = '1'
+export const SYMMETRY_SPAN_CONTENT_VERSION = '2' // v2: بازیابی بلندتر از دسته دیگر «کامل» شمرده نمی‌شود (complex-span)
 
 /** طول دسته‌ها بر حسب دشواری ۱..۵ (۳ دسته؛ ۳ تا ۶ آیتم) */
 const SET_LENGTHS_BY_DIFFICULTY: readonly (readonly number[])[] = [

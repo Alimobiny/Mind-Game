@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { ComponentType, LazyExoticComponent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameShell } from '../components/game/GameShell'
@@ -457,15 +457,25 @@ function RunNextBar({
   autoSeconds?: number
 }) {
   const [seconds, setSeconds] = useState(autoSeconds)
+  // شمارش در تب مخفی فریز می‌شود: تمرین بعدیِ زنجیره نباید در پس‌زمینه
+  // خودکار mount شود (جلسه با omission خالص تکمیل و تاریخچه آلوده می‌شد)
+  const [visibilityTick, bumpVisibilityTick] = useReducer((x: number) => x + 1, 0)
+  useEffect(() => {
+    const onVisibility = () => bumpVisibilityTick()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
   useEffect(() => {
     if (seconds <= 0) {
-      onGo()
+      // آغاز خودکار فقط در تب نمایان — با بازگشت کاربر، تغییر visibilityTick
+      // این افکت را دوباره ارزیابی می‌کند
+      if (!document.hidden) onGo()
       return
     }
-    const timer = window.setTimeout(() => setSeconds((s) => s - 1), 1000)
+    const timer = window.setTimeout(() => setSeconds((s) => (document.hidden ? s : s - 1)), 1000)
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seconds])
+  }, [seconds, visibilityTick])
 
   return (
     <div className={styles.runBar} data-testid="program-run-next">
@@ -495,15 +505,22 @@ function RunCompleteCard({
   autoSeconds?: number
 }) {
   const [seconds, setSeconds] = useState(autoSeconds)
+  // همان قید RunNextBar: بازگشت خودکار فقط در تب نمایان (فریز در پس‌زمینه)
+  const [visibilityTick, bumpVisibilityTick] = useReducer((x: number) => x + 1, 0)
+  useEffect(() => {
+    const onVisibility = () => bumpVisibilityTick()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
   useEffect(() => {
     if (seconds <= 0) {
-      onBack()
+      if (!document.hidden) onBack()
       return
     }
-    const timer = window.setTimeout(() => setSeconds((s) => s - 1), 1000)
+    const timer = window.setTimeout(() => setSeconds((s) => (document.hidden ? s : s - 1)), 1000)
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seconds])
+  }, [seconds, visibilityTick])
 
   return (
     <div className={styles.runBar} data-testid="program-run-complete">

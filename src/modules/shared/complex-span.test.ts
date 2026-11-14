@@ -17,6 +17,16 @@ describe('scoreSpanRecall', () => {
     expect(isFullRecall(score)).toBe(true)
   })
 
+  it('بازیابی بلندتر از دسته با همه در جای درست، «کامل» نیست (رگرسیون v2)', () => {
+    // در v1 فقط itemsInCorrectPosition === setLength چک می‌شد؛ [آب,برف] +
+    // یک تجاوز اضافه، دسته را نادرست correct ثبت می‌کرد (دقت متورم)
+    const score = scoreSpanRecall(['آب', 'برف'], ['آب', 'برف', 'خاک'])
+    expect(score.itemsInCorrectPosition).toBe(2)
+    expect(score.intrusionErrors).toBe(1)
+    expect(score.givenLength).toBe(3)
+    expect(isFullRecall(score)).toBe(false)
+  })
+
   it('جابه‌جایی ترتیب = خطای ترتیب، نه تجاوز', () => {
     const score = scoreSpanRecall(['آب', 'برف', 'باد'], ['برف', 'آب', 'باد'])
     expect(score.itemsInCorrectPosition).toBe(1) // «باد» در جای درست

@@ -35,17 +35,39 @@ describe('بانک ترکیب واژه', () => {
     expect(new Set(BLEND_BANK_FA.map((e) => e.word)).size).toBe(40)
   })
 
-  it('اتصال قطعات هر مدخل (پس از حذف اعراب) همان واژه را می‌سازد', () => {
+  it('اتصال قطعات هر مدخل (پس از حذف اعراب و نیم‌فاصله) همان واژه را می‌سازد', () => {
+    // v2: واژه‌های مرکب با نیم‌فاصلهٔ درست نوشته می‌شوند (پنبه‌زن، چای‌دان…)؛
+    // قطعات ساده‌اند و ZWNJ فقط در مقایسه حذف می‌شود
+    const stripZwnj = (t: string) => t.replace(/\u200c/g, '')
     for (const entry of BLEND_BANK_FA) {
       expect(entry.parts).toHaveLength(2)
       const joined = entry.parts.join('')
-      expect(normalizePersian(joined)).toBe(normalizePersian(entry.word))
-      expect(entry.word).not.toMatch(/[\s\u200c]/)
+      expect(normalizePersian(stripZwnj(joined))).toBe(normalizePersian(stripZwnj(entry.word)))
+      expect(entry.word).not.toMatch(/\s/)
       for (const part of entry.parts) {
         expect(part.length).toBeGreaterThan(0)
         expect(part).not.toMatch(/\s/)
+        expect(part).not.toMatch(/\u200c/)
       }
     }
+  })
+
+  it('واژه‌های مرکب بانک با نیم‌فاصلهٔ درست نوشته شده‌اند (رگرسیون v2)', () => {
+    // در v1 پنج مدخل بدون نیم‌فاصله غلط املایی رندر می‌شدند
+    const zwnjWords = BLEND_BANK_FA.filter((e) => e.word.includes('‌')).map((e) => e.word)
+    expect(zwnjWords).toEqual(
+      expect.arrayContaining(['پنبه‌زن', 'چای‌دان', 'آتش‌نشانی', 'دستمال‌کاغذی', 'چراغ‌دان']),
+    )
+    expect(
+      BLEND_BANK_FA.some((e) => /^(پنبهزن|چایدان|آتشنشانی|دستمالکاغذی|چراغدان)$/.test(e.word)),
+    ).toBe(false)
+  })
+
+  it('trial نردبان سرعت گفتار را حمل می‌کند (سیم‌کشی v2)', () => {
+    const config = configForDifficulty(5)
+    const state = def.createSession('s', config, 11)
+    const next = def.nextTrial(state)
+    expect(next.trial.speechRate).toBe(config.speechRate)
   })
 })
 

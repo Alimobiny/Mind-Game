@@ -83,7 +83,7 @@ export interface VisibleColumn {
 export const BLOCK_HEIGHT_ID = 'block-height'
 export const BLOCK_HEIGHT_VERSION = '1.0.0'
 /** ۲ = رندر ایزومتریک + دستورالعمل بازنویسی‌شده (منطق تولید بدون تغییر) */
-export const BLOCK_HEIGHT_CONTENT_VERSION = '2'
+export const BLOCK_HEIGHT_CONTENT_VERSION = '3' // v3: آفست عمق پشتی ۱۲→۴ — لبهٔ ستون پشتی دیگر از سیلوئت جلویی بیرون نمی‌زند (اکلوژن کامل)
 const TOTAL_TRIALS = 12
 
 /**

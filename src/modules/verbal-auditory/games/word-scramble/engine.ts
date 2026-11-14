@@ -66,7 +66,7 @@ export type WordScrambleAnswer = string | null
 
 export const WORD_SCRAMBLE_ID = 'word-scramble'
 export const WORD_SCRAMBLE_VERSION = '1.0.0'
-export const WORD_SCRAMBLE_CONTENT_VERSION = '1'
+export const WORD_SCRAMBLE_CONTENT_VERSION = '2' // v2: چیدمان «فریب + بقیهٔ مرتب» هم رد می‌شود — معمای حل‌شده نمایش داده نمی‌شد
 
 const TOTAL_TRIALS = 12
 
@@ -90,15 +90,30 @@ export function configForDifficulty(difficulty: number): WordScrambleConfig {
 }
 
 /**
- * حروف به‌هم‌ریختهٔ تضمینی: چیدمان نباید در جایگاه‌های اصلی واژه، خودِ واژه
- * را بنشانند (حرف فریب اگر انتها بیفتد و بقیه مرتب باشند، تلاش دیگری می‌شود).
+ * آیا چیدمان «به‌سختی حل‌شده» است؟ فقط تکرارِ خود واژه در جایگاه‌های اصلی
+ * نیست: اگر حذف یک حرف (در هر جایگاه — مثلاً فریبِ ابتدا) باقی‌مانده را
+ * به ترتیبِ خود واژه بگذارد، معما عملاً حل‌شده نمایش داده می‌شود.
+ */
+function isTrivialLayout(shuffled: readonly string[], word: string): boolean {
+  if (shuffled.slice(0, word.length).join('') === word) return true
+  for (let skip = 0; skip < shuffled.length; skip += 1) {
+    const rest = shuffled.filter((_, i) => i !== skip).join('')
+    if (rest === word) return true
+  }
+  return false
+}
+
+/**
+ * حروف به‌هم‌ریختهٔ تضمینی: چیدمان نباید خود واژه را در جایگاه‌های اصلی
+ * بنشاند و نه با حذف یک حرف (فریب در ابتدا/انتها/وسط) به ترتیب واژه
+ * برسد (v2 — در v1 فریبِ ابتدا + بقیهٔ مرتب پاس می‌شد).
  */
 function scrambleLetters(rng: SeededRandom, word: string, decoy: string | null): string[] {
   const letters = [...word]
   if (decoy !== null) letters.push(decoy)
   for (let attempt = 0; attempt < 64; attempt += 1) {
     const shuffled = rng.shuffle(letters)
-    if (shuffled.slice(0, word.length).join('') !== word) return shuffled
+    if (!isTrivialLayout(shuffled, word)) return shuffled
   }
   // واژه‌ای با حروف کاملاً یکسان که هیچ چیدمان متفاوتی ندارد — عملاً رخ
   // نمی‌دهد؛ چیدمان نهایی به‌هرحال بازگردانده می‌شود

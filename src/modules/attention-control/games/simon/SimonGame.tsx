@@ -65,7 +65,12 @@ export function SimonGame({ ctx }: { ctx: ActiveGameContext }) {
           if (submittedRef.current) return
           submittedRef.current = true
           void ctx.submit(null).then((result) => {
-            if (result.accepted && !result.sessionCompleted) {
+            if (!result.accepted) {
+              // persist_failed: مدیر rollback کرده — قفل باز بماند
+              submittedRef.current = false
+              return
+            }
+            if (!result.sessionCompleted) {
               try {
                 ctx.advance()
               } catch {

@@ -45,7 +45,13 @@ export function SyllableCountingGame({ ctx }: { ctx: ActiveGameContext }) {
     submittedRef.current = true
     const value = Number.parseInt(entry, 10)
     const result = await ctx.submit(value)
-    if (!result.accepted || result.sessionCompleted) return
+    if (!result.accepted) {
+      // persist_failed: مدیر rollback کرده — قفل باز بماند تا تلاش مجدد
+      // ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
+      submittedRef.current = false
+      return
+    }
+    if (result.sessionCompleted) return
     const expected = trial.syllableCount
     setFlash({ correct: result.record.correct, expected })
     flashTimerRef.current = window.setTimeout(() => {

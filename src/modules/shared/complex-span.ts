@@ -22,6 +22,8 @@ export interface SpanRecallScore {
   readonly intrusionErrors: number
   /** طول درست دسته */
   readonly setLength: number
+  /** طول بازیابی‌شدهٔ کاربر (می‌تواند بلندتر/کوتاه‌تر از دسته باشد) */
+  readonly givenLength: number
 }
 
 /**
@@ -43,12 +45,21 @@ export function scoreSpanRecall<T>(expected: readonly T[], given: readonly T[]):
       intrusionErrors += 1
     }
   }
-  return { itemsInCorrectPosition, orderErrors, intrusionErrors, setLength: expected.length }
+  return { itemsInCorrectPosition, orderErrors, intrusionErrors, setLength: expected.length, givenLength: given.length }
 }
 
-/** آیا دسته کامل و به‌ترتیب بازیابی شد؟ */
+/**
+ * آیا دسته کامل و به‌ترتیب بازیابی شد؟
+ * طول بازیابی هم باید برابر طول دسته باشد — بازیابیِ بلندتر (مثلاً
+ * [۳,۷,۱۲] در برابر دستهٔ [۳,۷]) با وجود دو آیتم در جای درست «کامل»
+ * نیست (در v1 این حالت نادرست correct ثبت می‌شد).
+ */
 export function isFullRecall(score: SpanRecallScore): boolean {
-  return score.setLength > 0 && score.itemsInCorrectPosition === score.setLength
+  return (
+    score.setLength > 0 &&
+    score.itemsInCorrectPosition === score.setLength &&
+    score.givenLength === score.setLength
+  )
 }
 
 /**

@@ -51,7 +51,13 @@ export function StroopGame({ ctx }: { ctx: ActiveGameContext }) {
         if (submittedRef.current) return
         submittedRef.current = true
         void ctx.submit(null).then((result) => {
-          if (result.accepted && !result.sessionCompleted) {
+          if (!result.accepted) {
+            // persist_failed: مدیر rollback کرده — قفل باز بماند تا تلاش
+            // مجدد ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
+            submittedRef.current = false
+            return
+          }
+          if (!result.sessionCompleted) {
             try {
               ctx.advance()
             } catch {
@@ -81,7 +87,12 @@ export function StroopGame({ ctx }: { ctx: ActiveGameContext }) {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit(color).then((result) => {
-      if (!result.accepted || result.sessionCompleted) return
+      if (!result.accepted) {
+        // persist_failed: مدیر rollback کرده — قفل باز بماند
+        submittedRef.current = false
+        return
+      }
+      if (result.sessionCompleted) return
       flashThenAdvance(result.record.correct, trial.ink, () => {
         try {
           ctx.advance()

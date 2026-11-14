@@ -82,6 +82,8 @@ export class ExerciseSessionManager {
   private machine: SessionMachineState = initialMachineState()
   private sessionId: string | null = null
   private exerciseState: ExerciseState | null = null
+  /** start در حال اجرا — قفل همگام ورود دوباره در پنجرهٔ await (StrictMode) */
+  private startPromise: Promise<void> | null = null
   private currentTrial: ExerciseTrial | null = null
   private currentTrialAnswered = false
   /** زمان نمایش محرک جاری به ساعت تایمر (برای RT و مهلت پاسخ) */
@@ -123,18 +125,37 @@ export class ExerciseSessionManager {
   // ---------- lifecycle ----------
 
   /**
-   * شروع جلسه: ساخت state با seed، انتقال به READY و ذخیره رکورد
-   * in_progress (تا جلسات ناتمام قابل شناسایی باشند).
+   * شروع جلسه: ساخت state با seed، ذخیرهٔ رکورد in_progress (تا جلسات
+   * ناتمام قابل شناسایی باشند) و سپس انتقال به READY.
+   *
+   * ترتیب مهم است: اگر PREPARE پیش از persist زده شود و ذخیره شکست بخورد،
+   * جلسه در READY می‌ماند و GameShell کارت خطا را فقط در IDLE نشان می‌دهد —
+   * جلسهٔ «شفاف» بدون هیچ رکورد DB ساخته می‌شد. با این ترتیب، خطای
+   * ذخیره‌سازی حالت را در IDLE نگه می‌دارد و مسیر تلاش مجدد باز می‌ماند.
+   *
+   * قفل in-flight: چون PREPARE دیگر همگام نیست، در پنجرهٔ await فاز هنوز
+   * IDLE است — فراخوانی دوم (الگوی دوباراجرای افکت در StrictModeِ dev که
+   * start را روی mount صدا می‌زند) باید همان‌جا رد شود وگرنه هر مونت دو
+   * رکورد جلسه می‌سازد (رگرسیونی که e2eهای qa-refresh گرفتند).
    */
   async start(): Promise<void> {
-    if (this.machine.phase !== 'IDLE') {
+    if (this.machine.phase !== 'IDLE' || this.startPromise !== null) {
       throw new Error('جلسه قبلاً شروع شده است')
     }
+    const run = this.startInternal()
+    this.startPromise = run
+    try {
+      await run
+    } finally {
+      this.startPromise = null
+    }
+  }
+
+  private async startInternal(): Promise<void> {
     const sessionId = generateSessionId()
     const seed = this.deps.seed ?? createRandomSeed()
     this.sessionId = sessionId
     this.exerciseState = this.definition.createSession(sessionId, this.deps.config, seed)
-    this.machine = smDispatch(this.machine, 'PREPARE')
     await this.sessions.create({
       id: sessionId,
       exerciseId: this.definition.id,
@@ -154,6 +175,7 @@ export class ExerciseSessionManager {
       exerciseId: this.definition.id,
       lastDifficulty: this.deps.config.difficulty,
     })
+    this.machine = smDispatch(this.machine, 'PREPARE')
     this.emit()
   }
 

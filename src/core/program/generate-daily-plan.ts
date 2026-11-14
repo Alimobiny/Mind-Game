@@ -10,8 +10,10 @@ import type { ProgramExerciseEntry, TrainingPlanItem, TrainingPlanRecord } from 
  * قواعد طراحی (مصوب و مبتنی بر docs/SCIENTIFIC-VALIDATION.md — سقف ۱۵–۲۰ دقیقه
  * جلسه روزانه، تنوع حوزه‌ها و فاصله‌گذاری بین جلسات؛ بدون هیچ ادعای بالینی):
  *  ۱. هر روز ۳ تا ۴ بازی، مجموع تخمینی در بازه ۱۵–۲۰ دقیقه.
- *  ۲. چرخش هفتگی: «حوزه لنگر» هر روز از جایگشتی seed شده از شنبه همان هفته
- *     برداشته می‌شود → در طول هفته هر ۷ حوزه دقیقاً یک‌بار لنگر روز می‌شود.
+ *  ۲. چرخش لنگر: جایگشت seed شدهٔ حوزه‌ها در بلوک‌های هم‌طولِ تعداد حوزه‌ها
+ *     (اکنون ۸ روز) → در هر بلوک، هر حوزه دقیقاً یک‌بار لنگر روز می‌شود.
+ *     (قاعدهٔ قبلی «هفتگی» با افزودن حوزهٔ هشتم می‌شکست: اندیس روز هفته
+ *     ۰..۶ بود و حوزهٔ هشتمِ جایگشت هرگز لنگر نمی‌شد.)
  *  ۳. فاصله‌گذاری: بازیِ روز قبل در همان حوزه تکرار نمی‌شود، مگر آنکه
  *     جایگزینی وجود نداشته باشد («وقتی جایگزین هست»).
  *  ۴. سطح هر آیتم = سطح پیشنهادی دشواری تطبیقی همان بازی (بدون تاریخچه = کف).
@@ -62,15 +64,26 @@ function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
 
-/** شاخص روز هفته ایرانی: شنبه=۰ … جمعه=۶ (مستقل از منطقه زمانی) */
-function persianWeekdayIndex(iso: string): number {
-  return (parseIsoDate(iso).getUTCDay() + 1) % 7
+/** شمارهٔ روز مطلق (از مبدا یونیکس) — پایهٔ چرخش بلوکی لنگر */
+function dayNumber(iso: string): number {
+  return Math.floor(parseIsoDate(iso).getTime() / DAY_MS)
 }
 
-/** تاریخ شنبه‌ای که هفتهٔ ISO داده‌شده با آن شروع می‌شود */
-function weekStartIso(iso: string): string {
-  const utc = parseIsoDate(iso).getTime()
-  return toIsoDate(new Date(utc - persianWeekdayIndex(iso) * DAY_MS))
+/**
+ * حوزهٔ لنگر یک تاریخ: جایگشت seed شدهٔ حوزه‌ها در بلوک‌های هم‌طولِ تعداد
+ * حوزه‌ها (اکنون ۸ روز) — در هر بلوک هر حوزه دقیقاً یک‌بار لنگر می‌شود.
+ * صادر شده تا ناوردایی چرخش مستقیماً تست‌پذیر باشد (خروجی برنامه می‌تواند
+ * لنگر را وقتی کاندیدایش در سقف دقیقه نمی‌گنجد حذف کند).
+ */
+export function anchorDomainForDate(
+  date: string,
+  domains: readonly CognitiveDomain[] = COGNITIVE_DOMAINS,
+): CognitiveDomain {
+  const n = dayNumber(date)
+  const blockStart = n - (n % domains.length)
+  const blockStartIso = toIsoDate(new Date(blockStart * DAY_MS))
+  const rotation = new SeededRandom(hashStringToSeed(blockStartIso)).shuffle([...domains])
+  return rotation[n % rotation.length] as CognitiveDomain
 }
 
 /** ترتیب پایدار و مستقل از ورودی: به‌ترتیب COGNITIVE_DOMAINS سپس id */
@@ -125,9 +138,10 @@ export function generateDailyPlan(input: GenerateDailyPlanInput): TrainingPlanRe
 
   const dayRng = new SeededRandom(hashStringToSeed(input.date))
 
-  // چرخش هفتگی: جایگشت ثابت حوزه‌ها در هر هفته → پوشش همه حوزه‌ها در ۷ روز
-  const rotation = new SeededRandom(hashStringToSeed(weekStartIso(input.date))).shuffle(domains)
-  const anchorDomain = rotation[persianWeekdayIndex(input.date) % rotation.length] as CognitiveDomain
+  // چرخش بلوکی لنگر: جایگشت ثابت حوزه‌ها در بلوکِ هم‌طولِ تعداد حوزه‌ها
+  // (۸ روز) → در هر بلوک هر حوزه دقیقاً یک‌بار لنگر می‌شود. چرخش قبلی
+  // «هفتگی» با ۸ حوزه می‌شکست (اندیس ۰..۶ ⇒ حوزهٔ هشتم هرگز لنگر نه)
+  const anchorDomain = anchorDomainForDate(input.date)
 
   // فاصله‌گذاری: فقط برنامه دیروز ملاک است
   const yesterdayIso = toIsoDate(new Date(parseIsoDate(input.date).getTime() - DAY_MS))

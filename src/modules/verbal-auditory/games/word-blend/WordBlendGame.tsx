@@ -58,7 +58,7 @@ export function WordBlendGame({ ctx }: { ctx: ActiveGameContext }) {
       return
     }
     if (mode === 'speech') {
-      speech.speak(part, { rate: 0.85 })
+      speech.speak(part, { rate: trial.speechRate ?? 0.85 })
     }
     const timer = window.setTimeout(() => setPartIndex((i) => i + 1), trial.partGapMs)
     timersRef.current.push(timer)

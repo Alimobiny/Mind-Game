@@ -45,7 +45,13 @@ export function GoNoGoGame({ ctx }: { ctx: ActiveGameContext }) {
         if (submittedRef.current) return
         submittedRef.current = true
         void ctx.submit(null).then((result) => {
-          if (result.accepted && !result.sessionCompleted) {
+          if (!result.accepted) {
+            // persist_failed: مدیر rollback کرده — قفل باز بماند تا تلاش
+            // مجدد ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
+            submittedRef.current = false
+            return
+          }
+          if (!result.sessionCompleted) {
             try {
               ctx.advance()
             } catch {
@@ -73,8 +79,13 @@ export function GoNoGoGame({ ctx }: { ctx: ActiveGameContext }) {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit('tap').then((result) => {
-      if (result.accepted) flashBadge(result.record.correct)
-      if (result.accepted && !result.sessionCompleted) {
+      if (!result.accepted) {
+        // persist_failed: مدیر rollback کرده — قفل باز بماند
+        submittedRef.current = false
+        return
+      }
+      flashBadge(result.record.correct)
+      if (!result.sessionCompleted) {
         try {
           ctx.advance()
         } catch {

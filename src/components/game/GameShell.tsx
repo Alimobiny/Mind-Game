@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { ExerciseConfig, ExerciseTrial, RecordedTrial } from '../../core/types'
@@ -208,6 +208,15 @@ export function GameShell({
     setCountdown(COUNTDOWN_SECONDS)
   }, [manager])
 
+  // تغییر visibility باید افکت‌های «لحظهٔ آغاز» را دوباره ارزیابی کند —
+  // بازگشت کاربر به تب، شمارش‌های معلق در حالت مخفی را ادامه می‌دهد
+  const [visibilityTick, bumpVisibilityTick] = useReducer((x: number) => x + 1, 0)
+  useEffect(() => {
+    const onVisibility = () => bumpVisibilityTick()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
+
   // حالت زنجیرهٔ برنامه: شمارش نمایان روی دکمهٔ شروع، سپس آغاز خودکار
   useEffect(() => {
     if (!autoStart || phase !== 'READY') return
@@ -217,16 +226,18 @@ export function GameShell({
   useEffect(() => {
     if (autoStartSeconds === null || phase !== 'READY') return
     if (autoStartSeconds <= 0) {
+      // آغاز خودکار فقط در تب نمایان — جلسه در پس‌زمینه ACTIVE نمی‌شود
+      if (document.hidden) return
       setAutoStartSeconds(null)
       beginCountdown()
       return
     }
     const timer = window.setTimeout(
-      () => setAutoStartSeconds((s) => (s === null ? null : s - 1)),
+      () => setAutoStartSeconds((s) => (s === null || document.hidden ? s : s - 1)),
       1000,
     )
     return () => window.clearTimeout(timer)
-  }, [autoStartSeconds, phase, beginCountdown])
+  }, [autoStartSeconds, phase, beginCountdown, visibilityTick])
 
   // گزارش یک‌بارهٔ پایان جلسه به صفحه — برای ضبط جلسه در اجرای برنامه
   useEffect(() => {
@@ -243,13 +254,20 @@ export function GameShell({
   useEffect(() => {
     if (phase !== 'COUNTDOWN' || countdown === null) return
     if (countdown === 0) {
+      // ورود به ACTIVE فقط در تب نمایان — اگر کاربر تب را مخفی کرده،
+      // مکث کن؛ رویداد visibilitychange روی شروع این افکت، پس از بازگشت
+      // کاربر دوباره اجرا می‌شود (visibilityTick در وابستگی‌ها)
+      if (document.hidden) return
       manager.beginActive()
       setCountdown(null)
       return
     }
-    const timer = window.setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000)
+    const timer = window.setTimeout(
+      () => setCountdown((c) => (c === null || document.hidden ? c : c - 1)),
+      1000,
+    )
     return () => window.clearTimeout(timer)
-  }, [phase, countdown, manager])
+  }, [phase, countdown, manager, visibilityTick])
 
   const ctx = useMemo<ActiveGameContext | null>(() => {
     if (phase !== 'ACTIVE' || snapshot.currentTrial === null) return null
@@ -264,6 +282,14 @@ export function GameShell({
       paused: snapshot.machine.phase === 'PAUSED',
     }
   }, [phase, snapshot.currentTrial, snapshot.answeredTrials, snapshot.lastOutcome, snapshot.machine.phase, manager])
+
+  // تعداد مراحل واقعی جلسه: config موتور اگر totalTrials داشته باشد (برای
+  // بازی‌هایی که تعداد مرحله به سطح وابسته است — مثل حافظهٔ انجمنی که در
+  // سطح‌های بالا بلوک آزمونِ دوباره دارد) وگرنه متای رجیستری
+  const totalTrials =
+    (config as ExerciseConfig & { totalTrials?: number }).totalTrials ??
+    registered.meta.plannedTrials ??
+    0
 
   return (
     // data-trial-index: قلاب پایدار E2E — سنکرون روی «رندر مرحلهٔ بعدی» (نه ثبت
@@ -286,26 +312,24 @@ export function GameShell({
               className={styles.progressBar}
               data-testid="session-progress-bar"
               role="progressbar"
-              aria-label={`مرحلهٔ ${toFaDigits(snapshot.answeredTrials)} از ${toFaDigits(registered.meta.plannedTrials ?? 0)}`}
+              aria-label={`مرحلهٔ ${toFaDigits(snapshot.answeredTrials)} از ${toFaDigits(totalTrials)}`}
               aria-valuemin={0}
-              aria-valuemax={registered.meta.plannedTrials ?? 0}
+              aria-valuemax={totalTrials}
               aria-valuenow={snapshot.answeredTrials}
             >
               <span
                 className={styles.progressBarFill}
                 style={{
                   transform: `scaleX(${
-                    registered.meta.plannedTrials && registered.meta.plannedTrials > 0
-                      ? Math.min(1, snapshot.answeredTrials / registered.meta.plannedTrials)
-                      : 0
+                    totalTrials > 0 ? Math.min(1, snapshot.answeredTrials / totalTrials) : 0
                   })`,
                 }}
               />
             </span>
             {/* متن مرحله برای بینندگان — بدون aria-label تکراری (روی عنصر
-                بدون نقش معنا ندارد و صفحه‌خوان دوبار می‌خواند) */}
+                بدون نقش معنا ندارد و صفحه‌خوان دوباره می‌خواند) */}
             <span className={styles.progress}>
-              مرحله {toFaDigits(snapshot.answeredTrials)} / {toFaDigits(registered.meta.plannedTrials ?? 0)}
+              مرحله {toFaDigits(snapshot.answeredTrials)} / {toFaDigits(totalTrials)}
             </span>
             <button
               type="button"

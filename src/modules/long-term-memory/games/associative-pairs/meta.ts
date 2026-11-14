@@ -20,6 +20,8 @@ export const ASSOCIATIVE_PAIRS_META_FA: Pick<
     'دقت بلوک اول و بلوک یادآوری جداگانه گزارش می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
+  // کفِ سطح ۱ برای کاتالوگ/برآورد برنامه؛ تعداد واقعی مراحل به سطح وابسته
+  // است (config.totalTrials = ۸/۱۰/۱۸/۲۱/۲۴) و GameShell از config می‌خواند
   plannedTrials: 8,
   metricLabelsFa: {
     studiedPairs: 'جفت‌های مطالعه‌شده',

@@ -39,6 +39,12 @@ export interface AssociativePairsConfig extends ExerciseConfig {
   readonly hasRetestBlock: boolean
   /** مدت نمایش هر جفت در بلوک مطالعه (ms) */
   readonly studyDisplayMs: number
+  /**
+   * مراحل واقعی جلسه = جفت‌ها × (۱ مطالعه + بلوک‌های آزمون): ۸/۱۰/۱۸/۲۱/۲۴
+   * برحسب سطح. GameShell نوار پیشرفت را از همین عدد می‌سازد؛ متای
+   * رجیستری فقط کفِ سطح ۱ را برای کاتالوگ برنامه نگه می‌دارد.
+   */
+  readonly totalTrials: number
 }
 
 export interface AssociativePairsPlanItem {
@@ -72,7 +78,7 @@ export type AssociativePairsAnswer = number | null
 
 export const ASSOCIATIVE_PAIRS_ID = 'associative-pairs'
 export const ASSOCIATIVE_PAIRS_VERSION = '1.0.0'
-export const ASSOCIATIVE_PAIRS_CONTENT_VERSION = '1'
+export const ASSOCIATIVE_PAIRS_CONTENT_VERSION = '2'
 
 /** K جفت بر حسب دشواری ۱..۵ */
 const PAIR_COUNT_BY_DIFFICULTY: readonly number[] = [4, 5, 6, 7, 8]
@@ -85,12 +91,15 @@ export function configForDifficulty(difficulty: number): AssociativePairsConfig 
     throw new RangeError('دشواری باید بین ۱ تا ۵ باشد')
   }
   const level = difficulty - 1
+  const pairCount = PAIR_COUNT_BY_DIFFICULTY[level] as number
+  const hasRetestBlock = HAS_RETEST_BY_DIFFICULTY[level] as boolean
   return {
     difficulty,
-    pairCount: PAIR_COUNT_BY_DIFFICULTY[level] as number,
+    pairCount,
     choiceCount: CHOICE_COUNT_BY_DIFFICULTY[level] as number,
-    hasRetestBlock: HAS_RETEST_BY_DIFFICULTY[level] as boolean,
+    hasRetestBlock,
     studyDisplayMs: STUDY_DISPLAY_MS_BY_DIFFICULTY[level] as number,
+    totalTrials: pairCount * (hasRetestBlock ? 3 : 2),
   }
 }
 
@@ -202,12 +211,25 @@ export const associativePairsDefinition: ExerciseDefinition<
   },
 
   getSummary(state): ExerciseSummary {
-    const totals = summarizeOutcomes(state.results)
     const testResults = state.results.filter((r) => (r.stimulus as { phase?: string }).phase === 'test')
+    // شمارش‌ها و دقت فقط از مراحل آزمون — رکوردهای مطالعه (تماشا، همیشه
+    // «درست») دقت را متورم نمی‌کنند و آستانهٔ ارتقای دشواری تطبیقی (۸۰٪)
+    // دیگر با پاسخ‌های مجانی رد نمی‌شود (در v1، سطح ۱ با حافظهٔ صفر
+    // دقت ۵۰٪ می‌گرفت — contentVersion 2)
+    const totals = summarizeOutcomes(testResults)
     const pct = (rs: readonly RecordedTrial[]) =>
       rs.length === 0 ? 0 : Math.round((rs.filter((r) => r.correct).length / rs.length) * 100)
     const firstBlock = testResults.filter((r) => (r.stimulus as { block?: number }).block === 1)
     const secondBlock = testResults.filter((r) => (r.stimulus as { block?: number }).block === 2)
+    const metrics: Record<string, number> = {
+      studiedPairs: state.config.pairCount,
+      firstBlockAccuracy: pct(firstBlock),
+    }
+    // بلوک دوباره فقط در سطح ۳+ هست — بدون داده، کلید منتشر نمی‌شود
+    // (الگوی صداقت متریک؛ در v1 صفرِ جعلی گزارش می‌شد)
+    if (secondBlock.length > 0) {
+      metrics.secondBlockAccuracy = pct(secondBlock)
+    }
     return {
       exerciseId: ASSOCIATIVE_PAIRS_ID,
       sessionId: state.sessionId,
@@ -216,12 +238,7 @@ export const associativePairsDefinition: ExerciseDefinition<
       domain: 'long-term-memory',
       difficulty: state.config.difficulty,
       ...totals,
-      metrics: {
-        studiedPairs: state.config.pairCount,
-        firstBlockAccuracy: pct(firstBlock),
-        // سطح ۱و۲ بلوک دوباره ندارند — صفر گزارش می‌شود (برچسب توضیح می‌دهد)
-        secondBlockAccuracy: pct(secondBlock),
-      },
+      metrics,
     }
   },
 }

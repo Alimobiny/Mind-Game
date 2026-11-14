@@ -59,7 +59,9 @@ export interface ExerciseTrial {
   /**
    * مهلت پاسخ از لحظه نمایش محرک (میلی‌ثانیه).
    * null = بی‌مهلت (بازی‌های غیرزمانی مثل Calculation × 20).
-   * SessionManager با رسیدن مهلت، submitAnswer با answer=null صدا می‌زند.
+   * توجه: SessionManager خودش تایمر مهلتی ندارد — مسئولیت اجرای مهلت با
+   * کامپوننت بازی است که timeRemainingMs را چک و در انقضا submitAnswer با
+   * answer=null می‌زند (الگوی رایج در کامپوننت‌های بازی ببینید).
    */
   readonly responseWindowMs: number | null
 }

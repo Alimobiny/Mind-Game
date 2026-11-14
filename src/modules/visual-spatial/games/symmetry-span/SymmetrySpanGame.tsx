@@ -72,7 +72,13 @@ export function SymmetrySpanGame({ ctx }: { ctx: ActiveGameContext }) {
                 }
               : null,
           ).then((result) => {
-            if (result.accepted && !result.sessionCompleted) {
+            if (!result.accepted) {
+              // persist_failed: مدیر rollback کرده — قفل باز بماند (مسیر
+              // submitSet همین را دارد؛ مسیر مهلت هم باید داشته باشد)
+              submittedRef.current = false
+              return
+            }
+            if (!result.sessionCompleted) {
               try {
                 ctx.advance()
               } catch {

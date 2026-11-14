@@ -22,7 +22,7 @@ export function ReadingAloudGame({ ctx }: { ctx: ActiveGameContext }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [elapsedSec, setElapsedSec] = useState(0)
   const [answers, setAnswers] = useState<readonly (number | null)[]>(
-    trial.passage.questions.map(() => null),
+    trial.questions.map(() => null),
   )
   const timersRef = useRef<number[]>([])
   const submittedRef = useRef(false)
@@ -33,7 +33,7 @@ export function ReadingAloudGame({ ctx }: { ctx: ActiveGameContext }) {
     submittedRef.current = false
     setPhase('idle')
     setElapsedSec(0)
-    setAnswers(trial.passage.questions.map(() => null))
+    setAnswers(trial.questions.map(() => null))
     for (const t of timersRef.current) window.clearInterval(t)
     timersRef.current = []
     return () => {
@@ -126,7 +126,7 @@ export function ReadingAloudGame({ ctx }: { ctx: ActiveGameContext }) {
       {phase === 'questions' ? (
         <div className={styles.questionsArea} data-testid="ra-questions">
           <p className={gameStyles.hint}>متن را به یاد بیار و پاسخ بده</p>
-          {trial.passage.questions.map((question, qi) => (
+          {trial.questions.map((question, qi) => (
             <div key={qi} className={styles.questionBlock}>
               <p className={styles.questionPrompt}>{question.prompt}</p>
               <div className={styles.choiceGrid} role="group" aria-label={`سؤال ${toFaDigits(qi + 1)}`}>

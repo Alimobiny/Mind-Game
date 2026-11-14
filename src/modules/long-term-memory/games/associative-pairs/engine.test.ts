@@ -92,10 +92,27 @@ describe('امتیازدهی و خلاصه', () => {
     expect(summary.metrics.secondBlockAccuracy).toBe(0)
   })
 
-  it('سطح ۱: متریک بلوک دوم صفر گزارش می‌شود (بدون بازآزمون)', () => {
+  it('سطح ۱: بدون بازآزمون، کلید بلوک دوم منتشر نمی‌شود (صداقت متریک)', () => {
     const { state } = fullSession(1, (t) => (t.item.phase === 'study' ? null : t.item.correctIndex))
     const summary = def.getSummary(state)
-    expect(summary.metrics).toMatchObject({ firstBlockAccuracy: 100, secondBlockAccuracy: 0 })
+    expect(summary.metrics).toMatchObject({ firstBlockAccuracy: 100 })
+    expect(summary.metrics).not.toHaveProperty('secondBlockAccuracy')
+  })
+
+  it('دقت فقط از مراحل آزمون — مطالعه دقت را متورم نمی‌کند (contentVersion 2)', () => {
+    // همهٔ آزمون‌ها غلط: در v1 رکوردهای مطالعه (همیشه درست) دقت ۵۰٪
+    // می‌ساختند و آستانهٔ ۸۰٪ ارتقای دشواری تطبیقی را به‌صورت کاذب نزدیک
+    // می‌کردند؛ حالا باید صفر خالص باشد
+    const { state } = fullSession(1, (t) =>
+      t.item.phase === 'study' ? null : (t.item.correctIndex + 1) % t.item.choices.length,
+    )
+    const summary = def.getSummary(state)
+    expect(summary.accuracy).toBe(0)
+    expect(summary.totalTrials).toBe(configForDifficulty(1).pairCount) // فقط آزمون‌ها
+  })
+
+  it('config.totalTrials مراحل واقعی جلسه را برحسب سطح می‌دهد (۸/۱۰/۱۸/۲۱/۲۴)', () => {
+    expect([1, 2, 3, 4, 5].map((d) => configForDifficulty(d).totalTrials)).toEqual([8, 10, 18, 21, 24])
   })
 
   it('مطالعه همیشه درست ثبت می‌شود (در دقت بی‌اثر)', () => {

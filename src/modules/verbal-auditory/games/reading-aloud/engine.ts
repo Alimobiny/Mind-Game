@@ -7,6 +7,7 @@ import type {
   RecordedTrial,
 } from '../../../../core/types'
 import { SeededRandom } from '../../../../core/randomization/seeded-random'
+import { deriveTrialSeed } from '../../../../core/randomization/derive-seed'
 import { accuracyPercent, summarizeOutcomes } from '../../../../core/scoring/scoring'
 import { countPersianWords } from '../../../../utils/persian'
 
@@ -185,6 +186,13 @@ export interface ReadingAloudState extends ExerciseState<ReadingAloudConfig> {
 export interface ReadingAloudTrial extends ExerciseTrial {
   readonly trialIndex: number
   readonly passage: ReadingPassage
+  /**
+   * سؤال‌های این مرحله با گزینه‌های بُرخورده — بانک، گزینهٔ درست را همیشه
+   * در جایگاه صفر نگه می‌داشت (تصادفی‌سازی در زمان ساخت انجام نشده بود)؛
+   * بُر زدن per-trial با بذر مرحله انجام می‌شود و جایگاه پاسخ درست در
+   * هر مرحله/بذر متفاوت است (contentVersion 2).
+   */
+  readonly questions: readonly ReadingQuestion[]
   /** شمارش واژهٔ متن — محاسبه در زمان ساخت مرحله */
   readonly wordCount: number
 }
@@ -197,7 +205,7 @@ export interface ReadingAloudAnswer {
 
 export const READING_ALOUD_ID = 'reading-aloud'
 export const READING_ALOUD_VERSION = '1.0.0'
-export const READING_ALOUD_CONTENT_VERSION = '1'
+export const READING_ALOUD_CONTENT_VERSION = '2'
 
 const TOTAL_TRIALS = 3
 
@@ -253,9 +261,21 @@ export const readingAloudDefinition: ExerciseDefinition<
     }
     const bankIndex = state.order[state.drawn] as number
     const passage = PASSAGE_BANK_FA[bankIndex] as ReadingPassage
+    // بُر زدن گزینه‌های هر سؤال با بذر مرحله — پاسخ درست دیگر لکه‌نشان
+    // نیست (در v1 همیشه گزینهٔ نخست بود: همیشه‌انتخابِ گزینهٔ اول = ۱۰۰٪)
+    const rng = new SeededRandom(deriveTrialSeed(state.seed, state.nextTrialIndex))
+    const questions: ReadingQuestion[] = passage.questions.map((question) => {
+      const choices = rng.shuffle([...question.choices])
+      return {
+        prompt: question.prompt,
+        choices,
+        correctIndex: choices.indexOf(question.choices[question.correctIndex] as string),
+      }
+    })
     const trial: ReadingAloudTrial = {
       trialIndex: state.nextTrialIndex,
       passage,
+      questions,
       wordCount: countPersianWords(passage.text),
       responseWindowMs: null,
     }
@@ -274,21 +294,21 @@ export const readingAloudDefinition: ExerciseDefinition<
     const trial = state.currentTrial
     if (!trial) throw new Error('مرحله فعلی برای ثبت پاسخ وجود ندارد')
 
-    const answers = answer?.answers ?? trial.passage.questions.map(() => null)
+    const answers = answer?.answers ?? trial.questions.map(() => null)
     const allCorrect =
       answer !== null &&
-      trial.passage.questions.every((q, i) => answers[i] === q.correctIndex)
+      trial.questions.every((q, i) => answers[i] === q.correctIndex)
 
     const record: RecordedTrial = {
       trialIndex: trial.trialIndex,
       stimulus: {
         text: trial.passage.text,
         level: trial.passage.level,
-        questions: trial.passage.questions,
+        questions: trial.questions,
         readingMs: answer?.readingMs ?? null,
         answers,
       },
-      expected: trial.passage.questions.map((q) => q.correctIndex),
+      expected: trial.questions.map((q) => q.correctIndex),
       given: answer === null ? null : answers,
       outcome: answer === null ? 'omission' : allCorrect ? 'correct' : 'incorrect',
       correct: answer !== null && allCorrect,

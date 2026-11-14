@@ -56,8 +56,14 @@ export function PatternCompletionGame({ ctx }: { ctx: ActiveGameContext }) {
     if (submittedRef.current || ctx.paused) return
     submittedRef.current = true
     void ctx.submit(index).then((result) => {
+      if (!result.accepted) {
+        // persist_failed: مدیر rollback کرده — قفل باز بماند تا تلاش
+        // مجدد ممکن باشد (وگرنه جلسه تا abort قفل می‌شد)
+        submittedRef.current = false
+        return
+      }
       // advance روی جلسه تمام‌شده (آخرین گزینه) خطا می‌دهد
-      if (result.accepted && !result.sessionCompleted) {
+      if (!result.sessionCompleted) {
         try {
           ctx.advance()
         } catch {

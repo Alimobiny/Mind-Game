@@ -8,6 +8,7 @@ import {
   DAILY_HARD_MAX_MINUTES,
   DAILY_TARGET_MINUTES,
   MAX_ITEMS_PER_DAY,
+  anchorDomainForDate,
   generateDailyPlan,
 } from './generate-daily-plan'
 import { estimateExerciseMinutes } from './time-estimation'
@@ -121,6 +122,28 @@ describe('تولید برنامه روزانه — قطعیت', () => {
 })
 
 describe('تولید برنامه روزانه — پوشش و فاصله‌گذاری', () => {
+  it('در هر بلوک ۸روزه هر حوزه دقیقاً یک‌بار لنگر می‌شود (رگرسیون چرخش بلوکی)', () => {
+    // رگرسیون: چرخش قبلی «هفتگی» با ۸ حوزه اندیس ۰..۶ داشت و حوزهٔ هشتم
+    // (حافظهٔ بلندمدت) هرگز لنگر روز نمی‌شد؛ حالا جایگشت روی بلوک ۸روزه است
+    // پنجره باید بلوک‌هم‌تراز باشد (2026-11-03 مبدأ بلوک است) — پنجرهٔ
+    // ناهم‌تراز از دو جایگشت مستقل عبور می‌کند و تکرار طبیعی است
+    const anchors = Array.from({ length: 8 }, (_, i) => {
+      const d = new Date('2026-11-03T00:00:00Z')
+      d.setUTCDate(d.getUTCDate() + i)
+      return anchorDomainForDate(d.toISOString().slice(0, 10))
+    })
+    expect(new Set(anchors).size).toBe(COGNITIVE_DOMAINS.length)
+    // در پنجرهٔ ۴۰روزه (۵ بلوک کامل) هر حوزه دقیقاً ۵ بار لنگر می‌شود
+    const counts = new Map<CognitiveDomain, number>()
+    for (let i = 0; i < 40; i += 1) {
+      const d = new Date('2026-11-03T00:00:00Z')
+      d.setUTCDate(d.getUTCDate() + i)
+      const anchor = anchorDomainForDate(d.toISOString().slice(0, 10))
+      counts.set(anchor, (counts.get(anchor) ?? 0) + 1)
+    }
+    expect([...counts.values()].every((c) => c === 5)).toBe(true)
+  })
+
   it('در طول هفته هر ۷ حوزه دست‌کم یک‌بار پوشش داده می‌شود', () => {
     const catalog = realCatalog()
     const domainById = new Map(catalog.map((e) => [e.exerciseId, e.domain] as const))

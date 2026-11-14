@@ -73,14 +73,14 @@ export const BLEND_BANK_FA: readonly BlendEntry[] = [
   { word: 'پرچمدار', parts: ['پرچم', 'دار'], level: 4 }, // پرچم + دار
   { word: 'هندوانه', parts: ['هندو', 'انه'], level: 4 }, // هندو + انه
   // ─── سطح ۵ — مرکب‌های طولانی و کمتر رایج ───
-  { word: 'چراغدان', parts: ['چراغ', 'دان'], level: 5 }, // چراغ + دان
-  { word: 'پنبهزن', parts: ['پنبه', 'زن'], level: 5 }, // پنبه + زن
-  { word: 'چایدان', parts: ['چای', 'دان'], level: 5 }, // چای + دان
+  { word: 'چراغ‌دان', parts: ['چراغ', 'دان'], level: 5 }, // چراغ + دان
+  { word: 'پنبه‌زن', parts: ['پنبه', 'زن'], level: 5 }, // پنبه + زن
+  { word: 'چای‌دان', parts: ['چای', 'دان'], level: 5 }, // چای + دان
   { word: 'شتربان', parts: ['شتر', 'بان'], level: 5 }, // شتر + بان
   { word: 'کفشدوزن', parts: ['کفش', 'دوزن'], level: 5 }, // کفش + دوزن
   { word: 'دریانوردی', parts: ['دریا', 'نوردی'], level: 5 }, // دریا + نوردی
-  { word: 'آتشنشانی', parts: ['آتش', 'نشانی'], level: 5 }, // آتش + نشانی
-  { word: 'دستمالکاغذی', parts: ['دستمال', 'کاغذی'], level: 5 }, // دستمال + کاغذی
+  { word: 'آتش‌نشانی', parts: ['آتش', 'نشانی'], level: 5 }, // آتش + نشانی
+  { word: 'دستمال‌کاغذی', parts: ['دستمال', 'کاغذی'], level: 5 }, // دستمال + کاغذی
 ]
 
 export interface WordBlendConfig extends ExerciseConfig {
@@ -107,13 +107,15 @@ export interface WordBlendTrial extends ExerciseTrial {
   readonly choices: readonly string[]
   readonly correctIndex: number
   readonly partGapMs: number
+  /** سرعت گفتار قطعات از config — کامپوننت TTS از همین می‌خواند (v2) */
+  readonly speechRate: number
 }
 
 export type WordBlendAnswer = number | null
 
 export const WORD_BLEND_ID = 'word-blend'
 export const WORD_BLEND_VERSION = '1.0.0'
-export const WORD_BLEND_CONTENT_VERSION = '1'
+export const WORD_BLEND_CONTENT_VERSION = '2' // v2: املای درست مرکب‌ها با نیم‌فاصله + سیم‌کشی speechRate به کامپوننت
 
 const TOTAL_TRIALS = 12
 const PART_GAP_MS_BY_DIFFICULTY: readonly number[] = [1200, 1000, 900, 800, 700]
@@ -198,6 +200,7 @@ export const wordBlendDefinition: ExerciseDefinition<
       choices,
       correctIndex: choices.indexOf(entry.word),
       partGapMs: state.config.partGapMs,
+      speechRate: state.config.speechRate,
       responseWindowMs: null,
     }
     return {

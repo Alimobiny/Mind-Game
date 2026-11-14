@@ -82,6 +82,20 @@ describe('طرح جلسه', () => {
       }
     }
   })
+
+  it('چیدمان با حذف یک حرف به ترتیب واژه نمی‌رسد — فریبِ ابتدا هم رد می‌شود (رگرسیون v2)', () => {
+    // در v1 فقط «حروف اصلی = خود واژه» چک می‌شد؛ فریب در ابتدا + بقیهٔ
+    // حروف به‌ترتیبِ واژه پاس می‌شد و معما عملاً حل‌شده دیده می‌شد
+    for (const difficulty of [4, 5]) {
+      const { trials } = fullSession(difficulty, (t) => t.target)
+      for (const t of trials) {
+        for (let skip = 0; skip < t.letters.length; skip += 1) {
+          const rest = t.letters.filter((_, i) => i !== skip).join('')
+          expect(rest).not.toBe(t.target)
+        }
+      }
+    }
+  })
 })
 
 describe('داوری و امتیازدهی', () => {
