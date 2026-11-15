@@ -1,71 +1,66 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 /**
- * E2E طبقه‌بندی — سه نمای گروه‌بندی فهرست اصلی (حوزه / نوع تمرین / اثر شناختی)
- * با بخش‌های تاشو و نوار جستجوی دسترسی سریع:
- * هر نما هر ۳۷ تمرین را دقیقاً یک‌بار نشان می‌دهد و پیمایش تا picker سالم است.
+ * E2E کتابخانهٔ فهرست اصلی — کارت «تمرین امروز» + فهرست متراکم با نوار
+ * فیلتر چسبان (تب حوزه + خانواده + ترتیب) و جستجوی دسترسی سریع:
+ * تب «همه» هر ۳۷ تمرین را یک‌جا نشان می‌دهد؛ فیلترها زیرمجموعه درست
+ * می‌دهند و پیمایش تا picker سالم است.
  */
 
 const TOTAL_EXERCISES = 37
 
-/** باز کردن همهٔ بخش‌های تاشو — پیش از شمارش کارت‌ها.
- *  همیشه «نخستینِ بسته» کلیک می‌شود؛ باز شدنِ هر بخش فهرست بسته‌ها را
- *  جابه‌جا می‌کند و اندیس گرفتنِ یک‌باره برای nth خطای کهنه می‌دهد. */
-async function expandAllSections(page: Page): Promise<void> {
-  const collapsed = page.locator('[data-testid="section-toggle"][aria-expanded="false"]')
-  while ((await collapsed.count()) > 0) {
-    await collapsed.first().click()
-  }
-}
-
-test.describe('طبقه‌بندی فهرست تمرین‌ها', () => {
-  test('سه نمای گروه‌بندی: سرفصل‌ها عوض می‌شوند و هر نما همهٔ ۳۷ تمرین را یک‌بار دارد', async ({
+test.describe('کتابخانهٔ تمرین‌ها (تب حوزه + فیلتر خانواده)', () => {
+  test('کارت «تمرین امروز» بالای کتابخانه و تب همه هر ۳۷ تمرین را یک‌جا دارد', async ({
     page,
   }) => {
     await page.goto('/')
 
-    // نمای پیش‌فرض: حوزهٔ شناختی
-    const domainBtn = page.getByTestId('view-domain')
-    await expect(domainBtn).toBeVisible()
-    await expect(domainBtn).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('heading', { name: 'حافظه کاری' })).toBeVisible()
-    await expandAllSections(page)
-    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(TOTAL_EXERCISES)
+    // کارت قهرمان امروز — عنوان + دکمهٔ مسیر برنامه
+    await expect(page.getByRole('heading', { name: 'تمرین امروز' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /شروع برنامهٔ امروز|ادامهٔ اجرای امروز|مشاهدهٔ برنامه/ })).toBeVisible()
 
-    // نمای نوع تمرین — سرفصل‌های جدید، بدون سرفصل حوزه
-    await page.getByTestId('view-type').click()
-    await expect(page.getByTestId('view-type')).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('heading', { name: 'عددی و محاسبه‌ای' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'حافظه کاری' })).toBeHidden()
-    await expandAllSections(page)
-    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(TOTAL_EXERCISES)
-
-    // نمای اثر شناختی — سرفصل‌های اثر (برچسب حوزه‌ها)، بازی‌ها زیر اثر اصلی‌شان
-    await page.getByTestId('view-effect').click()
-    await expect(page.getByTestId('view-effect')).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('heading', { name: 'حافظه کاری' })).toBeVisible()
-    await expandAllSections(page)
-    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(TOTAL_EXERCISES)
-
-    // نمای خانوادهٔ پارادایمی — سرفصل‌های خانواده؛ ان-بک دوگانه دو عضو دارد
-    await page.getByTestId('view-family').click()
-    await expect(page.getByTestId('view-family')).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('heading', { name: 'ان-بک دوگانه' })).toBeVisible()
-    await expandAllSections(page)
+    // تب پیش‌فرض «همه» — همهٔ ردیف‌ها بدون بازکردن هیچ چیزی
+    await expect(page.getByTestId('domain-tab-all')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('heading', { name: /کتابخانهٔ تمرین‌ها/ })).toBeVisible()
     await expect(page.locator('main a[href^="/play/"]')).toHaveCount(TOTAL_EXERCISES)
   })
 
-  test('جستجو: عبارت لاتین شناسه بازی را می‌یابد (n-back/pasat)', async ({ page }) => {
+  test('تب حوزه فهرست را فیلتر می‌کند و برمی‌گرداند', async ({ page }) => {
     await page.goto('/')
-    await page.getByTestId('game-search').fill('pasat')
-    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(1)
-    await expect(page.getByRole('link', { name: /جمع زنجیره‌ای گام‌دار/ })).toBeVisible()
 
-    await page.getByTestId('game-search').fill('n-back')
-    const nbackLinks = page.locator('main a[href^="/play/"]')
-    await expect(nbackLinks.first()).toBeVisible()
-    // سه عضو خانوادهٔ ان-بک: n-back و دو dual — هر سه لاتینِ «n-back» را دارند
-    await expect(nbackLinks).toHaveCount(3)
+    // تب حوزهٔ توجه — فقط ۵ ردیف همان حوزه
+    await page.getByTestId('domain-tab-attention-control').click()
+    await expect(page.getByTestId('domain-tab-attention-control')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(5)
+    await expect(page.locator('main a[href^="/play/"][data-domain="attention-control"]')).toHaveCount(5)
+
+    // بازگشت به «همه» — دوباره ۳۷ ردیف
+    await page.getByTestId('domain-tab-all').click()
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(TOTAL_EXERCISES)
+  })
+
+  test('فیلتر خانواده زیرمجموعهٔ درست می‌دهد و با تعویض تب پاک می‌شود', async ({ page }) => {
+    await page.goto('/')
+
+    // خانوادهٔ ان-بک در «همه» — فقط ان-بک تکی
+    await page.getByTestId('family-filter').selectOption('n-back')
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(1)
+    await expect(page.getByRole('link', { name: /^ان-بک(?! دوگانه)/ })).toBeVisible()
+
+    // خانوادهٔ دهانهٔ مرکب — دو عضو در دو حوزهٔ متفاوت
+    await page.getByTestId('family-filter').selectOption('complex-span')
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(2)
+
+    // خانوادهٔ کورسی فقط در دیداری-فضایی است — با رفتن به حافظهٔ کاری پاک می‌شود
+    await page.getByTestId('family-filter').selectOption('corsi')
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(1)
+    await page.getByTestId('domain-tab-working-memory').click()
+    const value = await page.getByTestId('family-filter').inputValue()
+    expect(value).toBe('')
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(6)
   })
 
   test('از جستجو، پیمایش تا picker سالم است', async ({ page }) => {
@@ -73,35 +68,14 @@ test.describe('طبقه‌بندی فهرست تمرین‌ها', () => {
 
     // جستجوی «ان-بک دوگانه» — لنگر لازم است («ان-بک» و «ان-بک دوگانهٔ
     // شنیداری» هر دو پیشوند مشترک‌اند و strict mode می‌شکند؛ نام
-    // دسترس‌پذیر کارت توضیح را هم دارد، پس $ کار نمی‌کند)
+    // دسترس‌پذیر ردیف متا را هم دارد، پس $ کار نمی‌کند)
     await page.getByTestId('game-search').fill('ان-بک دوگانه')
     const nback = page.getByRole('link', { name: /^ان-بک دوگانه(?!.*شنیداری)/ })
     await expect(nback).toBeVisible()
     await nback.click()
 
-    await expect(page.getByTestId('view-type')).toBeHidden()
+    await expect(page.getByTestId('domain-tab-all')).toBeHidden()
     await expect(page.getByRole('radiogroup', { name: 'سطح دشواری' })).toBeVisible()
-  })
-
-  test('بخش‌های تاشو: پیش‌فرض فقط نخستین بخش باز؛ کلیک می‌بندد و باز می‌کند', async ({
-    page,
-  }) => {
-    await page.goto('/')
-
-    const toggles = page.locator('[data-testid="section-toggle"]')
-    await expect(toggles.first()).toBeVisible()
-    // فقط یک بخش باز است
-    await expect(page.locator('[data-testid="section-toggle"][aria-expanded="true"]')).toHaveCount(1)
-    // بازی‌های بخش اول دیده می‌شوند
-    await expect(page.locator('main a[href^="/play/"]').first()).toBeVisible()
-
-    // بستن بخش باز → هیچ بازی‌ای در DOM نیست (فهرست فشرده)
-    await page.locator('[data-testid="section-toggle"][aria-expanded="true"]').click()
-    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(0)
-
-    // باز کردن بخش دوم → کارت‌های همان بخش ظاهر می‌شوند
-    await toggles.nth(1).click()
-    await expect(page.locator('main a[href^="/play/"]').first()).toBeVisible()
   })
 
   test('جستجو: فیلتر زندهٔ نام بازی + حالت خالی + بازگشت با پاک‌کردن', async ({ page }) => {
@@ -117,9 +91,22 @@ test.describe('طبقه‌بندی فهرست تمرین‌ها', () => {
     await expect(page.getByTestId('search-empty')).toBeVisible()
     await expect(page.locator('main a[href^="/play/"]')).toHaveCount(0)
 
-    // پاک‌کردن → بازگشت به فهرست تاشوی گروه‌بندی
+    // پاک‌کردن → بازگشت به کتابخانهٔ فیلترشده
     await page.getByTestId('game-search-clear').click()
-    await expect(page.getByTestId('view-domain')).toBeVisible()
-    await expect(page.locator('[data-testid="section-toggle"]').first()).toBeVisible()
+    await expect(page.getByTestId('domain-tab-all')).toBeVisible()
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(TOTAL_EXERCISES)
+  })
+
+  test('جستجو: عبارت لاتین شناسهٔ بازی را می‌یابد (n-back/pasat)', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('game-search').fill('pasat')
+    await expect(page.locator('main a[href^="/play/"]')).toHaveCount(1)
+    await expect(page.getByRole('link', { name: /جمع زنجیره‌ای گام‌دار/ })).toBeVisible()
+
+    await page.getByTestId('game-search').fill('n-back')
+    const nbackLinks = page.locator('main a[href^="/play/"]')
+    await expect(nbackLinks.first()).toBeVisible()
+    // سه عضو خانوادهٔ ان-بک: n-back و دو dual — هر سه لاتینِ «n-back» را دارند
+    await expect(nbackLinks).toHaveCount(3)
   })
 })

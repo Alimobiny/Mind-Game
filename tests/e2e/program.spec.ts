@@ -9,7 +9,9 @@ import { expect, test } from '@playwright/test'
 test.describe('برنامه امروز من', () => {
   test('از صفحه اصلی باز می‌شود، ۳ تا ۴ آیتم دارد و لینک شروع کار می‌کند', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('link', { name: 'برنامه امروز من' }).click()
+    // ورود از کارت «تمرین امروز» صفحهٔ اصلی (پیش از این کارت کوچک
+    // «برنامه امروز من» در هدر بود — بازطراحی نشست ۱۵)
+    await page.getByTestId('today-cta').click()
 
     await expect(page.getByRole('heading', { name: 'برنامه امروز من' })).toBeVisible()
     // خط صادقانه درباره هدف ۱۵ تا ۲۰ دقیقه

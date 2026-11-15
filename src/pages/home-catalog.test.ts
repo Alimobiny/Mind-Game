@@ -1,40 +1,78 @@
 import { describe, expect, it } from 'vitest'
 import { GAME_CATALOG } from '../modules/catalog'
-import { activeCatalogDomains, groupCatalog, searchCatalog } from './home-catalog'
+import {
+  activeCatalogDomains,
+  familyOptions,
+  filterCatalog,
+  searchCatalog,
+  type LastPlayedIndex,
+} from './home-catalog'
 
 /**
- * منطق خالص فهرست خانگی — گروه‌بندی چهارنما و جست‌وجوی گسترش‌یافته
- * (نام انگلیسی/شناسه/خانواده/کلیدواژه) مستقیماً روی کاتالوگ واقعی.
+ * منطق خالص کتابخانهٔ فهرست خانگی — فیلتر (حوزه/خانواده)، مرتب‌سازی و
+ * جست‌وجوی گسترش‌یافته (نام انگلیسی/شناسه/خانواده/کلیدواژه) روی کاتالوگ واقعی.
  */
-describe('groupCatalog — چهار نمای گروه‌بندی', () => {
-  it('در هر نما هر تمرین دقیقاً یک‌بار ظاهر می‌شود', () => {
-    for (const mode of ['domain', 'type', 'effect', 'family'] as const) {
-      const all = groupCatalog(GAME_CATALOG, mode).flatMap((g) => g.list.map((m) => m.id))
-      expect(all, mode).toHaveLength(GAME_CATALOG.length)
-      expect(new Set(all).size, mode).toBe(GAME_CATALOG.length)
+describe('filterCatalog — فیلتر و مرتب‌سازی کتابخانه', () => {
+  it('بدون فیلتر، همهٔ ۳۷ تمرین را با ترتیب پیش‌فرض می‌دهد', () => {
+    const all = filterCatalog(GAME_CATALOG, {})
+    expect(all).toHaveLength(37)
+    expect(all).toBe(GAME_CATALOG)
+  })
+
+  it('فیلتر حوزه فقط بازی‌های همان حوزه را می‌دهد', () => {
+    const attention = filterCatalog(GAME_CATALOG, { domain: 'attention-control' })
+    expect(attention).toHaveLength(5)
+    expect(attention.every((m) => m.domain === 'attention-control')).toBe(true)
+  })
+
+  it('فیلتر خانواده + حوزه با هم: complex-span در working-memory فقط ospan', () => {
+    const ospan = filterCatalog(GAME_CATALOG, {
+      domain: 'working-memory',
+      family: 'complex-span',
+    })
+    expect(ospan.map((m) => m.id)).toEqual(['operation-span'])
+  })
+
+  it('ترکیب فیلتر بی‌نتیجه، فهرست خالی می‌دهد (نه خطا)', () => {
+    expect(filterCatalog(GAME_CATALOG, { domain: 'sensorimotor', family: 'n-back' })).toEqual([])
+  })
+
+  it('سورت الفبایی: نام‌های فارسی به ترتیب locale فارسی', () => {
+    const alpha = filterCatalog(GAME_CATALOG, { sort: 'alpha' })
+    const names = alpha.map((m) => m.nameFa)
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, 'fa'))
+    expect(names).toEqual(sorted)
+  })
+
+  it('سورت آخرین اجرا: تازه‌ترین اول، بی‌سابقه‌ها آخر به ترتیب پیش‌فرض', () => {
+    const lastPlayed: LastPlayedIndex = {
+      pasat: '2026-11-15',
+      'n-back': '2026-11-14',
+      stroop: '2026-11-13',
     }
+    const recent = filterCatalog(GAME_CATALOG, { sort: 'recent' }, lastPlayed)
+    expect(recent.slice(0, 3).map((m) => m.id)).toEqual(['pasat', 'n-back', 'stroop'])
+    // بی‌سابقه‌ها همه بعد از سابقه‌دارها و به ترتیب پیش‌فرض
+    const firstNever = recent.findIndex((m) => lastPlayed[m.id] === undefined)
+    expect(firstNever).toBe(3)
+    expect(recent.slice(firstNever)).toEqual(
+      GAME_CATALOG.filter((m) => lastPlayed[m.id] === undefined),
+    )
   })
 
-  it('نمای خانواده: بخش‌ها برچسب خانواده دارند و ان-بک‌ها زیر یک سقف‌اند', () => {
-    const familyGroups = groupCatalog(GAME_CATALOG, 'family')
-    expect(familyGroups.every((g) => g.kind === 'family')).toBe(true)
-    const dualGroup = familyGroups.find((g) => g.key === 'dual-n-back')
-    expect(dualGroup?.list.map((m) => m.id).sort()).toEqual(['dual-n-back', 'dual-n-back-auditory'])
-    // دهانهٔ مرکب دو عضو دارد (ospan + symspan) — در دو حوزهٔ متفاوت
-    const spanGroup = familyGroups.find((g) => g.key === 'complex-span')
-    expect(spanGroup?.list).toHaveLength(2)
+  it('activeCatalogDomains همهٔ ۸ حوزه را به ترتیب استاندارد می‌دهد', () => {
+    expect(activeCatalogDomains(GAME_CATALOG)).toHaveLength(8)
+    expect(activeCatalogDomains(GAME_CATALOG)[0]).toBe('working-memory')
   })
 
-  it('نمای نوع: هر بخش فقط بازی‌های همان جنس تکلیف دارد', () => {
-    const typeGroups = groupCatalog(GAME_CATALOG, 'type')
-    const numeric = typeGroups.find((g) => g.key === 'numeric')
-    expect(numeric?.list.every((m) => m.exerciseType === 'numeric')).toBe(true)
-  })
-
-  it('activeCatalogDomains فقط حوزه‌های دارای بازی را به ترتیب استاندارد می‌دهد', () => {
-    const domains = activeCatalogDomains(GAME_CATALOG)
-    expect(domains).toHaveLength(8)
-    expect(domains[0]).toBe('working-memory')
+  it('familyOptions: در کل کاتالوگ همهٔ خانواده‌های دارای بازی؛ محدود به حوزه', () => {
+    const all = familyOptions(GAME_CATALOG)
+    expect(all).toContain('n-back')
+    expect(all).toContain('complex-span')
+    // در حوزهٔ حافظهٔ کاری، خانوادهٔ پاسات نیست
+    const wm = familyOptions(GAME_CATALOG, 'working-memory')
+    expect(wm).not.toContain('pasat')
+    expect(wm).toContain('complex-span')
   })
 })
 

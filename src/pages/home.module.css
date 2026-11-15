@@ -47,7 +47,8 @@
   margin-top: var(--space-1);
 }
 
-.programLink {
+/* کارت قهرمان «تمرین امروز» — هدف روزانه بالای کتابخانه (الگوی Elevate/BrainHQ) */
+.todayHero {
   margin-top: var(--space-4);
   display: flex;
   align-items: center;
@@ -62,61 +63,60 @@
   padding: var(--space-4);
   box-shadow: var(--shadow-1);
   color: var(--color-text);
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.programLink:hover,
-.programLink:focus-visible {
-  transform: translateY(-2px);
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-2);
-}
-
-.programLink:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.programIconWrap {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  flex-shrink: 0;
-  color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 13%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
-}
-
-.programTexts {
+.todayHeroTexts {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
 
-.programTitle {
+.todayHeroTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-weight: 700;
   font-size: 1.05rem;
   color: var(--color-primary);
+  margin: 0;
 }
 
-.programHint {
+.todayHeroMeta {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.86rem;
+}
+
+.todayHeroCta {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-on-primary, #fff);
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.todayHeroCta:hover,
+.todayHeroCta:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2);
+}
+
+.todayHeroCta:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .programArrow {
-  margin-inline-start: auto;
   flex-shrink: 0;
   color: var(--color-text-muted);
   transition: transform 160ms ease;
-}
-
-.programLink:hover .programArrow {
-  transform: translateX(-3px);
-  color: var(--color-primary);
 }
 
 /* کارت فشردهٔ فعالیت — هم‌خانوادهٔ کارت برنامه، ولی با نقشهٔ حرارتی داخلش */
@@ -173,40 +173,95 @@
   white-space: nowrap;
 }
 
-/* سوییچ نمای گروه‌بندی: حوزه / نوع / اثر */
-.viewSwitch {
+/* نوار فیلتر چسبان کتابخانه — تب حوزه + خانواده + ترتیب (الگوی کتابخانهٔ فروشگاهی) */
+.filterBar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-2);
   margin-top: var(--space-4);
+  padding: var(--space-2) 0;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.viewButton {
-  padding: 8px 14px;
+.domainTabs {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+
+.domainTab {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
   border-radius: 999px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text-muted);
-  font-size: 0.85rem;
-  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease,
-    transform 160ms ease;
+  font-size: 0.84rem;
+  white-space: nowrap;
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
-.viewButton:hover {
+.domainTab:hover {
   color: var(--color-text);
-  transform: translateY(-1px);
 }
 
-.viewButton:focus-visible {
+.domainTab:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-.viewButton[aria-pressed='true'] {
+.domainTabActive,
+.domainTab[aria-pressed='true'] {
   background: color-mix(in srgb, var(--color-primary) 15%, transparent);
   border-color: var(--color-primary);
   color: var(--color-primary);
   font-weight: 700;
+}
+
+.domainTabCount {
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+
+.filterSelects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  align-items: center;
+}
+
+.filterField {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.filterField select {
+  font-family: inherit;
+  font-size: 0.84rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  max-width: 46vw;
+}
+
+.filterField select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 .domainSection {
@@ -262,78 +317,14 @@
   padding: var(--space-5) var(--space-3);
 }
 
-.sectionHeading {
-  display: flex;
-  align-items: center;
-  font-size: 1.05rem;
-  color: var(--accent, var(--color-primary));
-  margin-bottom: var(--space-2);
-}
-
-/* سرفصل تاشو — دکمهٔ تمام‌عرض داخل h2 (نقش heading برای تست‌ها حفظ می‌شود) */
-.sectionToggle {
+/* سرفصل کتابخانه/نتایج — ساده و ثابت (بدون تاشو) */
+.libraryHeading {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-2) var(--space-1);
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  color: inherit;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--border-subtle);
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.sectionToggle:hover,
-.sectionToggle:focus-visible {
+  font-size: 1.05rem;
   color: var(--color-primary);
-  outline: none;
-}
-
-.sectionLabel {
-  white-space: nowrap;
-}
-
-/* شورون چرخان — نشانگر باز/بسته */
-.chevron {
-  flex-shrink: 0;
-  width: 9px;
-  height: 9px;
-  margin-inline-start: auto;
-  border-inline-start: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(45deg);
-  transition: transform 0.2s ease;
-  opacity: 0.7;
-}
-
-.chevronOpen {
-  transform: rotate(-135deg);
-}
-
-.sectionIcon {
-  flex-shrink: 0;
-}
-
-.sectionIconWrap {
-  display: inline-grid;
-  place-items: center;
-  flex-shrink: 0;
-  color: var(--type-accent, var(--color-primary));
-}
-
-/* نشان سرفصل‌های نمای خانواده — لوزی کوچک اکسنت (خانواده گلیف اختصاصی ندارد) */
-.sectionFamilyMark {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  background: currentColor;
-  transform: rotate(45deg);
-  opacity: 0.85;
+  margin-bottom: var(--space-2);
 }
 
 .sectionCount {
@@ -343,120 +334,99 @@
   white-space: nowrap;
 }
 
-.exerciseGrid {
-  display: grid;
-  gap: var(--space-3);
-}
-
-/* ورود پلکانی کارت‌ها (با تأخیر inline) */
-.exerciseCard {
+/* فهرست متراکم ردیفی — همهٔ تمرین‌ها در یک نگاه (الگوی کتابخانهٔ فروشگاهی) */
+.gameList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  /* نوار اکسنت حوزهٔ خودِ بازی — همیشه روشنِ ملایم، در هاور کامل */
-  border-inline-start: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  color: var(--color-text);
-  box-shadow: var(--shadow-1);
-  animation: fade-up 380ms ease backwards;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.exerciseCard:hover,
-.exerciseCard:focus-visible {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--color-border));
-  border-inline-start-color: var(--accent);
-  box-shadow: var(--shadow-2);
-}
-
-.exerciseCard:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.exerciseCard:active {
-  transform: translateY(0) scale(0.99);
-}
-
-.cardHead {
+.gameRow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 140ms ease;
+}
+
+.gameRow:first-child {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.gameRow:hover,
+.gameRow:focus-visible {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  outline: none;
+}
+
+.gameRow:focus-visible {
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .typeTile {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
   flex-shrink: 0;
   color: var(--type-accent, var(--color-primary));
   background: color-mix(in srgb, var(--type-accent, var(--color-primary)) 13%, transparent);
   border: 1px solid color-mix(in srgb, var(--type-accent, var(--color-primary)) 28%, transparent);
-  transition: transform 160ms ease;
 }
 
-.exerciseCard:hover .typeTile {
-  transform: scale(1.08) rotate(-3deg);
-}
-
-.cardTexts {
+.rowTexts {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
-.exerciseName {
+.rowName {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
 }
 
-.exerciseDesc {
+.rowMeta {
   color: var(--color-text-muted);
-  font-size: 0.85rem;
-  line-height: 1.8;
-}
-
-/* چیپ‌های نوع/اثر — رنگ از data-type یا data-domain همان چیپ */
-.chipRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.chip {
-  font-size: 0.68rem;
-  padding: 2px 9px;
-  border-radius: 999px;
+  font-size: 0.76rem;
   white-space: nowrap;
-  color: var(--type-accent, var(--accent, var(--color-text-muted)));
-  border: 1px solid color-mix(
-    in srgb,
-    var(--type-accent, var(--accent, var(--color-border))) 32%,
-    transparent
-  );
-  background: color-mix(
-    in srgb,
-    var(--type-accent, var(--accent, var(--color-surface-2))) 9%,
-    transparent
-  );
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.exerciseMeta {
-  font-size: 0.75rem;
-  color: var(--color-primary);
-  margin-top: var(--space-1);
+.rowSide {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
 }
 
-.lastPlayed {
+.rowLast {
   font-size: 0.7rem;
   color: var(--color-text-muted);
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowPlay {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  transition: transform 140ms ease, background-color 140ms ease;
+}
+
+.gameRow:hover .rowPlay {
+  transform: translateX(-2px);
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .comingSoon {
