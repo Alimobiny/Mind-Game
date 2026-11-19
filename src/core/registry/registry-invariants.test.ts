@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createAppRegistry, createExerciseConfig } from '../../modules'
+import { standardStageCount } from '../difficulty/stage-counts'
 
 /**
  * ناوردایی‌های متا↔موتور — رجیستری فقط id/exerciseType/effects را اعتبارسنجی
@@ -40,6 +41,25 @@ describe('ناوردایی‌های متا ↔ موتور', () => {
         config.totalTrials,
         `${meta.id} سطح ${baseDifficulty}: config.totalTrials باید = meta.plannedTrials باشد`,
       ).toBe(planned)
+    }
+  })
+
+  it('تعداد مرحلهٔ config در هر سطح = نردبان سیاست (سطح بالاتر = مراحل بیشتر)', () => {
+    for (const exercise of exercises) {
+      const { meta } = exercise
+      for (const level of meta.difficultyLevels) {
+        const config = createExerciseConfig(meta.id, level) as {
+          totalTrials?: number
+          trials?: number
+          trialCount?: number
+        }
+        const count = config.totalTrials ?? config.trials ?? config.trialCount
+        if (count === undefined) continue
+        expect(
+          count,
+          `${meta.id} سطح ${level}: تعداد مرحلهٔ config باید = نردبان سیاست باشد`,
+        ).toBe(standardStageCount(meta.id, level, meta.plannedTrials))
+      }
     }
   })
 })

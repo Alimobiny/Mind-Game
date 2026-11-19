@@ -76,6 +76,8 @@ export interface OspanSetPlan {
 }
 
 export interface OperationSpanConfig extends ExerciseConfig {
+  /** تعداد دسته‌های جلسه — هر دسته یک «مرحله» است (برای نوار پیشرفت پوسته) */
+  readonly totalTrials: number
   /** طول هر دسته — تعداد عناصر = تعداد مراحل جلسه */
   readonly setLengths: readonly number[]
   /** ۲ = جمع/تفریق · ۳ = +ضرب · ۴ = +تقسیم */
@@ -128,14 +130,39 @@ const MEMORY_DISPLAY_MS_BY_DIFFICULTY: readonly number[] = [2000, 2000, 1800, 16
 const RECALL_WINDOW_MS_BY_DIFFICULTY: readonly number[] = [18000, 20000, 22000, 24000, 26000]
 const REVERSE_RECALL_BY_DIFFICULTY: readonly boolean[] = [false, false, false, false, true]
 
-export function configForDifficulty(difficulty: number): OperationSpanConfig {
+/**
+ * چرخهٔ الگوی طول دسته‌های سطح تا رسیدن به تعداد دستهٔ هدف — سطح بالاتر
+ * (نردبان سیاست مرحله) دسته‌های بیشتری می‌خواهد و الگوی طول همان سطح
+ * تکرار می‌شود تا معنای سطح (۳ تا ۷ آیتم) حفظ بماند.
+ */
+function scaleSetLengths(levelLengths: readonly number[], setCount?: number): readonly number[] {
+  if (setCount === undefined) return levelLengths
+  if (setCount < 2) {
+    throw new RangeError('تعداد دسته باید حداقل ۲ باشد')
+  }
+  return Array.from(
+    { length: setCount },
+    (_, i) => levelLengths[i % levelLengths.length] as number,
+  )
+}
+
+/**
+ * تنظیم سطح + تعداد دسته. setCount از نردبان سیاست مرحله می‌آید
+ * (core/difficulty/stage-counts.ts)؛ بدون آن، الگوی سه‌دسته‌ای خود سطح.
+ */
+export function configForDifficulty(difficulty: number, setCount?: number): OperationSpanConfig {
   if (difficulty < 1 || difficulty > 5) {
     throw new RangeError('دشواری باید بین ۱ تا ۵ باشد')
   }
   const level = difficulty - 1
+  const setLengths = scaleSetLengths(
+    SET_LENGTHS_BY_DIFFICULTY[level] as readonly number[],
+    setCount,
+  )
   return {
     difficulty,
-    setLengths: SET_LENGTHS_BY_DIFFICULTY[level] as readonly number[],
+    totalTrials: setLengths.length,
+    setLengths,
     mathOps: MATH_OPS_BY_DIFFICULTY[level] as 2 | 3 | 4,
     processingWindowMs: PROCESSING_WINDOW_MS_BY_DIFFICULTY[level] as number,
     feedbackMs: FEEDBACK_MS_BY_DIFFICULTY[level] as number,

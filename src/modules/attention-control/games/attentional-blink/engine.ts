@@ -140,7 +140,10 @@ export const attentionalBlinkDefinition: ExerciseDefinition<
     const letters = rng.sample(LETTER_POOL, state.config.streamLength)
     // هدف اول نه خیلی زود (پایداری توجه) و نه خیلی دیر (خستگی)
     const t1Index = rng.int(3, 5)
-    const lag = lagScheduleFor(state.seed)[trialIndex] as number
+    // چرخهٔ برنامهٔ lag: پاس کاملِ ۱۲تایی سهمیهٔ ۴تایی هر lag را تضمین می‌کند؛
+    // مراحل اضافیِ نردبان سیاست (سطح ۲+) از ابتدای همان بُر قطعی تکرار می‌شوند
+    const schedule = lagScheduleFor(state.seed)
+    const lag = schedule[trialIndex % schedule.length] as number
     const t2Index = t1Index + lag
     const t1 = letters[t1Index] as string
     const t2 = letters[t2Index] as string

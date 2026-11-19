@@ -350,11 +350,18 @@ export function GameShell({
     }
   }, [phase, snapshot.currentTrial, snapshot.answeredTrials, snapshot.lastOutcome, snapshot.machine.phase, manager, trialPresentation])
 
-  // تعداد مراحل واقعی جلسه: config موتور اگر totalTrials داشته باشد (برای
-  // بازی‌هایی که تعداد مرحله به سطح وابسته است — مثل حافظهٔ انجمنی که در
-  // سطح‌های بالا بلوک آزمونِ دوباره دارد) وگرنه متای رجیستری
+  // تعداد مراحل واقعی جلسه: فیلد شمارش config موتور (totalTrials رایج؛
+  // trials در بازی‌های کلامی-شنیداری و trialCount در کارت‌مرتب‌سازی) وگرنه
+  // متای رجیستری — config از نردبان سیاست مرحله برای سطح انتخابی ساخته شده
+  const stageCountConfig = config as ExerciseConfig & {
+    totalTrials?: number
+    trials?: number
+    trialCount?: number
+  }
   const totalTrials =
-    (config as ExerciseConfig & { totalTrials?: number }).totalTrials ??
+    stageCountConfig.totalTrials ??
+    stageCountConfig.trials ??
+    stageCountConfig.trialCount ??
     registered.meta.plannedTrials ??
     0
 

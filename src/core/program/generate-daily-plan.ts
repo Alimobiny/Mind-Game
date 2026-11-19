@@ -1,6 +1,7 @@
 import { COGNITIVE_DOMAINS } from '../types'
 import type { CognitiveDomain } from '../types'
 import { SeededRandom } from '../randomization/seeded-random'
+import { standardStageCount } from '../difficulty/stage-counts'
 import { estimateExerciseMinutes } from './time-estimation'
 import type { ProgramExerciseEntry, TrainingPlanItem, TrainingPlanRecord } from './types'
 
@@ -122,8 +123,18 @@ export function generateDailyPlan(input: GenerateDailyPlanInput): TrainingPlanRe
   }
 
   const canonical = canonicalizeCatalog(input.catalog)
+  // بودجه با تعداد مرحلهٔ استانداردِ همان سطح محاسبه می‌شود — نردبان سیاست
+  // (سطح بالاتر = مراحل بیشتر تا ۱٫۵×) وگرنه plannedTrials ورودی (کف متا).
+  // سطح هر بازی قطعی است (خروجی resolveDifficulty فقط به ورودی‌ها وابسته است).
   const minutesById = new Map(
-    canonical.map((entry) => [entry.exerciseId, estimateExerciseMinutes(entry)] as const),
+    canonical.map((entry) => {
+      const difficulty = resolveDifficulty(entry, input.difficultyByExercise)
+      const stageCount = standardStageCount(entry.exerciseId, difficulty, entry.plannedTrials)
+      return [
+        entry.exerciseId,
+        estimateExerciseMinutes({ ...entry, plannedTrials: stageCount }),
+      ] as const
+    }),
   )
 
   // حوزه‌های موجود به‌ترتیب استاندارد — چرخش روی همین‌هاست

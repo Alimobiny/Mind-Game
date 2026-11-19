@@ -117,6 +117,14 @@
   color: var(--color-warning);
 }
 
+/* خط «مراحل + مدت تقریبی» زیر شبکهٔ سطح — اطلاع‌رسانی نردبان سیاست */
+.stageInfo {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .startButton {
   background: var(--color-primary-strong);
   color: #082f49;

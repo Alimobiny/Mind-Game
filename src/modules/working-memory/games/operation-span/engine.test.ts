@@ -51,6 +51,28 @@ describe('configForDifficulty — دهانهٔ عملیاتی', () => {
     expect(() => configForDifficulty(0)).toThrow(RangeError)
     expect(() => configForDifficulty(6)).toThrow(RangeError)
   })
+
+  it('بدون پارامتر setCount: الگوی سه‌دسته‌ای سطح + totalTrials هم‌ارزش', () => {
+    expect(configForDifficulty(1).totalTrials).toBe(3)
+    expect(configForDifficulty(1).setLengths).toEqual([3, 3, 3])
+  })
+
+  it('پارامتر setCount (نردبان سیاست مرحله): چرخهٔ الگوی سطح + بازتولید طرح', () => {
+    // سطح ۵ با ۵ دسته: الگوی [۶,۶,۷] چرخیده → [۶,۶,۷,۶,۶]
+    const config = configForDifficulty(5, 5)
+    expect(config.totalTrials).toBe(5)
+    expect(config.setLengths).toEqual([6, 6, 7, 6, 6])
+    // طرح کامل جلسه همان تعداد دسته را می‌سازد و جلسه در همان نقطه کامل می‌شود
+    let state = def.createSession('s1', config, SEED) as OperationSpanState
+    expect(state.plan).toHaveLength(5)
+    for (let i = 0; i < 5; i++) {
+      const next = def.nextTrial(state)
+      state = next.state as OperationSpanState
+      state = def.submitAnswer(state, null, 1000) as OperationSpanState
+    }
+    expect(def.isComplete(state)).toBe(true)
+    expect(() => configForDifficulty(3, 1)).toThrow(RangeError)
+  })
 })
 
 describe('طرح جلسه', () => {

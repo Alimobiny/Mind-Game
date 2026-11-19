@@ -59,6 +59,8 @@ export interface SymspanSetPlan {
 }
 
 export interface SymmetrySpanConfig extends ExerciseConfig {
+  /** تعداد دسته‌های جلسه — هر دسته یک «مرحله» است (برای نوار پیشرفت پوسته) */
+  readonly totalTrials: number
   readonly setLengths: readonly number[]
   /** پنجرهٔ قضاوت تقارن (ms) */
   readonly patternWindowMs: number
@@ -114,14 +116,39 @@ const TARGET_SPACING_BY_DIFFICULTY: readonly ('spread' | 'mixed' | 'close')[] = 
   'close',
 ]
 
-export function configForDifficulty(difficulty: number): SymmetrySpanConfig {
+/**
+ * چرخهٔ الگوی طول دسته‌های سطح تا تعداد دستهٔ هدف — همان الگوی دهانهٔ عملیاتی؛
+ * سطح بالاتر (نردبان سیاست مرحله) دسته بیشتر می‌خواهد، معنای سطح (۳ تا ۶ آیتم)
+ * از الگوی همان سطح حفظ می‌شود.
+ */
+function scaleSetLengths(levelLengths: readonly number[], setCount?: number): readonly number[] {
+  if (setCount === undefined) return levelLengths
+  if (setCount < 2) {
+    throw new RangeError('تعداد دسته باید حداقل ۲ باشد')
+  }
+  return Array.from(
+    { length: setCount },
+    (_, i) => levelLengths[i % levelLengths.length] as number,
+  )
+}
+
+/**
+ * تنظیم سطح + تعداد دسته. setCount از نردبان سیاست مرحله می‌آید
+ * (core/difficulty/stage-counts.ts)؛ بدون آن، الگوی سه‌دسته‌ای خود سطح.
+ */
+export function configForDifficulty(difficulty: number, setCount?: number): SymmetrySpanConfig {
   if (difficulty < 1 || difficulty > 5) {
     throw new RangeError('دشواری باید بین ۱ تا ۵ باشد')
   }
   const level = difficulty - 1
+  const setLengths = scaleSetLengths(
+    SET_LENGTHS_BY_DIFFICULTY[level] as readonly number[],
+    setCount,
+  )
   return {
     difficulty,
-    setLengths: SET_LENGTHS_BY_DIFFICULTY[level] as readonly number[],
+    totalTrials: setLengths.length,
+    setLengths,
     patternWindowMs: PATTERN_WINDOW_MS_BY_DIFFICULTY[level] as number,
     feedbackMs: FEEDBACK_MS_BY_DIFFICULTY[level] as number,
     cellDisplayMs: CELL_DISPLAY_MS_BY_DIFFICULTY[level] as number,

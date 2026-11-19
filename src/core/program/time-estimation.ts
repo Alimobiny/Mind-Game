@@ -104,8 +104,13 @@ export const TRIAL_SECONDS_BY_EXERCISE: Readonly<Record<string, number>> = {
   'progressive-matrices': 14,
 }
 
+/** تخمین مدت جلسه با تعداد مرحلهٔ مشخص — برای نمایش پیش از شروع (picker) */
+export function estimateMinutesForStages(exerciseId: string, stageCount: number): number {
+  const perTrialSeconds = TRIAL_SECONDS_BY_EXERCISE[exerciseId] ?? DEFAULT_TRIAL_SECONDS
+  return Math.ceil((stageCount * perTrialSeconds + SESSION_OVERHEAD_SECONDS) / 60)
+}
+
 /** تخمین مدت جلسه یک بازی به دقیقه — گرد به بالا */
 export function estimateExerciseMinutes(entry: ProgramExerciseEntry): number {
-  const perTrialSeconds = TRIAL_SECONDS_BY_EXERCISE[entry.exerciseId] ?? DEFAULT_TRIAL_SECONDS
-  return Math.ceil((entry.plannedTrials * perTrialSeconds + SESSION_OVERHEAD_SECONDS) / 60)
+  return estimateMinutesForStages(entry.exerciseId, entry.plannedTrials)
 }

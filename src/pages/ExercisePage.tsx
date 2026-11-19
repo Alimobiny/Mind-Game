@@ -9,7 +9,9 @@ import {
   toLocalIsoDate,
 } from '../core/difficulty/adaptive-difficulty'
 import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-difficulty'
+import { standardStageCount } from '../core/difficulty/stage-counts'
 import { deriveCompletedExerciseIds } from '../core/program/plan-status'
+import { estimateMinutesForStages } from '../core/program/time-estimation'
 import {
   finalizeRun,
   findInProgressRun,
@@ -319,6 +321,14 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
   if (!difficultyConfirmed || !appData) {
     const recommended = adaptive?.recommendedLevel ?? null
     const isManual = recommended !== null && difficulty !== recommended
+    // نردبان سیاست مرحله: سطح بالاتر = مراحل بیشتر؛ مدت تقریبی از ثانیه‌های
+    // هر مرحلهٔ همان بازی + سربار ثابت جلسه
+    const stageCount = standardStageCount(
+      registered.meta.id,
+      difficulty,
+      registered.meta.plannedTrials ?? 0,
+    )
+    const estimatedMinutes = estimateMinutesForStages(registered.meta.id, stageCount)
     return (
       <main className="app-shell">
         <div className={styles.picker} data-domain={registered.meta.domain}>
@@ -385,6 +395,9 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
               </button>
             ))}
           </div>
+          <p className={styles.stageInfo} data-testid="picker-stage-info">
+            مراحل این سطح: {toFaDigits(stageCount)} · مدت تقریبی: ~{toFaDigits(estimatedMinutes)} دقیقه
+          </p>
           {isManual ? (
             <p className={styles.manualHint}>انتخاب دستی — جلسات سطح دستی در ارتقای سطح حساب نمی‌شوند.</p>
           ) : null}

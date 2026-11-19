@@ -1,3 +1,4 @@
+import { policyStageCount } from '../core/difficulty/stage-counts'
 import { GameRegistry } from '../core/registry/game-registry'
 import type { AnyExerciseDefinition } from '../core/registry/game-registry'
 import type { ExerciseConfig } from '../core/types'
@@ -258,10 +259,44 @@ export const appRegistry: GameRegistry = createAppRegistry()
 export const DEFINED_EXERCISE_IDS: readonly ExerciseId[] = ALL_EXERCISE_IDS
 
 /**
+ * فیلدهای شمارش مرحله که موتورها بسته به بازی به کار می‌برند —
+ * totalTrials (رایج)، trials (بازی‌های کلامی-شنیداری) و trialCount (کارت‌مرتب‌سازی).
+ */
+type StageCountConfig = ExerciseConfig & {
+  readonly totalTrials?: number
+  readonly trials?: number
+  readonly trialCount?: number
+}
+
+/**
+ * بازنویسی فیلد شمارش مرحله با مقدار نردبان سیاست — موتورها isComplete و
+ * nextTrial را از config خودشان می‌خوانند، پس همین بازنویسی در سطح اتصال
+ * کافی است و بدنهٔ موتورها دست نمی‌خورد. null یعنی بازی موتور-مولف است.
+ */
+function withPolicyStageCount(config: StageCountConfig, stageCount: number | null): StageCountConfig {
+  if (stageCount === null) return config
+  if (config.totalTrials !== undefined) return { ...config, totalTrials: stageCount }
+  if (config.trials !== undefined) return { ...config, trials: stageCount }
+  if (config.trialCount !== undefined) return { ...config, trialCount: stageCount }
+  return config
+}
+
+/**
  * ساخت config کامل بازی برای سطح دشواری داده‌شده — نقطهٔ واحد اتصال
- * «difficulty انتخابی کاربر» به پیکربندی موتور همان بازی.
+ * «difficulty انتخابی کاربر» به پیکربندی موتور همان بازی + اعمال نردبان
+ * استاندارد تعداد مراحل (core/difficulty/stage-counts.ts: سطح بالاتر =
+ * مراحل بیشتر، تا ۱٫۵ برابر).
  */
 export function createExerciseConfig(exerciseId: string, difficulty: number): ExerciseConfig {
+  const stageCount = policyStageCount(exerciseId, difficulty)
+  return withPolicyStageCount(baseExerciseConfig(exerciseId, difficulty, stageCount), stageCount)
+}
+
+function baseExerciseConfig(
+  exerciseId: string,
+  difficulty: number,
+  spanSetCount: number | null,
+): ExerciseConfig {
   switch (exerciseId) {
     case NUMBER_SEQUENCE_ID:
       return nsConfigForDifficulty(difficulty)
@@ -311,10 +346,12 @@ export function createExerciseConfig(exerciseId: string, difficulty: number): Ex
       return bhConfigForDifficulty(difficulty)
     case TASK_SWITCHING_ID:
       return tsConfigForDifficulty(difficulty)
+    // دو اسپن پیچیده: نردبان سیاست «تعداد دسته» است و به خود موتور
+    // می‌رسد تا طرح جلسه (setLengths) بازتولید شود
     case OPERATION_SPAN_ID:
-      return ospanConfigForDifficulty(difficulty)
+      return ospanConfigForDifficulty(difficulty, spanSetCount ?? undefined)
     case SYMMETRY_SPAN_ID:
-      return symspanConfigForDifficulty(difficulty)
+      return symspanConfigForDifficulty(difficulty, spanSetCount ?? undefined)
     case RULE_DISCOVERY_CARD_SORTING_ID:
       return rdcsConfigForDifficulty(difficulty)
     case READING_ALOUD_ID:
