@@ -19,6 +19,8 @@ export interface ExerciseSettingsRecord {
   readonly exerciseId: string
   /** آخرین سطح دشواری انتخاب‌شده — فقط برای راحتی UI، نه مبنای تصمیم دشواری */
   readonly lastDifficulty: number
+  /** تعداد مرحلهٔ دلخواه کاربر برای این بازی — null یعنی استانداردِ نردبان */
+  readonly customStageCount?: number | null
 }
 
 export interface ExerciseSettingsRepository {

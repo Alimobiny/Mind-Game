@@ -9,10 +9,10 @@ import { startExercise, waitForResults, waitProgressAdvance } from './helpers'
 const FA = '۰۱۲۳۴۵۶۷۸۹'
 
 test.describe('Word Memory', () => {
-  test('۶ بلوک: ثبت کلمات مطالعه و انتخاب همان‌ها', async ({ page }) => {
+  test('۳ بلوک: ثبت کلمات مطالعه و انتخاب همان‌ها', async ({ page }) => {
     await startExercise(page, 'حافظه واژه‌ها', 1)
 
-    for (let block = 0; block < 6; block++) {
+    for (let block = 0; block < 3; block++) {
       // ضبط کلمات فاز مطالعه (سطح ۱: ۴ کلمه) با polling داخل صفحه
       await page.waitForFunction(
         () => {
@@ -55,11 +55,11 @@ test.describe('Word Memory', () => {
 })
 
 test.describe('Syllable Counting', () => {
-  test('۱۲ سؤال: ورود عدد و تأیید', async ({ page }) => {
+  test('۶ سؤال: ورود عدد و تأیید', async ({ page }) => {
     await startExercise(page, 'شمارش هجا', 1)
 
     let progress = 0
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 6; i++) {
       const sentence = page.getByTestId('syllable-sentence')
       await expect(sentence).toBeVisible({ timeout: 10_000 })
       const text = (await sentence.textContent()) ?? ''
@@ -76,10 +76,10 @@ test.describe('Syllable Counting', () => {
 })
 
 test.describe('Sequence Logic', () => {
-  test('۱۲ سؤال: انتخاب گزینه', async ({ page }) => {
+  test('۶ سؤال: انتخاب گزینه', async ({ page }) => {
     await startExercise(page, 'منطق توالی', 1)
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 6; i++) {
       const shown = page.getByTestId('seq-shown')
       await expect(shown).toBeVisible({ timeout: 10_000 })
       await page.locator('[data-testid="seq-option"]').first().click()
@@ -91,10 +91,10 @@ test.describe('Sequence Logic', () => {
 })
 
 test.describe('Pattern Completion', () => {
-  test('۱۲ سؤال: انتخاب گزینه', async ({ page }) => {
+  test('۶ سؤال: انتخاب گزینه', async ({ page }) => {
     await startExercise(page, 'تکمیل الگو', 1)
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 6; i++) {
       const matrix = page.getByTestId('pattern-matrix')
       await expect(matrix).toBeVisible({ timeout: 10_000 })
       await page.locator('[data-testid="pattern-option"]').first().click()
@@ -109,7 +109,7 @@ test.describe('Export / Import', () => {
   test('انتقال کامل داده به یک context جدید (دستگاه دیگر)', async ({ page, browser }) => {
     // ۱) یک جلسه کامل انجام بده تا داده‌ای برای انتقال وجود داشته باشد
     await startExercise(page, 'محاسبه × ۲۰', 1)
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 9; i++) {
       const questionEl = page.getByTestId('calc-question')
       await expect(questionEl).toBeVisible()
       const text = (await questionEl.textContent()) ?? ''

@@ -24,7 +24,7 @@ export const SPATIAL_SEQUENCE_META_FA: ExerciseMeta = {
     '۱۰ مرحله در هر جلسه؛ با بالا رفتن سطح، توالی طولانی‌تر می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 10,
+  plannedTrials: 8,
   metricLabelsFa: {
     meanOrderMatchRate: 'میانگین خانه‌های درست در جای درست (٪)',
     gridSize: 'ابعاد شبکه',

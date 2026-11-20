@@ -37,7 +37,7 @@ test('screenshots for visual review', async ({ page }) => {
   await page.getByRole('button', { name: 'ادامه' }).click()
   await page.getByRole('button', { name: 'شروع تمرین' }).click()
   await page.locator('section[data-phase="ACTIVE"]').waitFor({ timeout: 20_000 })
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 6; i++) {
     await page.locator('[data-testid="pattern-option"]').first().click()
     await page.waitForTimeout(150)
   }

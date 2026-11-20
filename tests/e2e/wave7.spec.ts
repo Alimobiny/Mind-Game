@@ -8,13 +8,13 @@ import { trackPageErrors } from './qa-helpers'
  */
 
 test.describe('Operation Span', () => {
-  test('۳ دسته: قضاوت معادله‌ها + بازیابی ترتیبی واژه‌ها', async ({ page }) => {
+  test('۲ دسته: قضاوت معادله‌ها + بازیابی ترتیبی واژه‌ها', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'دهانهٔ عملیاتی', 1)
 
     // سطح ۱: ۳ دسته × ۳ آیتم
     let progress = 0
-    for (let set = 0; set < 3; set++) {
+    for (let set = 0; set < 2; set++) {
       for (let item = 0; item < 3; item++) {
         const math = page.getByTestId('ospan-math')
         await expect(math).toBeVisible({ timeout: 15_000 })
@@ -71,13 +71,13 @@ test.describe('Symmetry Span', () => {
 })
 
 test.describe('Rule Discovery Card Sorting', () => {
-  test('۳۶ کارت: دسته‌بندی کاملِ درست + تعویض‌های قاعده', async ({ page }) => {
+  test('۲۲ کارت: دسته‌بندی کاملِ درست + تعویض‌های قاعده', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'کارت‌بندی قاعده', 1)
 
     // بازی بی‌نقص: هر کارت زیر جایگاهِ data-expected — قاعده‌ها خودشان می‌چرخند
     let progress = 0
-    for (let i = 0; i < 36; i++) {
+    for (let i = 0; i < 22; i++) {
       const board = page.getByTestId('wcs-board')
       await expect(board).toBeVisible({ timeout: 15_000 })
       const expected = Number(await board.getAttribute('data-expected'))
@@ -86,6 +86,6 @@ test.describe('Rule Discovery Card Sorting', () => {
     }
 
     await waitForResults(page)
-    expect(getErrors(), 'بدون خطای صفحه در ۳۶ کارت').toEqual([])
+    expect(getErrors(), 'بدون خطای صفحه در ۲۲ کارت').toEqual([])
   })
 })

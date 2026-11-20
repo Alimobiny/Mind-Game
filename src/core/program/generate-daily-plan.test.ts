@@ -191,7 +191,7 @@ describe('تولید برنامه روزانه — پوشش و فاصله‌گذ
 })
 
 describe('تولید برنامه روزانه — بودجه ۱۵ تا ۲۰ دقیقه', () => {
-  it('با کاتالوگ واقعی: هر روز ۳ تا ۴ بازی با مجموع ۱۵ تا ۲۰ دقیقه', () => {
+  it('با کاتالوگ واقعی: هر روز ۳ تا ۶ بازی با مجموع ۱۵ تا ۲۰ دقیقه', () => {
     for (const plan of generateWeek(realCatalog())) {
       const total = plan.items.reduce((sum, i) => sum + i.estimatedMinutes, 0)
       expect(plan.items.length).toBeGreaterThanOrEqual(3)
@@ -210,13 +210,13 @@ describe('تولید برنامه روزانه — بودجه ۱۵ تا ۲۰ د�
     expect(plan.items.reduce((s, i) => s + i.estimatedMinutes, 0)).toBe(15)
   })
 
-  it('با بازی‌های کوتاه: بهترین تلاش — ۴ بازی و مجموع زیر هدف، اما هرگز بالای سقف', () => {
-    // ۹ مرحله → دقیقاً ۳ دقیقه؛ ۴×۳=۱۲ < ۱۵ اما سقف تعداد تمام است
+  it('با بازی‌های کوتاه: بهترین تلاش — ۵ بازی تا رسیدن به هدف، اما هرگز بالای سقف', () => {
+    // ۹ مرحله → دقیقاً ۳ دقیقه؛ ۵×۳=۱۵ = هدف → توقف (سقف ۶ بازی تمام نمی‌شود)
     const catalog = syntheticCatalog(9)
     const plan = generateDailyPlan({ date: '2026-11-11', catalog, generatedAt: 0 })
-    expect(plan.items).toHaveLength(MAX_ITEMS_PER_DAY)
+    expect(plan.items).toHaveLength(5)
     const total = plan.items.reduce((s, i) => s + i.estimatedMinutes, 0)
-    expect(total).toBe(12)
+    expect(total).toBe(15)
     expect(total).toBeLessThanOrEqual(DAILY_HARD_MAX_MINUTES)
   })
 

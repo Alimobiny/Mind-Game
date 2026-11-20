@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test'
  */
 
 test.describe('برنامه امروز من', () => {
-  test('از صفحه اصلی باز می‌شود، ۳ تا ۴ آیتم دارد و لینک شروع کار می‌کند', async ({ page }) => {
+  test('از صفحه اصلی باز می‌شود، ۳ تا ۶ آیتم دارد و لینک شروع کار می‌کند', async ({ page }) => {
     await page.goto('/')
     // ورود از کارت «تمرین امروز» صفحهٔ اصلی (پیش از این کارت کوچک
     // «برنامه امروز من» در هدر بود — بازطراحی نشست ۱۵)
@@ -21,7 +21,7 @@ test.describe('برنامه امروز من', () => {
     await expect(items.first()).toBeVisible()
     const count = await items.count()
     expect(count).toBeGreaterThanOrEqual(3)
-    expect(count).toBeLessThanOrEqual(4)
+    expect(count).toBeLessThanOrEqual(6)
 
     // هر آیتم دکمه شروع با لینک به صفحه همان بازی دارد
     await page.getByTestId('program-start').first().click()

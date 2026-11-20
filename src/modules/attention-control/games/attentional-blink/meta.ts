@@ -26,7 +26,7 @@ export const ATTENTIONAL_BLINK_META_FA: ExerciseMeta = {
     '۱۲ جریان در هر جلسه؛ با بالا رفتن سطح، جریان تندتر می‌شود (۸ تا ~۱۲ حرف بر ثانیه).',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 12,
+  plannedTrials: 10,
   metricLabelsFa: {
     t1Accuracy: 'تشخیص هدف اول (٪)',
     t2Accuracy: 'تشخیص هدف دوم (٪)',

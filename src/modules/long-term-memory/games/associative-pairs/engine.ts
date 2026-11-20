@@ -78,12 +78,15 @@ export type AssociativePairsAnswer = number | null
 
 export const ASSOCIATIVE_PAIRS_ID = 'associative-pairs'
 export const ASSOCIATIVE_PAIRS_VERSION = '1.0.0'
-export const ASSOCIATIVE_PAIRS_CONTENT_VERSION = '2'
+/** ۳ = کالیبراسیون باند ۱٫۵-۳ دقیقه (نشست ۱۶): ۴ جفت ثابت در همهٔ سطوح و بلوک
+ * یادآوری فقط در سطح ۴-۵ → ۸/۸/۸/۱۲/۱۲ مرحله؛ دشواری از گزینه‌ها و سرعت می‌آید */
+export const ASSOCIATIVE_PAIRS_CONTENT_VERSION = '3'
 
-/** K جفت بر حسب دشواری ۱..۵ */
-const PAIR_COUNT_BY_DIFFICULTY: readonly number[] = [4, 5, 6, 7, 8]
+/** K جفت — پس از بازکالیبراسیون ثابت: رشد تعداد مرحله مدت جلسه را از باند
+ * استاندارد خارج می‌کرد؛ بار شناختی از راه گزینه‌ها/سرعت می‌آید */
+const PAIR_COUNT_BY_DIFFICULTY: readonly number[] = [4, 4, 4, 4, 4]
 const CHOICE_COUNT_BY_DIFFICULTY: readonly number[] = [3, 3, 4, 5, 5]
-const HAS_RETEST_BY_DIFFICULTY: readonly boolean[] = [false, false, true, true, true]
+const HAS_RETEST_BY_DIFFICULTY: readonly boolean[] = [false, false, false, true, true]
 const STUDY_DISPLAY_MS_BY_DIFFICULTY: readonly number[] = [3000, 2800, 2600, 2400, 2200]
 
 export function configForDifficulty(difficulty: number): AssociativePairsConfig {

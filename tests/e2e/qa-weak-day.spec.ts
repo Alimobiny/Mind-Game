@@ -81,7 +81,7 @@ test.describe('QA4: قاعده روز ضعیف پس از جلسه تماماً �
 
     // ۲) جلسه واقعی تماماً غلط در سطح پیشنهادی ۲
     await startCalculationAt(page, 2)
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 10; i++) {
       const questionEl = page.getByTestId('calc-question')
       await expect(questionEl).toBeVisible()
       const text = (await questionEl.textContent()) ?? ''

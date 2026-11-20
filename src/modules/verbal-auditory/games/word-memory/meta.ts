@@ -24,7 +24,7 @@ export const WORD_MEMORY_META_FA: ExerciseMeta = {
     '۶ مرحله در هر جلسه؛ با بالا رفتن سطح، تعداد کلمات بیشتر و زمان کمتر می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 6,
+  plannedTrials: 3,
   metricLabelsFa: {
     hits: 'کلمات به‌یادآورده‌شده',
     falseAlarms: 'کلمات نابجا انتخاب‌شده',

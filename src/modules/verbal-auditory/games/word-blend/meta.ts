@@ -26,7 +26,7 @@ export const WORD_BLEND_META_FA: ExerciseMeta = {
     'با بالا رفتن سطح، قطعات سریع‌تر پشت‌سرهم می‌آیند و واژه‌ها مرکب‌تر می‌شوند.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 12,
+  plannedTrials: 11,
   metricLabelsFa: {
     meanAnswerTimeMs: 'میانگین زمان پاسخ (میلی‌ثانیه)',
   },

@@ -26,7 +26,7 @@ export const MIRROR_CLOCK_META_FA: ExerciseMeta = {
     'در سطح‌های بالاتر آینهٔ افقی و قطری، دقیقه‌های تک‌دار و مهلت زمانی اضافه می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 12,
+  plannedTrials: 7,
   metricLabelsFa: {
     naiveMirrorErrorCount: 'خطای خوانش آینه‌ای (انتخاب زمانِ آینه‌ای)',
     swapErrorCount: 'خطای جابه‌جایی نقش عقربه‌ها',

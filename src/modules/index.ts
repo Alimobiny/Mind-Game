@@ -1,4 +1,4 @@
-import { policyStageCount } from '../core/difficulty/stage-counts'
+import { clampCustomStageCount, policyStageCount } from '../core/difficulty/stage-counts'
 import { GameRegistry } from '../core/registry/game-registry'
 import type { AnyExerciseDefinition } from '../core/registry/game-registry'
 import type { ExerciseConfig } from '../core/types'
@@ -282,13 +282,28 @@ function withPolicyStageCount(config: StageCountConfig, stageCount: number | nul
 }
 
 /**
- * ساخت config کامل بازی برای سطح دشواری داده‌شده — نقطهٔ واحد اتصال
- * «difficulty انتخابی کاربر» به پیکربندی موتور همان بازی + اعمال نردبان
- * استاندارد تعداد مراحل (core/difficulty/stage-counts.ts: سطح بالاتر =
- * مراحل بیشتر، تا ۱٫۵ برابر).
+ * گزینه‌های اختیاری جلسه — تعداد مرحلهٔ «دلخواه» کاربر (ذخیره‌شده در
+ * تنظیمات همان بازی) بر نردبان سیاست مقدم است.
  */
-export function createExerciseConfig(exerciseId: string, difficulty: number): ExerciseConfig {
-  const stageCount = policyStageCount(exerciseId, difficulty)
+export interface CreateExerciseConfigOptions {
+  readonly stageCount?: number
+}
+
+/**
+ * ساخت config کامل بازی برای سطح دشواری داده‌شده — نقطهٔ واحد اتصال
+ * «difficulty انتخابی کاربر» به پیکربندی موتور همان بازی + اعمال تعداد
+ * مرحله: دلخواه کاربر > نردبان استاندارد (core/difficulty/stage-counts.ts،
+ * باند ۱٫۵-۳ دقیقه) > مقدار پیش‌فرض موتور.
+ */
+export function createExerciseConfig(
+  exerciseId: string,
+  difficulty: number,
+  options?: CreateExerciseConfigOptions,
+): ExerciseConfig {
+  const stageCount =
+    options?.stageCount !== undefined
+      ? clampCustomStageCount(exerciseId, options.stageCount)
+      : policyStageCount(exerciseId, difficulty)
   return withPolicyStageCount(baseExerciseConfig(exerciseId, difficulty, stageCount), stageCount)
 }
 

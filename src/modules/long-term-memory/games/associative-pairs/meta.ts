@@ -17,7 +17,7 @@ export const ASSOCIATIVE_PAIRS_META_FA: ExerciseMeta = {
   keywordsFa: ['جفت واژه', 'حافظه انجمنی', 'یادآوری جفت'],
   effects: ['long-term-memory', 'working-memory'],
   version: '1.0.0',
-  contentVersion: '2',
+  contentVersion: '3',
   instructionsFa: [
     'اول چند جفت واژه یکی‌یکی نشان داده می‌شود — هر دو واژه را با هم به خاطر بسپار.',
     'سپس نشانهٔ هر جفت (واژهٔ اول) با چند گزینه می‌آید؛ واژهٔ جفت‌شده را انتخاب کن.',

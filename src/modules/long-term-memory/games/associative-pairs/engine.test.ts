@@ -23,22 +23,27 @@ function fullSession(difficulty: number, answerOf: (t: AssociativePairsTrial) =>
 }
 
 describe('configForDifficulty — حافظهٔ انجمنی', () => {
-  it('نردبان جفت/گزینه/بازآزمون + خطای بازه', () => {
+  it('نردبان گزینه/سرعت/بازآزمون + خطای بازه — جفت ثابت ۴ (کالیبراسیون باند)', () => {
     expect(configForDifficulty(1)).toMatchObject({ pairCount: 4, choiceCount: 3, hasRetestBlock: false })
-    expect(configForDifficulty(3)).toMatchObject({ pairCount: 6, choiceCount: 4, hasRetestBlock: true })
-    expect(configForDifficulty(5)).toMatchObject({ pairCount: 8, choiceCount: 5, hasRetestBlock: true })
+    expect(configForDifficulty(3)).toMatchObject({ pairCount: 4, choiceCount: 4, hasRetestBlock: false })
+    expect(configForDifficulty(4)).toMatchObject({ pairCount: 4, choiceCount: 5, hasRetestBlock: true })
+    expect(configForDifficulty(5)).toMatchObject({ pairCount: 4, choiceCount: 5, hasRetestBlock: true })
     expect(() => configForDifficulty(0)).toThrow(RangeError)
     expect(() => configForDifficulty(6)).toThrow(RangeError)
   })
 })
 
 describe('طرح جلسه', () => {
-  it('ساختار: مطالعه K → آزمون K → (بازآزمون K در سطح ۳+)', () => {
-    const { trials, config } = fullSession(3, () => null)
+  it('ساختار: مطالعه K → آزمون K → (بازآزمون K در سطح ۴+)', () => {
+    const { trials, config } = fullSession(4, () => null)
     expect(trials).toHaveLength(config.pairCount * 3)
     expect(trials.slice(0, config.pairCount).every((t) => t.item.phase === 'study')).toBe(true)
     expect(trials.slice(config.pairCount, config.pairCount * 2).every((t) => t.item.phase === 'test' && t.item.block === 1)).toBe(true)
     expect(trials.slice(config.pairCount * 2).every((t) => t.item.phase === 'test' && t.item.block === 2)).toBe(true)
+    // سطح ۳ بدون بلوک یادآوری: فقط مطالعه + یک آزمون
+    const l3 = fullSession(3, () => null).trials
+    expect(l3).toHaveLength(configForDifficulty(3).pairCount * 2)
+    expect(l3.every((t) => t.item.block !== 2)).toBe(true)
   })
 
   it('قطعی: بذر یکسان → طرح یکسان', () => {
@@ -72,7 +77,7 @@ describe('طرح جلسه', () => {
 
 describe('امتیازدهی و خلاصه', () => {
   it('همهٔ آزمون‌ها درست → دقت ۱۰۰ + متریک بلوک‌ها', () => {
-    const { state, config } = fullSession(3, (t) => (t.item.phase === 'study' ? null : t.item.correctIndex))
+    const { state, config } = fullSession(4, (t) => (t.item.phase === 'study' ? null : t.item.correctIndex))
     expect(def.isComplete(state)).toBe(true)
     const summary = def.getSummary(state)
     expect(summary.metrics).toMatchObject({
@@ -84,7 +89,7 @@ describe('امتیازدهی و خلاصه', () => {
   })
 
   it('خطا فقط در بلوک دوباره → دقت بلوک‌ها جدا', () => {
-    const { state } = fullSession(3, (t) =>
+    const { state } = fullSession(4, (t) =>
       t.item.phase === 'study' ? null : t.item.block === 2 ? ((t.item.correctIndex + 1) % t.item.choices.length) : t.item.correctIndex,
     )
     const summary = def.getSummary(state)
@@ -111,8 +116,9 @@ describe('امتیازدهی و خلاصه', () => {
     expect(summary.totalTrials).toBe(configForDifficulty(1).pairCount) // فقط آزمون‌ها
   })
 
-  it('config.totalTrials مراحل واقعی جلسه را برحسب سطح می‌دهد (۸/۱۰/۱۸/۲۱/۲۴)', () => {
-    expect([1, 2, 3, 4, 5].map((d) => configForDifficulty(d).totalTrials)).toEqual([8, 10, 18, 21, 24])
+  it('config.totalTrials مراحل واقعی جلسه را برحسب سطح می‌دهد (۸/۸/۸/۱۲/۱۲)', () => {
+    // ۴ جفت × (۲ بلوک؛ سطح ۴+ بلوک یادآوری = ۳) — کالیبراسیون باند نشست ۱۶
+    expect([1, 2, 3, 4, 5].map((d) => configForDifficulty(d).totalTrials)).toEqual([8, 8, 8, 12, 12])
   })
 
   it('مطالعه همیشه درست ثبت می‌شود (در دقت بی‌اثر)', () => {

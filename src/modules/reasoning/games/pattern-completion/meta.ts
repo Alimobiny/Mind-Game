@@ -24,7 +24,7 @@ export const PATTERN_COMPLETION_META_FA: ExerciseMeta = {
     '۱۲ سؤال در هر جلسه؛ با بالا رفتن سطح، گزینه‌های گمراه‌کننده شبیه‌تر می‌شوند.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 12,
+  plannedTrials: 6,
   metricLabelsFa: {
     ruleFamilyVariety: 'تنوع قواعد دیده‌شده',
     difficultyWeightedScore: 'امتیاز وزن‌دار سطح',

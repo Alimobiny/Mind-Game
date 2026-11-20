@@ -26,7 +26,7 @@ export const RUNNING_SPAN_META_FA: ExerciseMeta = {
     '۱۰ جریان در هر جلسه؛ با بالا رفتن سطح، عمق یادآوری بیشتر و نمایش تندتر می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 10,
+  plannedTrials: 5,
   metricLabelsFa: {
     lastNInOrderRate: 'میانگین ارقام درست در جای درست از دنبالهٔ انتظار (٪)',
     partialCreditScore: 'امتیاز اعتبار جزئی (٪)',

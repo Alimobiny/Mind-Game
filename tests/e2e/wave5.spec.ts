@@ -9,7 +9,7 @@ import { trackPageErrors } from './qa-helpers'
  */
 
 test.describe('Task Switching', () => {
-  test('۴۰ مرحله: پاسخ بر اساس نشانهٔ بُعد (نگاشت ثابت راست/چپ)', async ({ page }) => {
+  test('۳۶ مرحله: پاسخ بر اساس نشانهٔ بُعد (نگاشت ثابت راست/چپ)', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'جابه‌جایی تکلیف', 1)
 
@@ -21,7 +21,7 @@ test.describe('Task Switching', () => {
     }
 
     let progress = 0
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 36; i++) {
       const cue = page.getByTestId('ts-cue')
       await expect(cue).toBeVisible({ timeout: 15_000 })
       const dimension = (await cue.getAttribute('data-dimension')) ?? 'color'
@@ -42,14 +42,14 @@ test.describe('Task Switching', () => {
 })
 
 test.describe('Mental Rotation', () => {
-  test('۱۶ مرحله: قضاوت یکسان/آینه‌ای از data-same', async ({ page }) => {
+  test('۱۵ مرحله: قضاوت یکسان/آینه‌ای از data-same', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     // لنگر ^ لازم است: توضیح کارت «ساعت آینه‌ای» هم عبارت «چرخش ذهنی» را دارد
     // و بدون لنگر، locator با نقض strict mode دو کارت را می‌گیرد.
     await startExercise(page, '^چرخش ذهنی', 1)
 
     let progress = 0
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 15; i++) {
       const candidate = page.getByTestId('mr-candidate')
       await expect(candidate).toBeVisible({ timeout: 15_000 })
       const isSame = ((await candidate.getAttribute('data-same')) ?? '') === 'true'
@@ -65,12 +65,12 @@ test.describe('Mental Rotation', () => {
 })
 
 test.describe('Mirror Clock', () => {
-  test('۱۲ مرحله: انتخاب گزینهٔ درست (زمان واقعی از data-hour/minute)', async ({ page }) => {
+  test('۷ مرحله: انتخاب گزینهٔ درست (زمان واقعی از data-hour/minute)', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'ساعت آینه‌ای', 1)
 
     let progress = 0
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 7; i++) {
       const clock = page.getByTestId('mc-clock')
       await expect(clock).toBeVisible({ timeout: 15_000 })
       // درستی جواب از خود موتور می‌آید (data-correct) — E2E جریان را می‌سنجد
@@ -79,17 +79,17 @@ test.describe('Mirror Clock', () => {
     }
 
     await waitForResults(page)
-    expect(getErrors(), 'بدون خطای صفحه در ۱۲ مرحله').toEqual([])
+    expect(getErrors(), 'بدون خطای صفحه در ۷ مرحله').toEqual([])
   })
 })
 
 test.describe('Block Height', () => {
-  test('۱۲ مرحله: شمارش کل بلوک‌ها با صفحه‌کلید (data-total)', async ({ page }) => {
+  test('۳ مرحله: شمارش کل بلوک‌ها با صفحه‌کلید (data-total)', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'ارتفاع بلوک‌ها', 1)
 
     let progress = 0
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 3; i++) {
       const figure = page.getByTestId('bh-figure')
       await expect(figure).toBeVisible({ timeout: 15_000 })
       const total = Number((await figure.getAttribute('data-total')) ?? '0')
@@ -102,18 +102,18 @@ test.describe('Block Height', () => {
     }
 
     await waitForResults(page)
-    expect(getErrors(), 'بدون خطای صفحه در ۱۲ مرحله').toEqual([])
+    expect(getErrors(), 'بدون خطای صفحه در ۳ مرحله').toEqual([])
   })
 })
 
 test.describe('Object Tracking', () => {
-  test('۸ مرحله: هایلایت → حرکت → انتخاب اهداف و تأیید', async ({ page }) => {
+  test('۶ مرحله: هایلایت → حرکت → انتخاب اهداف و تأیید', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'دنبال‌کردن اشیا', 1)
 
     // سطح ۱: ۴ شیء و ۲ هدف — انتخاب دو شیء اول کافی است (E2E جریان را می‌سنجد)
     let progress = 0
-    for (let trial = 0; trial < 8; trial++) {
+    for (let trial = 0; trial < 6; trial++) {
       // فاز پاسخ پس از هایلایت (~۱.۶ث) + حرکت (~۴ث) ظاهر می‌شود
       await expect(page.locator('[data-testid="ot-phase"][data-phase="answer"]')).toBeVisible({
         timeout: 20_000,
@@ -125,6 +125,6 @@ test.describe('Object Tracking', () => {
     }
 
     await waitForResults(page)
-    expect(getErrors(), 'بدون خطای صفحه در ۸ مرحلهٔ Canvas').toEqual([])
+    expect(getErrors(), 'بدون خطای صفحه در ۶ مرحلهٔ Canvas').toEqual([])
   })
 })

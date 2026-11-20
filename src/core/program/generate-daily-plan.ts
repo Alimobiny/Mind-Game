@@ -10,7 +10,8 @@ import type { ProgramExerciseEntry, TrainingPlanItem, TrainingPlanRecord } from 
  *
  * قواعد طراحی (مصوب و مبتنی بر docs/SCIENTIFIC-VALIDATION.md — سقف ۱۵–۲۰ دقیقه
  * جلسه روزانه، تنوع حوزه‌ها و فاصله‌گذاری بین جلسات؛ بدون هیچ ادعای بالینی):
- *  ۱. هر روز ۳ تا ۴ بازی، مجموع تخمینی در بازه ۱۵–۲۰ دقیقه.
+ *  ۱. هر روز ۳ تا ۶ بازی (نشست ۱۵-۲۰ دقیقه‌ای با بازی‌های ۱٫۵-۳ دقیقه‌ای)،
+ *     مجموع تخمینی در بازه ۱۵-۲۰ دقیقه.
  *  ۲. چرخش لنگر: جایگشت seed شدهٔ حوزه‌ها در بلوک‌های هم‌طولِ تعداد حوزه‌ها
  *     (اکنون ۸ روز) → در هر بلوک، هر حوزه دقیقاً یک‌بار لنگر روز می‌شود.
  *     (قاعدهٔ قبلی «هفتگی» با افزودن حوزهٔ هشتم می‌شکست: اندیس روز هفته
@@ -29,7 +30,12 @@ import type { ProgramExerciseEntry, TrainingPlanItem, TrainingPlanRecord } from 
 export const DAILY_TARGET_MINUTES = 15
 /** سقف سخت مجموع دقیقه‌های روزانه */
 export const DAILY_HARD_MAX_MINUTES = 20
-export const MAX_ITEMS_PER_DAY = 4
+/**
+ * سقف تعداد بازی در روز — پس از کالیبراسیون باند ۱٫۵-۳ دقیقه‌ای هر بازی
+ * (نشست ۱۶)، رسیدن به هدف ۱۵ دقیقه با ۴ بازی ممکن نیست؛ ۶ بازی هم‌راستا با
+ * الگوی تجاری است (Lumosity: ۵ بازی در نشست ۵-۱۵ دقیقه‌ای).
+ */
+export const MAX_ITEMS_PER_DAY = 6
 export const MIN_ITEMS_PER_DAY = 3
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/

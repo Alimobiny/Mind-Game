@@ -15,14 +15,14 @@ const STROOP_LABELS: Readonly<Record<string, string>> = {
 }
 
 test.describe('Stroop (تمرین رنگ‌ها)', () => {
-  test('۲۰ محرک: انتخاب رنگ جوهر بر اساس data-ink', async ({ page }) => {
+  test('۱۸ محرک: انتخاب رنگ جوهر بر اساس data-ink', async ({ page }) => {
     await startExercise(page, 'استرووپ', 1)
     const results = page.getByTestId('results')
 
     // صبر تا ثبت پاسخ با شمارندهٔ هدر — نه تغییر رنگ جوهر (محرک هم‌رنگِ
     // متوالی ممکن است و آنگاه تغییر ink هرگز رخ نمی‌دهد و تست تایم‌اوت می‌خورد)
     let progress = 0
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 18; i++) {
       if (await results.isVisible().catch(() => false)) break
       const word = page.getByTestId('stroop-word')
       await expect(word).toBeVisible({ timeout: 10_000 })
@@ -101,10 +101,10 @@ test.describe('N-Back', () => {
 })
 
 test.describe('Spatial Sequence', () => {
-  test('۱۰ مرحله: بازسازی ترتیب خانه‌های فعال', async ({ page }) => {
+  test('۸ مرحله: بازسازی ترتیب خانه‌های فعال', async ({ page }) => {
     await startExercise(page, 'توالی مکانی', 1)
 
-    for (let trial = 0; trial < 10; trial++) {
+    for (let trial = 0; trial < 8; trial++) {
       // ثبت ترتیب خانه‌های فعال با polling داخل صفحه (waitForFunction مکرر اجرا می‌شود)
       await page.waitForFunction(
         () => {

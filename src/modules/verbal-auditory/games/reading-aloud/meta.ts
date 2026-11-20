@@ -26,7 +26,7 @@ export const READING_ALOUD_META_FA: ExerciseMeta = {
     'سرعت خواندن (واژه بر دقیقه)، زمان خواندن و دقت فهم جداگانه گزارش می‌شوند.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 3,
+  plannedTrials: 2,
   metricLabelsFa: {
     passagesRead: 'متن‌های خوانده‌شده',
     meanReadingMs: 'میانگین زمان خواندن (میلی‌ثانیه)',

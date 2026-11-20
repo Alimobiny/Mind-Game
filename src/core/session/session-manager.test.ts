@@ -338,6 +338,7 @@ describe('ExerciseSessionManager — integration با بازی آزمایشی', 
     expect(await settings.get('fake-exercise')).toEqual({
       exerciseId: 'fake-exercise',
       lastDifficulty: 2,
+      customStageCount: null,
     })
   })
 

@@ -26,7 +26,7 @@ export const CALCULATION_100_META_FA: ExerciseMeta = {
     'پاسخ سریع ولی نادرست امتیاز بیشتری نمی‌آورد؛ دقت جداگانه ثبت می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 100,
+  plannedTrials: 22,
   metricLabelsFa: {
     correctPerMinute: 'پاسخ درست بر دقیقه',
     meanReactionTimeMs: 'میانگین زمان پاسخ (میلی‌ثانیه)',

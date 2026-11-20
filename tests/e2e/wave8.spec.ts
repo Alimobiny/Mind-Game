@@ -10,12 +10,12 @@ import { trackPageErrors } from './qa-helpers'
  */
 
 test.describe('Reading Aloud', () => {
-  test('۳ متن: خواندن خودتنظیم + پاسخ سؤال‌های فهم', async ({ page }) => {
+  test('۲ متن: خواندن خودتنظیم + پاسخ سؤال‌های فهم', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'بلندخوانی', 1)
 
     let progress = 0
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < 2; i += 1) {
       const passage = page.getByTestId('ra-passage')
       await expect(passage).toBeVisible({ timeout: 15_000 })
       await page.getByTestId('ra-start').click()
@@ -38,12 +38,12 @@ test.describe('Reading Aloud', () => {
 })
 
 test.describe('Word Scramble', () => {
-  test('۱۲ مرحله: بازسازی واژه از حروف جابه‌جا', async ({ page }) => {
+  test('۶ مرحله: بازسازی واژه از حروف جابه‌جا', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'واژهٔ به‌هم‌ریخته', 1)
 
     let progress = 0
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 6; i += 1) {
       const letters = page.getByTestId('ws-letters')
       await expect(letters).toBeVisible({ timeout: 15_000 })
       const target = (await letters.getAttribute('data-target')) ?? ''
@@ -65,12 +65,12 @@ test.describe('Word Scramble', () => {
 })
 
 test.describe('Audio Recall', () => {
-  test('۶ مرحله: ارائهٔ خودکار ۳ واژه + بازیابی به همان ترتیب', async ({ page }) => {
+  test('۴ مرحله: ارائهٔ خودکار ۳ واژه + بازیابی به همان ترتیب', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'یادآوری شنیداری', 1)
 
     let progress = 0
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < 4; i += 1) {
       // فاز ارائه خودکار پیش می‌رود (ریتم تایمری) — تا فاز بازیابی صبر
       const recall = page.getByTestId('ar-recall')
       await expect(recall).toBeVisible({ timeout: 30_000 })
@@ -89,12 +89,12 @@ test.describe('Audio Recall', () => {
 })
 
 test.describe('Word Blend', () => {
-  test('۱۲ مرحله: شنیدن/دیدن دو قطعه + انتخاب واژهٔ ساخته‌شده', async ({ page }) => {
+  test('۱۱ مرحله: شنیدن/دیدن دو قطعه + انتخاب واژهٔ ساخته‌شده', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'ترکیب واژه', 1)
 
     let progress = 0
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 11; i += 1) {
       const choices = page.getByTestId('wb-choices')
       await expect(choices).toBeVisible({ timeout: 30_000 })
       await page.locator('[data-testid="wb-option"][data-correct="true"]').click()

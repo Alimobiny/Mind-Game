@@ -17,7 +17,7 @@ export const NUMBER_COMPARISON_META_FA: ExerciseMeta = {
   version: '1.0.0',
   contentVersion: '1',
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 36,
+  plannedTrials: 30,
   descriptionFa:
     'دو عدد کنار هم نمایش داده می‌شوند؛ هرچه سریع‌تر عدد بزرگ‌تر را انتخاب کن.',
   instructionsFa: [

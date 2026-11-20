@@ -26,7 +26,7 @@ export const CHANGE_DETECTION_META_FA: ExerciseMeta = {
     '۱۶ مرحله در هر جلسه؛ با بالا رفتن سطح، آرایه بزرگ‌تر (۲ تا ۸ مربع) و فاصلهٔ خالی طولانی‌تر می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 16,
+  plannedTrials: 15,
   metricLabelsFa: {
     hitRate: 'تشخیص تغییرهای واقعی (٪)',
     falseAlarmRate: 'زنگ‌خطر برای تغییرهای غیرواقعی (٪)',

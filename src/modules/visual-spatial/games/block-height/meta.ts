@@ -31,7 +31,7 @@ export const BLOCK_HEIGHT_META_FA: ExerciseMeta = {
     'مرحله مهلت ندارد — با آرامش بشمار. بعد از پاسخ، بلوک‌های پنهان خط‌چین می‌شوند تا شمارش را یاد بگیری.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 12,
+  plannedTrials: 3,
   metricLabelsFa: {
     exactAnswerRate: 'درصد پاسخ دقیق',
     meanAbsoluteError: 'میانگین خطای مطلق (بلوک)',

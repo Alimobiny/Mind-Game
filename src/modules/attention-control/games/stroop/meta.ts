@@ -24,7 +24,7 @@ export const STROOP_META_FA: ExerciseMeta = {
     '۲۰ محرک در هر جلسه؛ با بالا رفتن سطح، ناهم‌خوان‌ها بیشتر و زمان کمتر می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 20,
+  plannedTrials: 18,
   metricLabelsFa: {
     congruentAccuracy: 'دقت محرک‌های هم‌خوان (٪)',
     incongruentAccuracy: 'دقت محرک‌های ناهم‌خوان (٪)',

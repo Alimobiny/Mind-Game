@@ -12,12 +12,12 @@ import { trackPageErrors } from './qa-helpers'
  */
 
 test.describe('تشخیص تغییر', () => {
-  test('۱۶ مرحله: دوداوری تغییر/عدم تغییر آرایهٔ رنگی', async ({ page }) => {
+  test('۱۵ مرحله: دوداوری تغییر/عدم تغییر آرایهٔ رنگی', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'تشخیص تغییر', 1)
 
     let progress = 0
-    for (let i = 0; i < 16; i += 1) {
+    for (let i = 0; i < 15; i += 1) {
       // نمونه → خالی → آزمون؛ فقط فاز آزمون دکمه دارد
       const testGrid = page.locator('[data-testid="cd-grid"][data-phase="test"]')
       await expect(testGrid).toBeVisible({ timeout: 15_000 })
@@ -55,12 +55,12 @@ test.describe('ان-بک دوگانهٔ شنیداری', () => {
 })
 
 test.describe('ماتریس پیشرونده', () => {
-  test('۱۲ مرحله: انتخاب گزینهٔ برندهٔ همهٔ قواعد', async ({ page }) => {
+  test('۶ مرحله: انتخاب گزینهٔ برندهٔ همهٔ قواعد', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'ماتریس پیشرونده', 1)
 
     let progress = 0
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 6; i += 1) {
       const matrix = page.getByTestId('pm-matrix')
       await expect(matrix).toBeVisible({ timeout: 15_000 })
       await page.locator('[data-testid="pm-option"][data-correct="true"]').click()

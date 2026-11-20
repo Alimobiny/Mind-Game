@@ -30,7 +30,7 @@ export const TASK_SWITCHING_META_FA: ExerciseMeta = {
     'هدف، هم سریعی و هم درستی است: اختلاف سرعتِ مراحل پس از تعویض قاعده با مراحل تکراری، به‌عنوان هزینهٔ جابه‌جایی گزارش می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 40,
+  plannedTrials: 36,
   metricLabelsFa: {
     rtRepeatMs: 'میانه زمان پاسخ مراحل تکراری (میلی‌ثانیه)',
     rtSwitchMs: 'میانه زمان پاسخ مراحل جابه‌جایی (میلی‌ثانیه)',

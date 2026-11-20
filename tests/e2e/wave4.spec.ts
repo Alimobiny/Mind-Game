@@ -31,12 +31,12 @@ function apply(a: number, op: string, b: number): number {
 }
 
 test.describe('Calculation ×100', () => {
-  test('۱۰۰ سؤال: محاسبه پاسخ و ورود با صفحه‌کلید فیزیکی', async ({ page }) => {
+  test('۲۲ سؤال: محاسبه پاسخ و ورود با صفحه‌کلید فیزیکی', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'محاسبه × ۱۰۰', 1)
 
     let progress = 0
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 22; i++) {
       const q = page.getByTestId('calc100-question')
       const text = ((await q.textContent({ timeout: 10_000 })) ?? '').trim()
       const clean = faToEnDigits(text).replace(/[^0-9+\-×÷]/g, '')
@@ -52,12 +52,12 @@ test.describe('Calculation ×100', () => {
     }
 
     await waitForResults(page)
-    expect(getErrors(), 'بدون خطای صفحه در ۱۰۰ سؤال').toEqual([])
+    expect(getErrors(), 'بدون خطای صفحه در ۲۲ سؤال').toEqual([])
   })
 })
 
 test.describe('Continuous Countdown', () => {
-  test('۱۰ مرحله: جمع‌آوری توالی نمایشی و ورود باقیماندهٔ نهایی', async ({ page }) => {
+  test('۷ مرحله: جمع‌آوری توالی نمایشی و ورود باقیماندهٔ نهایی', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'شمارش معکوس پیوسته', 1)
 
@@ -71,7 +71,7 @@ test.describe('Continuous Countdown', () => {
 
     // سطح ۱: هر مرحله دقیقاً ۱ شروع + ۳ گام = ۴ رویداد نمایشی
     const eventsPerTrial = 4
-    for (let trial = 0; trial < 10; trial++) {
+    for (let trial = 0; trial < 7; trial++) {
       await page.waitForFunction(
         (min) => {
           const w = window as unknown as { __ccEv?: Array<{ kind: string; value: number }>; __ccLast?: string }
@@ -114,7 +114,7 @@ test.describe('Continuous Countdown', () => {
     }
 
     await waitForResults(page)
-    expect(getErrors(), 'بدون خطای صفحه در ۱۰ مرحله').toEqual([])
+    expect(getErrors(), 'بدون خطای صفحه در ۷ مرحله').toEqual([])
   })
 })
 
@@ -147,12 +147,12 @@ test.describe('Missing Operator', () => {
 })
 
 test.describe('Number Comparison', () => {
-  test('۳۶ مرحله: انتخاب عدد بزرگ‌تر پیش از انقضای مهلت', async ({ page }) => {
+  test('۳۰ مرحله: انتخاب عدد بزرگ‌تر پیش از انقضای مهلت', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'مقایسه اعداد', 1)
 
     let progress = 0
-    for (let i = 0; i < 36; i++) {
+    for (let i = 0; i < 30; i++) {
       if (await page.getByTestId('results').isVisible().catch(() => false)) break
 
       const pair = (await page.evaluate(() => ({
@@ -171,7 +171,7 @@ test.describe('Number Comparison', () => {
     }
 
     await waitForResults(page)
-    expect(getErrors(), 'بدون خطای صفحه در ۳۶ مرحله').toEqual([])
+    expect(getErrors(), 'بدون خطای صفحه در ۳۰ مرحله').toEqual([])
   })
 })
 
@@ -188,10 +188,10 @@ test.describe('رگرسیون — پایان جلسه در بازی‌های ز�
       yellow: 'زرد',
     }
     const results = page.getByTestId('results')
-    // سنکرون دقیق هر مرحله: شمارندهٔ «n / ۲۰» هدر یکی جلو می‌رود (محرک‌های
+    // سنکرون دقیق هر مرحله: شمارندهٔ «n / ۱۸» هدر یکی جلو می‌رود (محرک‌های
     // هم‌رنگِ متوالی با مقایسهٔ ink قابل‌تشخیص نیستند و مهلت را می‌سوزانند)
     let prevCount = 0
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 18; i++) {
       if (await results.isVisible().catch(() => false)) break
       const word = page.getByTestId('stroop-word')
       await expect(word).toBeVisible({ timeout: 10_000 })

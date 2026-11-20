@@ -26,7 +26,7 @@ export const OBJECT_TRACKING_META_FA: ExerciseMeta = {
     'با بالارفتن سطح، تعداد دایره‌ها و اهداف بیشتر و حرکت تندتر و طولانی‌تر می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 8,
+  plannedTrials: 6,
   metricLabelsFa: {
     targetOverlapRate: 'میانگین اهداف درست (٪)',
     objectCount: 'تعداد اشیا',

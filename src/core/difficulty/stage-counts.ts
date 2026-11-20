@@ -1,88 +1,101 @@
 /**
  * نردبان استاندارد «تعداد مراحل × سطح دشواری» برای همهٔ بازی‌ها.
  *
- * تا نشست ۱۵ تعداد مراحل تقریباً در همهٔ موتورها یک ثابت بود که با سطح
- * دشواری تغییر نمی‌کرد؛ این جدول قاعدهٔ واحد را تعریف می‌کند:
- *  - سطح ۱ = مقدار پایهٔ فعلی بازی (لنگر؛ همان plannedTrials متا)؛
- *  - سطح ۵ ≈ ۱٫۵ برابر؛ سطوح میانی با ضرایب [۱٫۰۰، ۱٫۱۲۵، ۱٫۲۵، ۱٫۳۷۵، ۱٫۵]
- *    و گرد به عدد صحیح.
- *  - استثناهای دستی: بازی‌های پرمصرف زمانی (خوانش، بلوک‌شماری) نردبان
- *    ملایم‌تری دارند تا سقف مدت جلسه معقول بماند؛ برای دو اسپن پیچیده
- *    واحد نردبان «دسته» است نه محرک.
+ * مبنای کالیبراسیون (نشست ۱۶، بازکالیبراسیون بر دادهٔ نظرسنجی کاربران):
+ * نارضایتی از «ناهمگنی» تعداد مراحل + باند استاندارد بازی‌های تجاری
+ * (Lumosity/Peak/Elevate: هر بازی ~۱ تا ۳ دقیقه؛ نشست ۵تایی/روز ۵-۱۵ دقیقه).
+ * قاعدهٔ واحد: مدت تخمینی جلسه (مراحل × ثانیهٔ هر مرحله + سربار ۹۰ث) باید در
+ * سطح ۱ داخل باند ۱٫۵-۳ دقیقه و در سطح ۵ حداکثر ~۴ دقیقه باشد؛ بازی‌هایی که
+ * از قبل داخل باند بودند دست نخورده‌اند (تغییر حداقلی).
  *
- * اعمال: createExerciseConfig (modules/index.ts) مقدار این جدول را روی فیلد
- * شمارش config می‌نویسد؛ برای اسپن‌ها به‌صورت پارامتر تعداد دسته به خود موتور
- * می‌رسد. نگهبان هم‌راستایی: registry-invariants.test.ts.
+ * فرمول سقف‌ها: L1 ≤ floor(90 / trialSec) و L5 ≤ floor(150 / trialSec)
+ * (با ثانیه‌های هر مرحله از core/program/time-estimation.ts)، هموارشده به
+ * پله‌های خوانا و با کفِ معناداری برای متریک‌ها. استثناهای مستند:
+ *  - بلندخوانی: واحدِ متن ~۷۵ث است؛ ۲ متن = ۴ دقیقه (کفِ معناداری) — تنها
+ *    تخطی از سقف ۳ دقیقه؛ گسترش از راه «تعداد دلخواه» ممکن است.
+ *  - اسپن‌های پیچیده: واحد نردبان «دسته» است (دهانهٔ عملیاتی ۴۰ث، تقارن ۳۰ث).
+ *  - حافظهٔ انجمنی: موتور-مولف است (بلوک مطالعه/آزمون/یادآوری).
  *
- * بازی‌های «موتور-مولف» (ENGINE_AUTHORED) تعداد مرحله را خود موتور از ساختار
- * جلسه می‌سازد (بلوک‌های حافظهٔ انجمنی) یا تعداد در نام بازی قفل است (محاسبهٔ
- * ۲۰/۱۰۰) — روی آن‌ها override اعمال نمی‌شود و جدول فقط آینهٔ واقعیت برای
- * نمایش و بودجه‌بندی است.
+ * اعمال: createExerciseConfig (modules/index.ts) — مقدار سیاست روی فیلد شمارش
+ * config بازنویسی می‌شود (یا برای اسپن‌ها به‌صورت تعداد دسته به موتور می‌رسد)؛
+ * تعداد «دلخواه» کاربر (اگر ذخیره کرده) بر همهٔ این‌ها مقدم است. نگهبان:
+ * registry-invariants.test.ts و تست باند همین ماژول.
  */
 
-/** ضریب نردبان بر حسب سطح ۱..۵ — سند مرجع گردکردن اعداد جدول */
-export const STAGE_MULTIPLIERS: readonly number[] = [1, 1.125, 1.25, 1.375, 1.5]
+/** ضریب سقف مرحله در سطح ۵ نسبت به سطح ۱ — قاعدهٔ کلی گردکردن نردبان */
+export const MAX_STAGE_MULTIPLIER = 1.5
+
+/** سربار ثابت هر جلسه (ثانیه) — هم‌ارزش SESSION_OVERHEAD_SECONDS برنامهٔ روزانه */
+export const STAGE_BAND_OVERHEAD_SECONDS = 90
 
 /**
- * نردبان‌های اعمال‌شونده — سطح ۱ = پایهٔ فعلی، سطح ۵ ≤ ۱٫۵×.
- * واحد دو اسپن (operation-span / symmetry-span) «دسته» است.
+ * نردبان‌های استاندارد اعمال‌شونده (سطح ۱..۵).
+ * واحد دو اسپن (operation-span / symmetry-span) «دسته» است نه محرک.
  */
 export const STAGE_COUNTS_BY_DIFFICULTY: Readonly<Record<string, readonly number[]>> = {
   // حافظهٔ کاری
-  'number-sequence': [10, 11, 12, 14, 15],
+  'number-sequence': [9, 10, 11, 12, 13],
   'n-back': [25, 28, 31, 34, 38],
   'dual-n-back': [24, 27, 30, 33, 36],
   'dual-n-back-auditory': [24, 27, 30, 33, 36],
-  'running-span': [10, 11, 12, 14, 15],
-  'operation-span': [3, 4, 4, 5, 5], // واحد = دسته
+  'running-span': [5, 6, 6, 7, 7],
+  'operation-span': [2, 2, 3, 3, 3], // واحد = دسته
   // سرعت پردازش
   pasat: [20, 22, 25, 28, 30],
-  'continuous-countdown': [10, 11, 12, 14, 15],
+  'continuous-countdown': [7, 8, 9, 10, 11],
   'missing-operator': [20, 22, 25, 28, 30],
-  'number-comparison': [36, 40, 45, 50, 54],
+  'number-comparison': [30, 34, 37, 41, 45],
   // کنترل توجه
   'go-no-go': [40, 45, 50, 55, 60],
-  stroop: [20, 22, 25, 28, 30],
-  'task-switching': [40, 45, 50, 55, 60],
+  stroop: [18, 20, 23, 25, 27],
+  'task-switching': [36, 40, 45, 50, 54],
   'simon-task': [40, 45, 50, 55, 60],
-  'attentional-blink': [12, 14, 15, 17, 18],
+  'attentional-blink': [10, 11, 12, 14, 15],
   // حافظهٔ بلندمدت و کلامی-شنیداری
-  'word-memory': [6, 7, 8, 8, 9],
-  'syllable-counting': [12, 14, 15, 17, 18],
-  'word-blend': [12, 14, 15, 17, 18],
-  'word-scramble': [12, 14, 15, 17, 18],
-  'audio-recall': [6, 7, 8, 8, 9],
-  // خوانش ~۷۵ث/مرحله — دستی و ملایم‌تر از ۱٫۵× تا سقف مدت معقول بماند
-  'reading-aloud': [3, 4, 4, 4, 4],
+  'word-memory': [3, 4, 4, 5, 5],
+  'syllable-counting': [6, 7, 8, 8, 9],
+  'word-blend': [11, 12, 13, 15, 16],
+  'word-scramble': [6, 7, 8, 8, 9],
+  'audio-recall': [4, 5, 5, 5, 6],
+  // واحد متن ~۷۵ث — کف معناداری ۲ متن؛ گسترش با تعداد دلخواه
+  'reading-aloud': [2, 2, 2, 2, 2],
   // دیداری-فضایی
-  'memorise-grid': [10, 11, 12, 14, 15],
-  'spatial-sequence': [10, 11, 12, 14, 15],
-  'object-tracking': [8, 9, 10, 11, 12],
-  'mental-rotation': [16, 18, 20, 22, 24],
-  'mirror-clock': [12, 14, 15, 17, 18],
-  'change-detection': [16, 18, 20, 22, 24],
-  'symmetry-span': [3, 4, 4, 5, 5], // واحد = دسته
-  // بلوک‌شماری ~۲۵ث/مرحله — دستی و ملایم‌تر از ۱٫۵×
-  'block-height': [12, 13, 14, 15, 16],
+  'memorise-grid': [8, 9, 10, 11, 12],
+  'spatial-sequence': [8, 9, 10, 11, 12],
+  'object-tracking': [6, 7, 8, 8, 9],
+  'mental-rotation': [15, 17, 19, 20, 22],
+  'mirror-clock': [7, 8, 9, 9, 10],
+  'change-detection': [15, 17, 19, 20, 22],
+  'symmetry-span': [3, 3, 3, 4, 4], // واحد = دسته
+  'block-height': [3, 3, 4, 4, 4],
   // استدلال
-  'sequence-logic': [12, 14, 15, 17, 18],
-  'pattern-completion': [12, 14, 15, 17, 18],
-  'progressive-matrices': [12, 14, 15, 17, 18],
-  'rule-discovery-card-sorting': [36, 40, 45, 50, 54],
+  'sequence-logic': [6, 7, 8, 8, 9],
+  'pattern-completion': [6, 7, 8, 8, 9],
+  'progressive-matrices': [6, 7, 8, 8, 9],
+  'rule-discovery-card-sorting': [22, 24, 27, 30, 33],
   // حسی-حرکتی
   'reaction-time': [10, 11, 12, 14, 15],
+  // محاسبه‌ها — پس از بازکالیبراسیون دیگر نام‌قفل نیستند و نردبان دارند؛
+  // میراث نام (۲۰/۱۰۰) به‌عنوان سقف «تعداد دلخواه» زنده است (CUSTOM_MAX)
+  'calculation-20': [9, 10, 11, 12, 13],
+  'calculation-100': [22, 24, 27, 30, 33],
 }
 
 /**
- * بازی‌هایی که تعداد مرحله را موتور خودش تعیین می‌کند — override اعمال
- * نمی‌شود؛ این آینه فقط برای نمایش «مراحل/مدت» و بودجهٔ برنامه روزانه است.
+ * بازی‌هایی که تعداد مرحله را موتور خودش از ساختار جلسه می‌سازد — override
+ * اعمال نمی‌شود و تعداد دلخواه هم برایشان معنا ندارد؛ این آینه فقط برای
+ * نمایش و بودجه‌بندی برنامه روزانه است.
  */
 export const ENGINE_AUTHORED_STAGE_COUNTS: Readonly<Record<string, readonly number[]>> = {
-  // بلوک‌های مطالعه/آزمون/یادآوری: pairCount × (۲ یا ۳) — موتور مولف است
-  'associative-pairs': [8, 10, 18, 21, 24],
-  // تعداد در نام بازی قفل است؛ دشواری از راه عملوندها و زمان‌بندی می‌آید
-  'calculation-20': [20, 20, 20, 20, 20],
-  'calculation-100': [100, 100, 100, 100, 100],
+  // بلوک‌های مطالعه/آزمون/یادآوری: ۴ جفت × (۲ یا ۳ بلوک) — موتور مولف است
+  'associative-pairs': [8, 8, 8, 12, 12],
+}
+
+/** حداقل/حداکثر «تعداد دلخواه» — پیش‌فرض از نردبان مشتق می‌شود */
+const CUSTOM_MAX_OVERRIDE: Readonly<Record<string, number>> = {
+  // میراث نام: جلسهٔ کلاسیک ۲۰/۱۰۰تایی با تعداد دلخواه در دسترس می‌ماند
+  'calculation-20': 20,
+  'calculation-100': 100,
 }
 
 /** اندیس سطح در نردبان — سطوح خارج از بازه به نزدیک‌ترین لبه می‌چسبند */
@@ -93,7 +106,7 @@ function ladderIndex(difficulty: number, length: number): number {
 /**
  * تعداد مرحله‌ای که createExerciseConfig باید روی config اعمال کند.
  * null یعنی بازی در سیاست نیست و موتور مقدار خودش را می‌سازد
- * (بازی‌های موتور-مولف و بازی‌های آیندهٔ فاقد نردبان).
+ * (بازی موتور-مولف و بازی‌های آیندهٔ فاقد نردبان).
  */
 export function policyStageCount(exerciseId: string, difficulty: number): number | null {
   const ladder = STAGE_COUNTS_BY_DIFFICULTY[exerciseId]
@@ -113,4 +126,51 @@ export function standardStageCount(
   const ladder = STAGE_COUNTS_BY_DIFFICULTY[exerciseId] ?? ENGINE_AUTHORED_STAGE_COUNTS[exerciseId]
   if (ladder === undefined) return fallbackPlannedTrials ?? 0
   return ladder[ladderIndex(difficulty, ladder.length)] as number
+}
+
+/** آیا کاربر می‌تواند تعداد مرحلهٔ این بازی را خودش انتخاب کند؟ */
+export function isStageCountCustomizable(exerciseId: string): boolean {
+  return STAGE_COUNTS_BY_DIFFICULTY[exerciseId] !== undefined
+}
+
+/** محدودهٔ مجاز «تعداد دلخواه» — کف ۲؛ سقف ۱٫۵× بالاترین نردبان (یا override نام) */
+export function stageCountBounds(exerciseId: string): { readonly min: number; readonly max: number } {
+  const ladder = STAGE_COUNTS_BY_DIFFICULTY[exerciseId]
+  const override = CUSTOM_MAX_OVERRIDE[exerciseId]
+  if (ladder !== undefined && override !== undefined) {
+    return { min: 2, max: override }
+  }
+  if (ladder !== undefined) {
+    return { min: 2, max: Math.max(2, Math.round((ladder[ladder.length - 1] as number) * MAX_STAGE_MULTIPLIER)) }
+  }
+  return { min: 2, max: 2 }
+}
+
+/** تعداد دلخواه را به محدودهٔ مجاز می‌چسباند؛ بازی غیرقابل‌تنظیم → null */
+export function clampCustomStageCount(
+  exerciseId: string,
+  requested: number | null | undefined,
+): number | null {
+  if (!isStageCountCustomizable(exerciseId) || requested === null || requested === undefined) {
+    return null
+  }
+  const bounds = stageCountBounds(exerciseId)
+  return Math.min(Math.max(Math.round(requested), bounds.min), bounds.max)
+}
+
+/**
+ * پیش‌تنظیم‌های ردیف «تعداد مراحل» در صفحهٔ انتخاب سطح — کوتاه/استاندارد/بلند
+ * حول مقدار استاندارد همان سطح؛ بلند هرگز از سقف مجاز رد نمی‌شود.
+ */
+export function stageCountPresets(
+  exerciseId: string,
+  difficulty: number,
+): { readonly short: number; readonly standard: number; readonly long: number } {
+  const standard = standardStageCount(exerciseId, difficulty, 0)
+  const bounds = stageCountBounds(exerciseId)
+  return {
+    short: Math.min(Math.max(Math.round(standard * 0.7), bounds.min), standard),
+    standard,
+    long: Math.min(Math.max(Math.round(standard * 1.3), standard), bounds.max),
+  }
 }

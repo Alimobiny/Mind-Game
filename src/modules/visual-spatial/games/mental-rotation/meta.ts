@@ -26,7 +26,7 @@ export const MENTAL_ROTATION_META_FA: ExerciseMeta = {
     'دقت و زمان پاسخ جداگانه اندازه‌گیری می‌شوند؛ شتابِ بدون دقت امتیاز بیشتری نمی‌آورد.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 16,
+  plannedTrials: 15,
   metricLabelsFa: {
     meanReactionTimeMs: 'میانگین زمان پاسخ (میلی‌ثانیه)',
     accuracyLowAngleBand: 'دقت در چرخش کم (۰ تا ۹۰ درجه)',

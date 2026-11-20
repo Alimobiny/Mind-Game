@@ -181,9 +181,13 @@ export class ExerciseSessionManager {
       trialCount: 0,
       summary: null,
     })
+    // نوشتنِ تنظیمات با merge — رکورد settings کل-شیء put می‌شود؛ بدون
+    // خواندن قبلی، تعداد مرحلهٔ دلخواهِ ذخیره‌شده پاک می‌شد
+    const existingSettings = (await this.settings?.get(this.definition.id)) ?? null
     await this.settings?.put({
       exerciseId: this.definition.id,
       lastDifficulty: this.deps.config.difficulty,
+      customStageCount: existingSettings?.customStageCount ?? null,
     })
     this.machine = smDispatch(this.machine, 'PREPARE')
     this.emit()

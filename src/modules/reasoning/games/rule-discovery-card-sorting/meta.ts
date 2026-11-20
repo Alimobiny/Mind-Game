@@ -26,7 +26,7 @@ export const RULE_DISCOVERY_CARD_SORTING_META_FA: ExerciseMeta = {
     'در سطح ۵ بازخوردها گاهی گمراه‌کننده‌اند؛ به الگوی کلی اعتماد کن، نه تک‌بازخورد.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 36,
+  plannedTrials: 22,
   metricLabelsFa: {
     categoriesCompleted: 'دسته‌های کامل‌شده',
     perseverativeErrors: 'خطای پایدار (قاعدهٔ منقضی)',

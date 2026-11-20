@@ -9,7 +9,11 @@ import {
   toLocalIsoDate,
 } from '../core/difficulty/adaptive-difficulty'
 import type { AdaptiveDifficultyResult } from '../core/difficulty/adaptive-difficulty'
-import { standardStageCount } from '../core/difficulty/stage-counts'
+import {
+  isStageCountCustomizable,
+  stageCountBounds,
+  stageCountPresets,
+} from '../core/difficulty/stage-counts'
 import { deriveCompletedExerciseIds } from '../core/program/plan-status'
 import { estimateMinutesForStages } from '../core/program/time-estimation'
 import {
@@ -146,6 +150,10 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
   const [difficulty, setDifficulty] = useState(1)
   const [difficultyConfirmed, setDifficultyConfirmed] = useState(false)
   const [appData, setAppData] = useState<Awaited<ReturnType<typeof getAppData>> | null>(null)
+  // تعداد مرحلهٔ دلخواه کاربر برای این بازی — null یعنی استانداردِ نردبان
+  const [customStages, setCustomStages] = useState<number | null>(null)
+  // جلوگیری از بازنویسی انتخاب کاربر با بارگذاری دوبارهٔ تنظیمات ذخیره‌شده
+  const [settingsLoadedFor, setSettingsLoadedFor] = useState<string | null>(null)
   // برای شروع مجدد جلسه با همان تنظیمات: کلید جدید، manager جدید
   const [sessionRound, setSessionRound] = useState(0)
   // دشواری تطبیقی: سطح پیشنهادی سیستم + وضعیت رکورد
@@ -166,6 +174,19 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
       cancelled = true
     }
   }, [])
+
+  // تنظیمات ذخیره‌شدهٔ این بازی (تعداد مرحلهٔ دلخواه) — یک‌بار برای هر بازی
+  useEffect(() => {
+    if (!appData || !registered || settingsLoadedFor === registered.meta.id) return
+    let cancelled = false
+    setSettingsLoadedFor(registered.meta.id)
+    void appData.settings.get(registered.meta.id).then((record) => {
+      if (!cancelled) setCustomStages(record?.customStageCount ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [appData, registered, settingsLoadedFor])
 
   // محاسبه سطح پیشنهادی از تاریخچه جلسات — با هر بازگشت به picker تازه می‌شود.
   // در حالت زنجیره، سطح از آیتم طرح می‌آید و این محاسبه معلق است.
@@ -321,14 +342,13 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
   if (!difficultyConfirmed || !appData) {
     const recommended = adaptive?.recommendedLevel ?? null
     const isManual = recommended !== null && difficulty !== recommended
-    // نردبان سیاست مرحله: سطح بالاتر = مراحل بیشتر؛ مدت تقریبی از ثانیه‌های
-    // هر مرحلهٔ همان بازی + سربار ثابت جلسه
-    const stageCount = standardStageCount(
-      registered.meta.id,
-      difficulty,
-      registered.meta.plannedTrials ?? 0,
-    )
-    const estimatedMinutes = estimateMinutesForStages(registered.meta.id, stageCount)
+    // نردبان سیاست مرحله (باند ۱٫۵-۳ دقیقه) + تعداد دلخواه کاربر؛ مدت تقریبی
+    // از ثانیه‌های هر مرحلهٔ همان بازی + سربار ثابت جلسه
+    const customizable = isStageCountCustomizable(registered.meta.id)
+    const presets = stageCountPresets(registered.meta.id, difficulty)
+    const bounds = stageCountBounds(registered.meta.id)
+    const effectiveStages = customStages ?? presets.standard
+    const estimatedMinutes = estimateMinutesForStages(registered.meta.id, effectiveStages)
     return (
       <main className="app-shell">
         <div className={styles.picker} data-domain={registered.meta.domain}>
@@ -395,8 +415,58 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
               </button>
             ))}
           </div>
+          {customizable ? (
+            <div className={styles.stageRow} data-testid="stage-count-row">
+              <div className={styles.stagePresets} role="group" aria-label="پیش‌تنظیم تعداد مراحل">
+                <button
+                  type="button"
+                  className={`${styles.presetChip} ${customStages === presets.short && presets.short !== presets.standard ? styles.presetChipActive : ''}`}
+                  aria-pressed={customStages === presets.short && presets.short !== presets.standard}
+                  onClick={() => setCustomStages(presets.short === presets.standard ? null : presets.short)}
+                >
+                  کوتاه ({toFaDigits(presets.short)})
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.presetChip} ${customStages === null || customStages === presets.standard ? styles.presetChipActive : ''}`}
+                  aria-pressed={customStages === null || customStages === presets.standard}
+                  onClick={() => setCustomStages(null)}
+                >
+                  استاندارد ({toFaDigits(presets.standard)})
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.presetChip} ${customStages === presets.long && presets.long !== presets.standard ? styles.presetChipActive : ''}`}
+                  aria-pressed={customStages === presets.long && presets.long !== presets.standard}
+                  onClick={() => setCustomStages(presets.long)}
+                >
+                  بلند ({toFaDigits(presets.long)})
+                </button>
+              </div>
+              <div className={styles.stageStepper}>
+                <button
+                  type="button"
+                  aria-label="کاهش تعداد مراحل"
+                  disabled={effectiveStages <= bounds.min}
+                  onClick={() => setCustomStages(Math.max(bounds.min, effectiveStages - 1))}
+                >
+                  −
+                </button>
+                <span className={styles.stageValue}>{toFaDigits(effectiveStages)}</span>
+                <button
+                  type="button"
+                  aria-label="افزایش تعداد مراحل"
+                  disabled={effectiveStages >= bounds.max}
+                  onClick={() => setCustomStages(Math.min(bounds.max, effectiveStages + 1))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ) : null}
           <p className={styles.stageInfo} data-testid="picker-stage-info">
-            مراحل این سطح: {toFaDigits(stageCount)} · مدت تقریبی: ~{toFaDigits(estimatedMinutes)} دقیقه
+            مراحل این سطح: {toFaDigits(effectiveStages)}
+            {customStages !== null ? ' (دلخواه)' : ''} · مدت تقریبی: ~{toFaDigits(estimatedMinutes)} دقیقه
           </p>
           {isManual ? (
             <p className={styles.manualHint}>انتخاب دستی — جلسات سطح دستی در ارتقای سطح حساب نمی‌شوند.</p>
@@ -405,7 +475,17 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
             type="button"
             className={styles.startButton}
             disabled={!appData}
-            onClick={() => setDifficultyConfirmed(true)}
+            onClick={() => {
+              setDifficultyConfirmed(true)
+              // ذخیرهٔ انتخاب‌ها (سطح + تعداد مرحلهٔ دلخواه) برای یادآوری بازی بعدی
+              if (appData) {
+                void appData.settings.put({
+                  exerciseId: registered.meta.id,
+                  lastDifficulty: difficulty,
+                  customStageCount: customStages,
+                })
+              }
+            }}
           >
             {appData ? 'ادامه' : 'در حال آماده‌سازی…'}
           </button>
@@ -438,7 +518,11 @@ function ExercisePageInner({ exerciseId, runDate }: ExercisePageInnerProps) {
       <GameShell
         key={sessionRound}
         registered={registered}
-        config={createExerciseConfig(registered.meta.id, difficulty)}
+        config={createExerciseConfig(
+          registered.meta.id,
+          difficulty,
+          customStages !== null ? { stageCount: customStages } : undefined,
+        )}
         deps={appData}
         renderTrial={(ctx) => renderTrial?.(ctx) ?? null}
         autoStart={runDate !== null}

@@ -26,7 +26,7 @@ export const AUDIO_RECALL_META_FA: ExerciseMeta = {
     'با بالا رفتن سطح، تعداد واژه‌ها (دهانه) بیشتر و سرعت ارائه بیشتر می‌شود.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 6,
+  plannedTrials: 4,
   metricLabelsFa: {
     spanCount: 'دهانه (تعداد واژه)',
     positionMatchRate: 'نرخ جایگاه درست (٪)',

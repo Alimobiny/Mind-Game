@@ -35,12 +35,12 @@ test.describe('تداخل مکانی (Simon)', () => {
 })
 
 test.describe('پلک توجه', () => {
-  test('۱۲ جریان: انتخاب هر دو هدف رنگی از جدول حروف', async ({ page }) => {
+  test('۱۰ جریان: انتخاب هر دو هدف رنگی از جدول حروف', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'پلک توجه', 1)
 
     let progress = 0
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       // جریان RSVP خودش می‌گذرد (~۲٫۷ث) — تا جدول بازیابی صبر
       const recall = page.getByTestId('ab-recall')
       await expect(recall).toBeVisible({ timeout: 30_000 })
@@ -61,12 +61,12 @@ test.describe('پلک توجه', () => {
 })
 
 test.describe('دهانهٔ جاری', () => {
-  test('۱۰ جریان: ورود آخرین ارقام پس از توقف ناگهانی', async ({ page }) => {
+  test('۵ جریان: ورود آخرین ارقام پس از توقف ناگهانی', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'دهانهٔ جاری', 1)
 
     let progress = 0
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < 5; i += 1) {
       // نمایش ۷ تا ۱۲ رقم (~۶-۱۱ث) — تا فاز ورود صبر
       const input = page.getByTestId('rs-input')
       await expect(input).toBeVisible({ timeout: 30_000 })

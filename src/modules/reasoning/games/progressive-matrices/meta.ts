@@ -26,7 +26,7 @@ export const PROGRESSIVE_MATRICES_META_FA: ExerciseMeta = {
     '۱۲ مرحله در هر جلسه؛ بازی غیرزمانی است — تحلیل دقیق مهم‌تر از سرعت است.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 12,
+  plannedTrials: 6,
   metricLabelsFa: {
     difficultyWeightedScore: 'دقت وزنی با هم‌زمانی قواعد (٪)',
     meanRtMs: 'میانگین زمان پاسخ (میلی‌ثانیه)',

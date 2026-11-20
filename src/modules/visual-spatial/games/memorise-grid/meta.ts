@@ -24,7 +24,7 @@ export const MEMORISE_GRID_META_FA: ExerciseMeta = {
     '۱۰ مرحله در هر جلسه؛ شبکه بزرگ‌تر و خانه‌های بیشتر با سطح بالاتر.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 10,
+  plannedTrials: 8,
   metricLabelsFa: {
     meanOverlapRate: 'میانگین خانه‌های به‌خاطرسپرده‌شده (٪)',
     gridSize: 'ابعاد شبکه',

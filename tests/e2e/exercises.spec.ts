@@ -18,9 +18,9 @@ async function typeAnswerWithKeypad(page: Page, answer: number): Promise<void> {
   await page.getByRole('button', { name: 'تأیید' }).click()
 }
 
-/** حلقه پاسخ به ۲۰ سؤال محاسبه */
+/** حلقه پاسخ به ۹ سؤال محاسبه */
 async function playFullCalculation(page: Page): Promise<void> {
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 9; i++) {
     const questionEl = page.getByTestId('calc-question')
     await expect(questionEl).toBeVisible()
     const text = (await questionEl.textContent()) ?? ''
@@ -48,7 +48,7 @@ test.describe('صفحه اصلی', () => {
 })
 
 test.describe('Calculation × 20', () => {
-  test('۲۰ سؤال کامل و نتیجه ذخیره می‌شود', async ({ page }) => {
+  test('۹ سؤال کامل و نتیجه ذخیره می‌شود', async ({ page }) => {
     await startExercise(page, 'محاسبه × ۲۰', 1)
     await playFullCalculation(page)
     await waitForResults(page)
@@ -57,7 +57,7 @@ test.describe('Calculation × 20', () => {
 })
 
 test.describe('Number Sequence', () => {
-  test('۱۰ مرحله با ثبت ارقام نمایش‌داده‌شده کامل می‌شود', async ({ page }) => {
+  test('۹ مرحله با ثبت ارقام نمایش‌داده‌شده کامل می‌شود', async ({ page }) => {
     // شروع دستی تا در فاز COUNTDOWN بتوان ضبط‌کننده ارقام را نصب کرد
     await openExerciseFromHome(page, /^توالی اعداد/)
     await page.getByRole('radio', { name: '۱', exact: true }).click()
@@ -82,7 +82,7 @@ test.describe('Number Sequence', () => {
     })
     await expect(page.locator('section[data-phase="ACTIVE"]')).toBeVisible({ timeout: 20_000 })
 
-    for (let trial = 0; trial < 10; trial++) {
+    for (let trial = 0; trial < 9; trial++) {
       // هر مرحله دقیقاً ۳ رقم ثبت می‌کند → شرط مطلق بدون race:
       // بعد از مرحله n، طول آرایه باید ۳×(n+1) باشد
       const needed = (trial + 1) * 3
@@ -144,10 +144,10 @@ test.describe('Go / No-Go', () => {
 })
 
 test.describe('Memorise Grid', () => {
-  test('۱۰ مرحله با خواندن خانه‌های فعال کامل می‌شود', async ({ page }) => {
+  test('۸ مرحله با خواندن خانه‌های فعال کامل می‌شود', async ({ page }) => {
     await startExercise(page, 'شبکه حافظه', 1)
 
-    for (let trial = 0; trial < 10; trial++) {
+    for (let trial = 0; trial < 8; trial++) {
       // فاز memorise: خانه‌های active را ثبت کن
       const activeCells = page.locator('[data-active="true"]')
       await expect(activeCells.first()).toBeVisible({ timeout: 10_000 })

@@ -26,7 +26,7 @@ export const OPERATION_SPAN_META_FA: ExerciseMeta = {
     'اگر دقت محاسبه‌هایت زیر ۸۵٪ بیفتد، جلسه «فاقد اعتبار» ثبت می‌شود — این قرارداد پژوهشی ظرفیت‌سنجی است.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 3,
+  plannedTrials: 2,
   metricLabelsFa: {
     setsCompleted: 'دسته‌های انجام‌شده',
     partialCreditUnitScore: 'امتیاز اعتبار جزئی (٪)',

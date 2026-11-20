@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { faToNumber, openExerciseFromHome, startExercise, waitForResults } from './helpers'
+import { faToNumber, openExerciseFromHome, startExercise, waitForResults, waitProgressAdvance } from './helpers'
 import {
   countAnsweredEvents,
   expectProgress,
@@ -20,9 +20,10 @@ import {
 
 const FA = '۰۱۲۳۴۵۶۷۸۹'
 
-/** حلقه پاسخ صحیح به ۲۰ سؤال محاسبه — هر تأیید با double-click */
+/** حلقه پاسخ صحیح به ۹ سؤال محاسبه — هر تأیید با double-click */
 async function playCalculationWithDoubleSubmit(page: Page): Promise<void> {
-  for (let i = 0; i < 20; i++) {
+  let progress = 0
+  for (let i = 0; i < 9; i++) {
     const questionEl = page.getByTestId('calc-question')
     await expect(questionEl).toBeVisible()
     const text = (await questionEl.textContent()) ?? ''
@@ -37,6 +38,9 @@ async function playCalculationWithDoubleSubmit(page: Page): Promise<void> {
     }
     // تپ مضاعف روی تأیید — باید فقط یک پاسخ ثبت شود
     await page.getByRole('button', { name: 'تأیید' }).dblclick()
+    // صبر تا رندر مرحلهٔ بعد (یا نتایج) — بدون این، پرسشِ در حال گذار خوانده
+    // می‌شود و ارقامِ پرسش قبلی برای مرحلهٔ تازه تایپ می‌شود (شلاک تحت بار)
+    progress = await waitProgressAdvance(page, progress)
   }
 }
 
@@ -77,7 +81,7 @@ test.describe('QA1: double-fire در بازی‌های زمان‌بندی‌ش�
     const ink = (await word.getAttribute('data-ink')) as string
     await page.getByRole('button', { name: STROOP_LABELS[ink] as string, exact: true }).dblclick()
 
-    await expectProgress(page, 1, 20)
+    await expectProgress(page, 1, 18)
     expect(getErrors()).toEqual([])
   })
 
@@ -122,15 +126,15 @@ test.describe('QA1: double-fire در بازی‌های زمان‌بندی‌ش�
 })
 
 test.describe('QA1: double-fire روی دکمه تأیید بازی‌های خود-پیش‌رو', () => {
-  test('Calculation ×20: دوبل‌کلیک تأیید در هر ۲۰ سؤال — نتایج دقیق', async ({ page }) => {
+  test('Calculation ×20: دوبل‌کلیک تأیید در هر ۹ سؤال — نتایج دقیق', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'محاسبه × ۲۰', 1)
     await playCalculationWithDoubleSubmit(page)
     await waitForResults(page)
 
-    // بدون پاسخ تکراری/پریده: همه ۲۰ مرحله درست
+    // بدون پاسخ تکراری/پریده: همه ۹ مرحله درست
     await expect(page.getByText('جلسه کامل شد')).toBeVisible()
-    const correctCard = page.locator('div', { hasText: 'پاسخ درست' }).getByText(toFa(20))
+    const correctCard = page.locator('div', { hasText: 'پاسخ درست' }).getByText(toFa(9))
     await expect(correctCard.first()).toBeVisible()
     expect(getErrors()).toEqual([])
   })
@@ -177,7 +181,7 @@ test.describe('QA1: double-fire روی دکمه تأیید بازی‌های خ�
 
     await expect(page.getByText('درست!')).toBeVisible({ timeout: 5_000 })
     // دقیقاً یک مرحله پاسخ داده شده باشد (دوبله ثبت نشده)
-    await expectProgress(page, 1, 10)
+    await expectProgress(page, 1, 9)
     // صبر از بازخورد عبور کنیم؛ هیچ استثنای مهارنشده (مثل advance دوباره) نباشد
     await page.waitForTimeout(1500)
     expect(getErrors()).toEqual([])
@@ -203,7 +207,7 @@ test.describe('QA1: double-fire روی دکمه تأیید بازی‌های خ�
     await confirm.dblclick()
 
     await expect(page.getByText('کامل و درست!')).toBeVisible({ timeout: 5_000 })
-    await expectProgress(page, 1, 10)
+    await expectProgress(page, 1, 8)
     await page.waitForTimeout(2000)
     expect(getErrors()).toEqual([])
   })
@@ -240,7 +244,7 @@ test.describe('QA1: double-fire روی دکمه تأیید بازی‌های خ�
     await confirm.dblclick()
 
     await expect(page.getByText('درست!')).toBeVisible({ timeout: 5_000 })
-    await expectProgress(page, 1, 10)
+    await expectProgress(page, 1, 8)
     await page.waitForTimeout(2000)
     expect(getErrors()).toEqual([])
   })
@@ -277,7 +281,7 @@ test.describe('QA1: double-fire روی دکمه تأیید بازی‌های خ�
     await confirm.dblclick()
 
     await expect(page.getByText('کامل و درست!')).toBeVisible({ timeout: 5_000 })
-    await expectProgress(page, 1, 6)
+    await expectProgress(page, 1, 3)
     await page.waitForTimeout(1900)
     expect(getErrors()).toEqual([])
   })
@@ -291,7 +295,7 @@ test.describe('QA1: double-fire روی گزینه‌های استدلال', () =
     const option: Locator = page.locator('[data-testid="pattern-option"]').first()
     await expect(option).toBeVisible({ timeout: 10_000 })
     await option.dblclick()
-    await expectProgress(page, 1, 12)
+    await expectProgress(page, 1, 6)
     expect(getErrors()).toEqual([])
   })
 
@@ -301,7 +305,7 @@ test.describe('QA1: double-fire روی گزینه‌های استدلال', () =
     const option: Locator = page.locator('[data-testid="seq-option"]').first()
     await expect(option).toBeVisible({ timeout: 10_000 })
     await option.dblclick()
-    await expectProgress(page, 1, 12)
+    await expectProgress(page, 1, 6)
     expect(getErrors()).toEqual([])
   })
 })

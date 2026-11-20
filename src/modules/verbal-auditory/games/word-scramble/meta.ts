@@ -26,7 +26,7 @@ export const WORD_SCRAMBLE_META_FA: ExerciseMeta = {
     'مرحله مهلت ندارد — با آرامش به یاد بیاور.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 12,
+  plannedTrials: 6,
   metricLabelsFa: {
     meanAnswerTimeMs: 'میانگین زمان پاسخ (میلی‌ثانیه)',
     decoyTrials: 'مراحل دارای حرف فریب',

@@ -125,6 +125,72 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ردیف «تعداد مراحل»: پیش‌تنظیم‌ها + تنظیم دقیق — شکل کوچک‌شدهٔ دکمه‌های سطح */
+.stageRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stagePresets {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.presetChip {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  padding: 5px 12px;
+  min-height: 32px;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.presetChip:hover {
+  border-color: var(--accent, var(--color-primary));
+}
+
+.presetChipActive {
+  background: var(--color-primary-strong);
+  border-color: var(--color-primary-strong);
+  color: #082f49;
+}
+
+.stageStepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stageStepper button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.stageStepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stageValue {
+  font-size: 0.95rem;
+  font-weight: 700;
+  min-width: 2ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .startButton {
   background: var(--color-primary-strong);
   color: #082f49;

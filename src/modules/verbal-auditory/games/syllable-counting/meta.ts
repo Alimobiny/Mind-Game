@@ -24,7 +24,7 @@ export const SYLLABLE_COUNTING_META_FA: ExerciseMeta = {
     '۱۲ جمله در هر جلسه؛ با بالا رفتن سطح، جمله‌ها طولانی‌تر می‌شوند.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 12,
+  plannedTrials: 6,
   metricLabelsFa: {
     meanAbsoluteError: 'میانگین خطای مطلق (هجا)',
     exactAnswerRate: 'درصد پاسخ دقیق (٪)',

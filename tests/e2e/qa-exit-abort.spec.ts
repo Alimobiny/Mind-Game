@@ -133,7 +133,7 @@ test.describe('QA2: پس از آخرین پاسخ تا نتایج — بدون �
     })
     await waitForActive(page)
 
-    for (let trial = 0; trial < 10; trial++) {
+    for (let trial = 0; trial < 9; trial++) {
       const needed = (trial + 1) * 3
       await page.waitForFunction(
         (target) => (window as unknown as { __nsDigits: string[] }).__nsDigits.length >= target,
@@ -161,7 +161,7 @@ test.describe('QA2: پس از آخرین پاسخ تا نتایج — بدون �
 
     const record = await latestSession(page, 'number-sequence')
     expect(record?.status).toBe('completed')
-    expect(record?.trialCount).toBe(10)
+    expect(record?.trialCount).toBe(9)
   })
 
   test('Pattern Completion کامل: کلیک آخرین گزینه advance روی جلسه تمام‌شده نمی‌زند', async ({
@@ -169,7 +169,7 @@ test.describe('QA2: پس از آخرین پاسخ تا نتایج — بدون �
   }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'تکمیل الگو', 1)
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 6; i++) {
       await page.locator('[data-testid="pattern-option"]').first().click()
       await page.waitForTimeout(120)
     }
@@ -181,7 +181,7 @@ test.describe('QA2: پس از آخرین پاسخ تا نتایج — بدون �
   test('Memorise Grid کامل: بدون خطای صفحه پس از آخرین تأیید', async ({ page }) => {
     const getErrors = trackPageErrors(page)
     await startExercise(page, 'شبکه حافظه', 1)
-    for (let trial = 0; trial < 10; trial++) {
+    for (let trial = 0; trial < 8; trial++) {
       const activeCells = page.locator('[data-active="true"]')
       await expect(activeCells.first()).toBeVisible({ timeout: 10_000 })
       await page.waitForTimeout(200)

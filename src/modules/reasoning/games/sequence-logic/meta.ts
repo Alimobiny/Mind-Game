@@ -24,7 +24,7 @@ export const SEQUENCE_LOGIC_META_FA: ExerciseMeta = {
     '۱۲ سؤال در هر جلسه؛ با بالا رفتن سطح، قاعده‌ها پیچیده‌تر می‌شوند.',
   ],
   difficultyLevels: [1, 2, 3, 4, 5],
-  plannedTrials: 12,
+  plannedTrials: 6,
   metricLabelsFa: {
     difficultyWeightedScore: 'امتیاز وزن‌دار سطح',
     avgShownLength: 'میانگین طول توالی',
